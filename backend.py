@@ -259,25 +259,14 @@ class Plot:
         self._toolbar.load_parameters()
         # self.load_settings()
 
-        # TODO: customize menu
-        menu: QMenu = self._canvas.ctrlMenu
-        print(menu.actions())
-        action: QAction
-        for action in self._canvas.ctrlMenu.actions():
-            print(action.associatedWidgets())
-        self._canvas.ctrlMenu.clear()
-        menuItems = [
-            ('Alpha', self._canvas.ctrl.alphaGroup),
-            ('Grid', self._canvas.ctrl.gridGroup),
+        # customize menu
+        titles_to_leave: List[str] = [
+            self._canvas.ctrl.alphaGroup.parent().title(),
+            self._canvas.ctrl.gridGroup.parent().title(),
         ]
-        self._canvas.subMenus = []
-        for name, grp in menuItems:
-            sm: QMenu = QMenu(name)
-            act: QWidgetAction = QWidgetAction(self._canvas)
-            act.setDefaultWidget(grp)
-            sm.addAction(act)
-            self._canvas.subMenus.append(sm)
-            # self._canvas.ctrlMenu.addMenu(sm)
+        for action in self._canvas.ctrlMenu.actions():
+            if action.text() not in titles_to_leave:
+                self._canvas.ctrlMenu.removeAction(action)
 
     def translate_ui(self):
         _translate: Callable[[str, str, Optional[str], int], str] = QCoreApplication.translate
