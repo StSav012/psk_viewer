@@ -1,8 +1,6 @@
 ﻿#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-# TODO: save and load trace balloons
-
 import os
 import sys
 from typing import List
@@ -207,8 +205,6 @@ class App(QMainWindow):
         self.setWindowTitle(_translate('main window', 'Fast Sweep Viewer'))
 
         self.plot_toolbar.parameters_title = _translate('plot config window title', 'Figure options')
-
-        suffix_mhz = ' ' + pg.siFormat(50e6, suffix=_translate('unit', 'Hz'))
 
         self.group_frequency.setTitle(_translate('main window', 'Frequency'))
         self.label_frequency_min.setText(_translate('main window', 'Minimum') + ':')
@@ -539,31 +535,6 @@ class App(QMainWindow):
 
     def next_found_line(self):
         self.spin_frequency_center.setValue(self.plot.next_found_line(self.spin_frequency_center.value()))
-
-    def plot_on_click(self, event):
-        if self._loading:
-            return
-        if event.inaxes is not None:
-            if event.dblclick \
-                    and not self.plot.trace_mode \
-                    and not self.plot.trace_multiple_mode:
-                min_freq, max_freq, min_voltage, max_voltage = self.plot.on_double_click(event)
-                self.set_config_value('frequency', 'lower', min_freq)
-                self.set_config_value('frequency', 'upper', max_freq)
-                self.set_config_value('voltage', 'lower', min_voltage)
-                self.set_config_value('voltage', 'upper', max_voltage)
-                self._loading = True
-                self.spin_frequency_min.setValue(min_freq)
-                self.spin_frequency_max.setValue(max_freq)
-                self.spin_frequency_min.setMaximum(max_freq)
-                self.spin_frequency_max.setMinimum(min_freq)
-                self.spin_frequency_span.setValue(max_freq - min_freq)
-                self.spin_frequency_center.setValue(0.5 * (max_freq + min_freq))
-                self.spin_voltage_min.setValue(min_voltage)
-                self.spin_voltage_max.setValue(max_voltage)
-                self.spin_voltage_min.setMaximum(max_voltage)
-                self.spin_voltage_max.setMinimum(min_voltage)
-                self._loading = False
 
     def open_file_dialog(self, _filter=''):
         directory = self.get_config_value('open', 'location', '', str)
