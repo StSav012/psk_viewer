@@ -8,8 +8,8 @@ import numpy as np
 import pandas as pd
 import pyqtgraph as pg
 from PyQt5.QtCore import QCoreApplication, QSettings, QSize, Qt, QPointF
-from PyQt5.QtGui import QIcon, QPixmap, QBrush
-from PyQt5.QtWidgets import QAction, QFileDialog, QMessageBox, QSizePolicy, QToolBar, QStatusBar, QMenu, QWidgetAction
+from PyQt5.QtGui import QBrush, QIcon, QPalette, QPixmap
+from PyQt5.QtWidgets import QAction, QFileDialog, QMessageBox, QToolBar, QStatusBar
 from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent
 
 import detection
@@ -59,8 +59,10 @@ def resource_path(relative_path: str) -> str:
 
 
 def load_icon(filename: str) -> QIcon:
+    is_dark: bool = QPalette().color(QPalette.Window).lightness() < 128
     icon: QIcon = QIcon()
-    icon.addPixmap(QPixmap(resource_path(os.path.join('img', filename + IMAGE_EXT))), QIcon.Normal, QIcon.Off)
+    icon.addPixmap(QPixmap(resource_path(os.path.join('img', 'dark' if is_dark else 'light', filename + IMAGE_EXT))),
+                   QIcon.Normal, QIcon.Off)
     return icon
 
 
@@ -150,6 +152,7 @@ class NavigationToolbar(QToolBar):
 
 class Plot:
     settings: QSettings
+    _is_dark: bool
     _legend_box: Optional[pg.GraphicsLayoutWidget]
     _legend: Optional[pg.LegendItem]
     _figure: pg.PlotWidget
@@ -178,6 +181,8 @@ class Plot:
             self.settings = QSettings("SavSoft", "Fast Sweep Viewer")
         else:
             self.settings = settings
+
+        self._is_dark = QPalette().color(QPalette.Window).lightness() < 128
 
         self._legend_box = legend
         self._legend = None
@@ -229,12 +234,29 @@ class Plot:
         self.setup_ui()
 
     def setup_ui(self):
+        if self._is_dark:
+            self._figure.setBackground(QBrush(pg.mkColor(0, 0, 0)))
+            label: str
+            for label, ax_d in self._canvas.axes.items():
+                ax: pg.AxisItem = ax_d['item']
+                ax.setPen('d')
+                ax.setTextPen('d')
+        else:
+            self._figure.setBackground(QBrush(pg.mkColor(255, 255, 255)))
+            label: str
+            for label, ax_d in self._canvas.axes.items():
+                ax: pg.AxisItem = ax_d['item']
+                ax.setPen('k')
+                ax.setTextPen('k')
         if self._legend_box is not None:
             self._legend = pg.LegendItem(offset=(0, 0))
-            self._legend_box.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Maximum)
             self._legend_box.setCentralItem(self._legend)
-            # self._legend.setParentItem(self._legend_box.ci)
-            self._legend_box.setBackground(QBrush(pg.mkColor(0, 0, 0, 0)))
+            if self._is_dark:
+                self._legend_box.setBackground(QBrush(pg.mkColor(0, 0, 0, 0)))
+                self._legend.setLabelTextColor(255, 255, 255, 255)
+            else:
+                self._legend_box.setBackground(QBrush(pg.mkColor(255, 255, 255, 0)))
+                self._legend.setLabelTextColor(0, 0, 0, 255)
             self._legend_box.sceneObj.sigMouseClicked.connect(self.on_legend_click)
 
         self._toolbar.open_action.triggered.connect(self.load_data)
