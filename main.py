@@ -7,8 +7,8 @@ from typing import List
 
 import pyqtgraph as pg
 from PyQt5.QtCore import QCoreApplication, QLibraryInfo, QLocale, QSettings, QTranslator, Qt
-from PyQt5.QtWidgets import QApplication, QCheckBox, QDesktopWidget, QFileDialog, QGridLayout, \
-    QGroupBox, QLabel, QMainWindow, QMessageBox, QPushButton, QWidget, QStatusBar
+from PyQt5.QtWidgets import QApplication, QCheckBox, QDesktopWidget, QDockWidget, QFileDialog, QFormLayout,\
+    QGridLayout, QMainWindow, QMessageBox, QPushButton, QVBoxLayout, QWidget, QStatusBar
 
 import backend
 from backend import NavigationToolbar as NavigationToolbar
@@ -24,16 +24,14 @@ class App(QMainWindow):
 
         self.central_widget = QWidget(self, flags=Qt.WindowFlags())
         self.grid_layout = QGridLayout(self.central_widget)
-        self.grid_layout.setColumnStretch(0, 1)
 
         # Frequency box
-        self.group_frequency = QGroupBox(self.central_widget)
-        self.grid_layout_frequency = QGridLayout(self.group_frequency)
-
-        self.label_frequency_min = QLabel(self.group_frequency)
-        self.label_frequency_max = QLabel(self.group_frequency)
-        self.label_frequency_center = QLabel(self.group_frequency)
-        self.label_frequency_span = QLabel(self.group_frequency)
+        self.box_frequency = QDockWidget(self.central_widget)
+        self.box_frequency.setObjectName('box_frequency')
+        self.group_frequency = QWidget(self.box_frequency)
+        self.v_layout_frequency = QVBoxLayout(self.group_frequency)
+        self.form_layout_frequency = QFormLayout()
+        self.grid_layout_frequency = QGridLayout()
 
         self.spin_frequency_min = pg.SpinBox(self.group_frequency)
         self.spin_frequency_max = pg.SpinBox(self.group_frequency)
@@ -56,11 +54,12 @@ class App(QMainWindow):
         self.button_move_x_right_coarse = QPushButton(self.group_frequency)
 
         # Voltage box
-        self.group_voltage = QGroupBox(self.central_widget)
-        self.grid_layout_voltage = QGridLayout(self.group_voltage)
-
-        self.label_voltage_min = QLabel(self.group_voltage)
-        self.label_voltage_max = QLabel(self.group_voltage)
+        self.box_voltage = QDockWidget(self.central_widget)
+        self.box_voltage.setObjectName('box_voltage')
+        self.group_voltage = QWidget(self.box_voltage)
+        self.v_layout_voltage = QVBoxLayout(self.group_voltage)
+        self.form_layout_voltage = QFormLayout()
+        self.grid_layout_voltage = QGridLayout()
 
         self.spin_voltage_min = pg.SpinBox(self.group_voltage)
         self.spin_voltage_max = pg.SpinBox(self.group_voltage)
@@ -74,9 +73,12 @@ class App(QMainWindow):
         self.button_zoom_y_in_coarse = QPushButton(self.group_voltage)
 
         # Find Lines box
-        self.group_find_lines = QGroupBox(self.central_widget)
-        self.grid_layout_find_lines = QGridLayout(self.group_find_lines)
-        self.label_threshold = QLabel(self.group_find_lines)
+        self.box_find_lines = QDockWidget(self.central_widget)
+        self.box_find_lines.setObjectName('box_find_lines')
+        self.group_find_lines = QWidget(self.box_find_lines)
+        self.v_layout_find_lines = QVBoxLayout(self.group_find_lines)
+        self.form_layout_find_lines = QFormLayout()
+        self.grid_layout_find_lines = QGridLayout()
         self.spin_threshold = pg.SpinBox(self.group_find_lines)
         self.spin_threshold.setMinimum(1.0)
         self.spin_threshold.setMaximum(1000.0)
@@ -92,6 +94,8 @@ class App(QMainWindow):
         self.figure = pg.PlotWidget(self.central_widget)
         self.figure.setFocusPolicy(Qt.ClickFocus)
         self.plot_toolbar = NavigationToolbar(self, parameters_icon=backend.load_icon('configure'))
+        self.box_legend = QDockWidget(self.central_widget)
+        self.box_legend.setObjectName('box_legend')
         self.legend: pg.GraphicsLayoutWidget = pg.GraphicsLayoutWidget()
         self.plot = backend.Plot(figure=self.figure,
                                  legend=self.legend,
@@ -138,46 +142,49 @@ class App(QMainWindow):
         self.button_next_line.clicked.connect(self.next_found_line)
 
     def setup_ui(self):
-        self.resize(484, 441)
+        _translate = QCoreApplication.translate
+
         self.setWindowIcon(backend.load_icon('sweep'))
 
-        self.grid_layout_frequency.addWidget(self.label_frequency_min, 1, 0, 1, 2)
-        self.grid_layout_frequency.addWidget(self.label_frequency_max, 0, 0, 1, 2)
-        self.grid_layout_frequency.addWidget(self.label_frequency_center, 2, 0, 1, 2)
-        self.grid_layout_frequency.addWidget(self.label_frequency_span, 3, 0, 1, 2)
-        self.grid_layout_frequency.addWidget(self.spin_frequency_min, 1, 2, 1, 2)
-        self.grid_layout_frequency.addWidget(self.spin_frequency_max, 0, 2, 1, 2)
-        self.grid_layout_frequency.addWidget(self.spin_frequency_center, 2, 2, 1, 2)
-        self.grid_layout_frequency.addWidget(self.spin_frequency_span, 3, 2, 1, 2)
-        self.grid_layout_frequency.addWidget(self.check_frequency_persists, 4, 0, 1, 4)
+        self.form_layout_frequency.addRow(_translate('main window', 'Minimum') + ':', self.spin_frequency_min)
+        self.form_layout_frequency.addRow(_translate('main window', 'Maximum') + ':', self.spin_frequency_max)
+        self.form_layout_frequency.addRow(_translate('main window', 'Center') + ':', self.spin_frequency_center)
+        self.form_layout_frequency.addRow(_translate('main window', 'Span') + ':', self.spin_frequency_span)
 
-        self.grid_layout_voltage.addWidget(self.label_voltage_min, 1, 0, 1, 2)
-        self.grid_layout_voltage.addWidget(self.label_voltage_max, 0, 0, 1, 2)
-        self.grid_layout_voltage.addWidget(self.spin_voltage_min, 1, 2, 1, 2)
-        self.grid_layout_voltage.addWidget(self.spin_voltage_max, 0, 2, 1, 2)
-        self.grid_layout_voltage.addWidget(self.check_voltage_persists, 2, 0, 1, 4)
+        self.grid_layout_frequency.addWidget(self.check_frequency_persists, 0, 0, 1, 4)
+        self.grid_layout_frequency.addWidget(self.button_zoom_x_out_coarse, 1, 0)
+        self.grid_layout_frequency.addWidget(self.button_zoom_x_out_fine, 1, 1)
+        self.grid_layout_frequency.addWidget(self.button_zoom_x_in_fine, 1, 2)
+        self.grid_layout_frequency.addWidget(self.button_zoom_x_in_coarse, 1, 3)
 
-        self.grid_layout_frequency.addWidget(self.button_zoom_x_out_coarse, 5, 0)
-        self.grid_layout_frequency.addWidget(self.button_zoom_x_out_fine, 5, 1)
-        self.grid_layout_frequency.addWidget(self.button_zoom_x_in_fine, 5, 2)
-        self.grid_layout_frequency.addWidget(self.button_zoom_x_in_coarse, 5, 3)
+        self.grid_layout_frequency.addWidget(self.button_move_x_left_coarse, 2, 0)
+        self.grid_layout_frequency.addWidget(self.button_move_x_left_fine, 2, 1)
+        self.grid_layout_frequency.addWidget(self.button_move_x_right_fine, 2, 2)
+        self.grid_layout_frequency.addWidget(self.button_move_x_right_coarse, 2, 3)
 
-        self.grid_layout_frequency.addWidget(self.button_move_x_left_coarse, 6, 0)
-        self.grid_layout_frequency.addWidget(self.button_move_x_left_fine, 6, 1)
-        self.grid_layout_frequency.addWidget(self.button_move_x_right_fine, 6, 2)
-        self.grid_layout_frequency.addWidget(self.button_move_x_right_coarse, 6, 3)
+        self.v_layout_frequency.addLayout(self.form_layout_frequency)
+        self.v_layout_frequency.addLayout(self.grid_layout_frequency)
 
-        self.grid_layout_voltage.addWidget(self.button_zoom_y_out_coarse, 3, 0)
-        self.grid_layout_voltage.addWidget(self.button_zoom_y_out_fine, 3, 1)
-        self.grid_layout_voltage.addWidget(self.button_zoom_y_in_fine, 3, 2)
-        self.grid_layout_voltage.addWidget(self.button_zoom_y_in_coarse, 3, 3)
+        self.form_layout_voltage.addRow(_translate('main window', 'Minimum') + ':', self.spin_voltage_min)
+        self.form_layout_voltage.addRow(_translate('main window', 'Maximum') + ':', self.spin_voltage_max)
 
-        self.grid_layout_find_lines.addWidget(self.label_threshold, 0, 0)
-        self.grid_layout_find_lines.addWidget(self.spin_threshold, 0, 1)
-        self.grid_layout_find_lines.addWidget(self.button_find_lines, 1, 0, 1, 2)
-        self.grid_layout_find_lines.addWidget(self.button_clear_lines, 2, 0, 1, 2)
-        self.grid_layout_find_lines.addWidget(self.button_prev_line, 3, 0)
-        self.grid_layout_find_lines.addWidget(self.button_next_line, 3, 1)
+        self.grid_layout_voltage.addWidget(self.check_voltage_persists, 0, 0, 1, 4)
+        self.grid_layout_voltage.addWidget(self.button_zoom_y_out_coarse, 1, 0)
+        self.grid_layout_voltage.addWidget(self.button_zoom_y_out_fine, 1, 1)
+        self.grid_layout_voltage.addWidget(self.button_zoom_y_in_fine, 1, 2)
+        self.grid_layout_voltage.addWidget(self.button_zoom_y_in_coarse, 1, 3)
+
+        self.v_layout_voltage.addLayout(self.form_layout_voltage)
+        self.v_layout_voltage.addLayout(self.grid_layout_voltage)
+
+        self.form_layout_find_lines.addRow(_translate('main window', 'Search threshold') + ':', self.spin_threshold)
+        self.grid_layout_find_lines.addWidget(self.button_find_lines, 0, 0, 1, 2)
+        self.grid_layout_find_lines.addWidget(self.button_clear_lines, 1, 0, 1, 2)
+        self.grid_layout_find_lines.addWidget(self.button_prev_line, 2, 0)
+        self.grid_layout_find_lines.addWidget(self.button_next_line, 2, 1)
+
+        self.v_layout_find_lines.addLayout(self.form_layout_find_lines)
+        self.v_layout_find_lines.addLayout(self.grid_layout_find_lines)
 
         _value_label_interaction_flags = (Qt.LinksAccessibleByKeyboard
                                           | Qt.LinksAccessibleByMouse
@@ -185,32 +192,35 @@ class App(QMainWindow):
                                           | Qt.TextSelectableByKeyboard
                                           | Qt.TextSelectableByMouse)
 
-        self.grid_layout.addWidget(self.group_frequency, 1, 1)
-        self.grid_layout.addWidget(self.group_voltage, 2, 1)
-        self.grid_layout.addWidget(self.group_find_lines, 3, 1)
+        self.box_legend.setWidget(self.legend)
+        self.box_legend.setFeatures(self.box_legend.features() & ~self.box_legend.DockWidgetClosable)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.box_legend)
+
+        # TODO: adjust size when undocked
+        self.box_frequency.setWidget(self.group_frequency)
+        self.box_frequency.setFeatures(self.box_frequency.features() & ~self.box_frequency.DockWidgetClosable)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.box_frequency)
+
+        self.box_voltage.setWidget(self.group_voltage)
+        self.box_voltage.setFeatures(self.box_voltage.features() & ~self.box_voltage.DockWidgetClosable)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.box_voltage)
+
+        self.box_find_lines.setWidget(self.group_find_lines)
+        self.box_find_lines.setFeatures(self.box_find_lines.features() & ~self.box_find_lines.DockWidgetClosable)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.box_find_lines)
 
         self.addToolBar(self.plot_toolbar)
-        self.grid_layout.addWidget(self.figure, 0, 0, 5, 1)
-        self.grid_layout.addWidget(self.legend, 0, 1)
-        self.grid_layout.setColumnStretch(0, 1)
-        self.grid_layout.setColumnStretch(1, 0)
+        self.grid_layout.addWidget(self.figure)
 
         self.setCentralWidget(self.central_widget)
 
-        self.translate_ui()
-        self.adjustSize()
-
-    def translate_ui(self):
-        _translate = QCoreApplication.translate
         self.setWindowTitle(_translate('main window', 'Fast Sweep Viewer'))
 
         self.plot_toolbar.parameters_title = _translate('plot config window title', 'Figure options')
 
-        self.group_frequency.setTitle(_translate('main window', 'Frequency'))
-        self.label_frequency_min.setText(_translate('main window', 'Minimum') + ':')
-        self.label_frequency_max.setText(_translate('main window', 'Maximum') + ':')
-        self.label_frequency_center.setText(_translate('main window', 'Center') + ':')
-        self.label_frequency_span.setText(_translate('main window', 'Span') + ':')
+        self.box_legend.setWindowTitle(_translate('main window', 'Legend'))
+
+        self.box_frequency.setWindowTitle(_translate('main window', 'Frequency'))
         self.check_frequency_persists.setText(_translate('main window', 'Keep frequency range'))
 
         self.button_zoom_x_out_coarse.setText(_translate('main window', '−50%'))
@@ -223,9 +233,7 @@ class App(QMainWindow):
         self.button_move_x_right_fine.setText('+' + pg.siFormat(5e7, suffix=_translate('unit', 'Hz')))
         self.button_move_x_right_coarse.setText('+' + pg.siFormat(5e8, suffix=_translate('unit', 'Hz')))
 
-        self.group_voltage.setTitle(_translate('main window', 'Voltage'))
-        self.label_voltage_min.setText(_translate('main window', 'Minimum') + ':')
-        self.label_voltage_max.setText(_translate('main window', 'Maximum') + ':')
+        self.box_voltage.setWindowTitle(_translate('main window', 'Voltage'))
         self.check_voltage_persists.setText(_translate('main window', 'Keep voltage range'))
 
         self.button_zoom_y_out_coarse.setText(_translate('main window', '−50%'))
@@ -233,10 +241,9 @@ class App(QMainWindow):
         self.button_zoom_y_in_fine.setText(_translate('main window', '+10%'))
         self.button_zoom_y_in_coarse.setText(_translate('main window', '+50%'))
 
-        self.group_find_lines.setTitle(_translate('main window', 'Find Lines'))
+        self.box_find_lines.setWindowTitle(_translate('main window', 'Find Lines'))
         self.group_find_lines.setToolTip(_translate('main window',
                                                     'Try to detect lines automatically'))
-        self.label_threshold.setText(_translate('main window', 'Search threshold') + ':')
         self.button_find_lines.setText(_translate('main window', 'Find Lines'))
         self.button_clear_lines.setText(_translate('main window', 'Clear Lines'))
         self.button_prev_line.setText(_translate('main window', 'Previous Line'))
@@ -266,6 +273,8 @@ class App(QMainWindow):
         self.spin_voltage_max.setOpts(**opts)
 
         self.spin_threshold.setOpts(compactHeight=False)
+
+        self.adjustSize()
 
     def closeEvent(self, event):
         """ senseless joke in the loop """
