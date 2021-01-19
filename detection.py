@@ -1,8 +1,15 @@
 # -*- coding: utf-8 -*-
-from typing import Final
+try:
+    from typing import Final
+except ImportError:
+    class _Final:
+        def __getitem__(self, item):
+            return item
+
+
+    Final = _Final()
 
 import numpy as np
-
 
 LINE_WIDTH: Final[float] = 2.6e6
 
