@@ -271,8 +271,8 @@ class Plot:
         self._status_bar.addWidget(self._cursor_x)
         self._status_bar.addWidget(self._cursor_y)
 
-        self._figure.addItem(self._crosshair_v_line, ignoreBounds=True)
-        self._figure.addItem(self._crosshair_h_line, ignoreBounds=True)
+        self._figure.plotItem.addItem(self._crosshair_v_line, ignoreBounds=True)
+        self._figure.plotItem.addItem(self._crosshair_h_line, ignoreBounds=True)
         self._crosshair_h_line.setVisible(False)
         self._crosshair_v_line.setVisible(False)
 
@@ -391,10 +391,10 @@ class Plot:
         return self._plot_lines_labels
 
     def set_frequency_range(self, lower_value: float, upper_value: float):
-        self._figure.setXRange(lower_value, upper_value, padding=0.0)
+        self._figure.plotItem.setXRange(lower_value, upper_value, padding=0.0)
 
     def set_voltage_range(self, lower_value: float, upper_value: float):
-        self._figure.setYRange(lower_value, upper_value, padding=0.0)
+        self._figure.plotItem.setYRange(lower_value, upper_value, padding=0.0)
 
     def draw_data(self):
         self._ignore_scale_change = True
