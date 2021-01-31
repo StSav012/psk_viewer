@@ -93,7 +93,7 @@ class App(QMainWindow):
         # plot
         self.figure = pg.PlotWidget(self.central_widget)
         self.figure.setFocusPolicy(Qt.ClickFocus)
-        self.plot_toolbar = NavigationToolbar(self, parameters_icon=backend.load_icon('configure'))
+        self.plot_toolbar = NavigationToolbar(self, parameters_icon='configure')
         self.box_legend = QDockWidget(self.central_widget)
         self.box_legend.setObjectName('box_legend')
         self.legend: pg.GraphicsLayoutWidget = pg.GraphicsLayoutWidget()
