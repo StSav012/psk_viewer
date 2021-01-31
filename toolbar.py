@@ -9,6 +9,8 @@ from PyQt5.QtWidgets import QAction, QToolBar
 
 import figureoptions
 
+IMAGE_EXT: str = '.svg'
+
 
 # https://www.reddit.com/r/learnpython/comments/4kjie3/how_to_include_gui_images_with_pyinstaller/d3gjmom
 def resource_path(relative_path: str) -> str:

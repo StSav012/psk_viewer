@@ -19,8 +19,6 @@ LINES_COUNT: int = 2
 
 TRACE_AVERAGING_RANGE: float = 25.
 
-IMAGE_EXT: str = '.svg'
-
 pg.ViewBox.suggestPadding = lambda *_: 0.0
 
 
