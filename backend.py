@@ -89,7 +89,12 @@ class Plot:
             self.model_signal: np.ndarray = np.loadtxt('averaged fs signal filtered.csv')
         except (OSError, BlockingIOError):
             self.model_signal: np.ndarray = np.empty(0)
-        self.found_lines: List[pg.ScatterPlotItem] = \
+        self.user_found_lines: List[pg.PlotDataItem] = \
+            [self._canvas.scatterPlot(np.empty(0),
+                                      pen=pg.intColor(5 * i), brush=pg.intColor(5 * i))
+             for i in range(LINES_COUNT)]
+        # TODO: remove points on right click
+        self.automatically_found_lines: List[pg.PlotDataItem] = \
             [self._canvas.scatterPlot(np.empty(0),
                                       pen=pg.intColor(5 * i), brush=pg.intColor(5 * i))
              for i in range(LINES_COUNT)]
@@ -99,7 +104,7 @@ class Plot:
         self._crosshair_h_line = pg.InfiniteLine(angle=0, movable=False)
 
         self._mouse_moved_signal_proxy = pg.SignalProxy(self._figure.scene().sigMouseMoved,
-                                                        rateLimit=10, slot=self.mouse_moved)
+                                                        rateLimit=10, slot=self.on_mouse_moved)
         self._axis_range_changed_signal_proxy = pg.SignalProxy(self._figure.sigRangeChanged,
                                                                rateLimit=20, slot=self.on_lim_changed)
 
@@ -162,6 +167,8 @@ class Plot:
             if action.text() not in titles_to_leave:
                 self._canvas.ctrlMenu.removeAction(action)
 
+        self._figure.sceneObj.sigMouseClicked.connect(self.on_plot_clicked)
+
     def translate_ui(self):
         _translate: Callable[[str, str, Optional[str], int], str] = QCoreApplication.translate
 
@@ -216,7 +223,7 @@ class Plot:
         self.update_legend()
         event.accept()
 
-    def mouse_moved(self, event: Tuple[QPointF]):
+    def on_mouse_moved(self, event: Tuple[QPointF]):
         pos: QPointF = event[0]
         if self._figure.sceneBoundingRect().contains(pos):
             point: QPointF = self._canvas.vb.mapSceneToView(pos)
@@ -234,6 +241,29 @@ class Plot:
             self._cursor_x.setVisible(False)
             self._cursor_y.setVisible(False)
 
+    def on_plot_clicked(self, event: MouseClickEvent):
+        pos: QPointF = event.scenePos()
+        if self.trace_multiple_mode and self._figure.sceneBoundingRect().contains(pos):
+            x_span: float = np.ptp(self._canvas.axes['bottom']['item'].range)
+            y_span: float = np.ptp(self._canvas.axes['left']['item'].range)
+            point: QPointF = self._canvas.vb.mapSceneToView(pos)
+            distances: np.ndarray = np.full(LINES_COUNT, np.nan)
+            line: pg.PlotDataItem
+            for index, line in enumerate(self._plot_lines):
+                if line.xData is None or not line.xData.size:
+                    continue
+                distances[index] = np.min(np.hypot((line.xData - point.x()) / x_span,
+                                                   (line.yData - point.y()) / y_span))
+            if np.any(~np.isnan(distances)):
+                clicked_line_index: int = np.nanargmin(distances)
+                if distances[clicked_line_index] < 0.01:
+                    line = self._plot_lines[clicked_line_index]
+                    closest_point_index: int = np.argmin(np.hypot((line.xData - point.x()) / x_span,
+                                                                  (line.yData - point.y()) / y_span))
+                    self.user_found_lines[clicked_line_index].scatter.addPoints([line.xData[closest_point_index]],
+                                                                                [line.yData[closest_point_index]])
+                    # TODO: add the point to a table
+
     def on_lim_changed(self, *args):
         rect: List[List[float]] = args[0][1]
         if self._ignore_scale_change:
@@ -247,12 +277,6 @@ class Plot:
         if self.on_ylim_changed_callback is not None and callable(self.on_ylim_changed_callback):
             self.on_ylim_changed_callback(ylim)
         self._ignore_scale_change = False
-
-    def load_settings(self):
-        attrs: List[str] = ['top', 'bottom', 'left', 'right']
-        defaults: Dict[str, float] = {attr: vars(self._figure.subplotpars)[attr] for attr in attrs}
-        self._figure.subplots_adjust(**{attr: self.get_config_value('margins', attr, defaults[attr], float)
-                                        for attr in attrs})
 
     @property
     def lines(self):
@@ -303,19 +327,19 @@ class Plot:
             found_lines = detection.peaks_positions(x, detection.correlation(y_model_new, x, y),
                                                     threshold=1.0 / threshold)
             if found_lines.size:
-                self.found_lines[i].setData(x[found_lines], y[found_lines])
+                self.automatically_found_lines[i].setData(x[found_lines], y[found_lines])
             else:
-                self.found_lines[i].setData(np.empty(0), np.empty(0))
+                self.automatically_found_lines[i].setData(np.empty(0), np.empty(0))
         self._ignore_scale_change = False
 
     def prev_found_line(self, init_frequency: float) -> float:
         if self.model_signal.size < 2:
             return init_frequency
 
-        prev_line_freq: np.ndarray = np.full(len(self.found_lines), np.nan)
+        prev_line_freq: np.ndarray = np.full(len(self.automatically_found_lines), np.nan)
         index: int
         line: pg.ScatterPlotItem
-        for index, line in enumerate(self.found_lines):
+        for index, line in enumerate(self.automatically_found_lines):
             line_data: np.ndarray = line.getData()[0]
             if line_data is None or not line_data.size:
                 continue
@@ -334,10 +358,10 @@ class Plot:
         if self.model_signal.size < 2:
             return init_frequency
 
-        next_line_freq: np.ndarray = np.full(len(self.found_lines), np.nan)
+        next_line_freq: np.ndarray = np.full(len(self.automatically_found_lines), np.nan)
         index: int
         line: pg.ScatterPlotItem
-        for index, line in enumerate(self.found_lines):
+        for index, line in enumerate(self.automatically_found_lines):
             line_data: np.ndarray = line.getData()[0]
             if line_data is None or not line_data.size:
                 continue
@@ -354,7 +378,7 @@ class Plot:
 
     def clear_found_lines(self):
         line: pg.ScatterPlotItem
-        for line in self.found_lines:
+        for line in self.automatically_found_lines:
             line.clear()
 
     def clear(self):
