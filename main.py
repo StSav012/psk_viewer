@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QApplication, QCheckBox, QDesktopWidget, QDockWidget
 
 import backend
 from backend import NavigationToolbar as NavigationToolbar
+from utils import load_icon, resource_path
 
 
 class App(QMainWindow):
@@ -156,7 +157,7 @@ class App(QMainWindow):
         pg.fn.INT_REGEX = pg.re.compile(r'(?P<number>[+-]?\d+)\s*'
                                         r'(?P<siPrefix>[u(' + '|'.join(pg.fn.SI_PREFIXES) + r')]?)(?P<suffix>.*)$')
 
-        self.setWindowIcon(backend.load_icon('sweep'))
+        self.setWindowIcon(load_icon('sweep'))
 
         self.form_layout_frequency.addRow(_translate('main window', 'Minimum') + ':', self.spin_frequency_min)
         self.form_layout_frequency.addRow(_translate('main window', 'Maximum') + ':', self.spin_frequency_max)
@@ -612,7 +613,7 @@ if __name__ == '__main__':
                            QLibraryInfo.location(QLibraryInfo.TranslationsPath))
     app.installTranslator(qtbase_translator)
     my_translator = QTranslator()
-    my_translator.load(QLocale.system().bcp47Name(), backend.resource_path('translations'))
+    my_translator.load(QLocale.system().bcp47Name(), resource_path('translations'))
     app.installTranslator(my_translator)
 
     window = App()
