@@ -144,6 +144,18 @@ class App(QMainWindow):
     def setup_ui(self):
         _translate = QCoreApplication.translate
 
+        pg.fn.SI_PREFIXES = _translate('si prefixes', 'y,z,a,f,p,n,µ,m, ,k,M,G,T,P,E,Z,Y').split(',')
+        pg.fn.SI_PREFIXES_ASCII = pg.fn.SI_PREFIXES
+        pg.fn.SI_PREFIX_EXPONENTS.update(dict([(s, (i - 8) * 3) for i, s in enumerate(pg.fn.SI_PREFIXES)]))
+        if _translate('si prefix alternative micro', 'u'):
+            pg.fn.SI_PREFIX_EXPONENTS[_translate('si prefix alternative micro', 'u')] = -6
+        pg.fn.FLOAT_REGEX = pg.re.compile(
+            r'(?P<number>[+-]?((((\d+(\.\d*)?)|(\d*\.\d+))([eE][+-]?\d+)?)'
+            r'|(nan|NaN|NAN|inf|Inf|INF)))\s*'
+            r'((?P<siPrefix>[u(' + '|'.join(pg.fn.SI_PREFIXES) + r')]?)(?P<suffix>\w.*))?$')
+        pg.fn.INT_REGEX = pg.re.compile(r'(?P<number>[+-]?\d+)\s*'
+                                        r'(?P<siPrefix>[u(' + '|'.join(pg.fn.SI_PREFIXES) + r')]?)(?P<suffix>.*)$')
+
         self.setWindowIcon(backend.load_icon('sweep'))
 
         self.form_layout_frequency.addRow(_translate('main window', 'Minimum') + ':', self.spin_frequency_min)
