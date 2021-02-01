@@ -141,8 +141,6 @@ class Plot:
         self._toolbar.save_data_action.triggered.connect(
             lambda: self.save_data(*self.save_file_dialog(_filter="CSV (*.csv);;XLSX (*.xlsx)")))
         self._toolbar.save_figure_action.triggered.connect(self.save_figure)
-        self._toolbar.trace_action.toggled.connect(self.plot_trace_action_toggled)
-        self._toolbar.trace_multiple_action.toggled.connect(self.plot_trace_multiple_action_toggled)
         self._toolbar.configure_action.triggered.connect(self._toolbar.edit_parameters)
 
         self._status_bar.addWidget(self._cursor_x)
@@ -190,9 +188,7 @@ class Plot:
         self._toolbar.save_figure_action.setIconText(_translate("plot toolbar action", "Save Figure"))
         self._toolbar.save_figure_action.setToolTip(_translate("plot toolbar action", "Save the plot as an image"))
         self._toolbar.trace_action.setIconText(_translate("plot toolbar action", "Mark"))
-        self._toolbar.trace_action.setToolTip(_translate("plot toolbar action", "Mark a data point"))
-        self._toolbar.trace_multiple_action.setIconText(_translate("plot toolbar action", "Mark Multiple"))
-        self._toolbar.trace_multiple_action.setToolTip(_translate("plot toolbar action", "Mark several data points"))
+        self._toolbar.trace_action.setToolTip(_translate("plot toolbar action", "Mark several data points"))
         self._toolbar.copy_trace_action.setIconText(_translate("plot toolbar action", "Copy Marked"))
         self._toolbar.copy_trace_action.setToolTip(_translate("plot toolbar action",
                                                               "Copy marked points values into clipboard"))
@@ -243,7 +239,7 @@ class Plot:
 
     def on_plot_clicked(self, event: MouseClickEvent):
         pos: QPointF = event.scenePos()
-        if self.trace_multiple_mode and self._figure.sceneBoundingRect().contains(pos):
+        if self.trace_mode and self._figure.sceneBoundingRect().contains(pos):
             x_span: float = np.ptp(self._canvas.axes['bottom']['item'].range)
             y_span: float = np.ptp(self._canvas.axes['left']['item'].range)
             point: QPointF = self._canvas.vb.mapSceneToView(pos)
@@ -393,12 +389,10 @@ class Plot:
             self._legend.clear()
             # self._legend.setVisible(False)
         self._toolbar.trace_action.setChecked(False)
-        self._toolbar.trace_multiple_action.setChecked(False)
         self._toolbar.clear_action.setEnabled(False)
         self._toolbar.save_data_action.setEnabled(False)
         self._toolbar.save_figure_action.setEnabled(False)
         self._toolbar.trace_action.setEnabled(False)
-        self._toolbar.trace_multiple_action.setEnabled(False)
         self._toolbar.copy_trace_action.setEnabled(False)
         self._toolbar.save_trace_action.setEnabled(False)
         self._toolbar.clear_trace_action.setEnabled(False)
@@ -458,7 +452,6 @@ class Plot:
             self._toolbar.save_data_action.setEnabled(True)
             self._toolbar.save_figure_action.setEnabled(True)
             self._toolbar.trace_action.setEnabled(True)
-            self._toolbar.trace_multiple_action.setEnabled(True)
             self._toolbar.copy_trace_action.setEnabled(True)
             self._toolbar.save_trace_action.setEnabled(True)
             self._toolbar.clear_trace_action.setEnabled(True)
@@ -475,23 +468,8 @@ class Plot:
     def trace_mode(self):
         return self._toolbar.trace_action.isChecked()
 
-    @property
-    def trace_multiple_mode(self):
-        return self._toolbar.trace_multiple_action.isChecked()
-
     def actions_off(self):
         self._toolbar.trace_action.setChecked(False)
-        self._toolbar.trace_multiple_action.setChecked(False)
-
-    def plot_trace_action_toggled(self, new_value: bool):
-        if new_value:
-            self._toolbar.trace_multiple_action.setChecked(False)
-            self._figure.setFocus()
-
-    def plot_trace_multiple_action_toggled(self, new_value: bool):
-        if new_value:
-            self._toolbar.trace_action.setChecked(False)
-            self._figure.setFocus()
 
     def save_data(self, filename: str, _filter: str):
         if self._plot_voltages[-1].size == 0 or not filename:

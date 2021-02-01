@@ -25,7 +25,6 @@ class NavigationToolbar(QToolBar):
         self.save_data_action: QAction = QAction(self)
         self.save_figure_action: QAction = QAction(self)
         self.trace_action: QAction = QAction(self)
-        self.trace_multiple_action: QAction = QAction(self)
         self.copy_trace_action: QAction = QAction(self)
         self.save_trace_action: QAction = QAction(self)
         self.clear_trace_action: QAction = QAction(self)
@@ -38,7 +37,7 @@ class NavigationToolbar(QToolBar):
                          self.clear_action,
                          self.save_data_action,
                          self.save_figure_action,
-                         self.trace_multiple_action,
+                         self.trace_action,
                          self.copy_trace_action,
                          self.save_trace_action,
                          self.clear_trace_action,
@@ -56,7 +55,7 @@ class NavigationToolbar(QToolBar):
                          self.clear_action,
                          self.save_data_action,
                          self.save_figure_action,
-                         self.trace_multiple_action,
+                         self.trace_action,
                          self.copy_trace_action,
                          self.save_trace_action,
                          self.clear_trace_action,
@@ -79,7 +78,7 @@ class NavigationToolbar(QToolBar):
         self.addAction(self.save_data_action)
         self.addAction(self.save_figure_action)
         self.addSeparator()
-        self.addAction(self.trace_multiple_action)
+        self.addAction(self.trace_action)
         self.addAction(self.copy_trace_action)
         self.addAction(self.save_trace_action)
         self.addAction(self.clear_trace_action)
@@ -89,13 +88,13 @@ class NavigationToolbar(QToolBar):
         self.clear_action.setEnabled(False)
         self.save_data_action.setEnabled(False)
         self.save_figure_action.setEnabled(False)
-        self.trace_multiple_action.setEnabled(False)
+        self.trace_action.setEnabled(False)
         self.copy_trace_action.setEnabled(False)
         self.save_trace_action.setEnabled(False)
         self.clear_trace_action.setEnabled(False)
         self.configure_action.setEnabled(False)
 
-        self.trace_multiple_action.setCheckable(True)
+        self.trace_action.setCheckable(True)
 
         # Aesthetic adjustments - we need to set these explicitly in PyQt5
         # otherwise the layout looks different - but we don't want to set it if
