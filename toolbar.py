@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from typing import Optional, Union
+from typing import Iterable, Optional, Union
 
 from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QIcon
@@ -38,7 +38,6 @@ class NavigationToolbar(QToolBar):
                          self.clear_action,
                          self.save_data_action,
                          self.save_figure_action,
-                         self.trace_action,
                          self.trace_multiple_action,
                          self.copy_trace_action,
                          self.save_trace_action,
@@ -47,10 +46,32 @@ class NavigationToolbar(QToolBar):
                         ['open', 'delete',
                          'saveTable',
                          'saveImage',
-                         'selectObject', 'selectMultiple',
+                         'selectObject',
                          'copySelected', 'saveSelected', 'clearSelected',
                          'configure']):
             a.setIcon(load_icon(i.lower()))
+        a: QAction
+        i: str
+        for a, i in zip([self.open_action,
+                         self.clear_action,
+                         self.save_data_action,
+                         self.save_figure_action,
+                         self.trace_multiple_action,
+                         self.copy_trace_action,
+                         self.save_trace_action,
+                         self.clear_trace_action,
+                         self.configure_action],
+                        ['Ctrl+O',
+                         '',
+                         '',
+                         '',
+                         '',
+                         '', '', '',
+                         '']):
+            if isinstance(i, str) and i:
+                a.setShortcut(i)
+            elif not isinstance(i, str) and isinstance(i, Iterable):
+                a.setShortcuts(i)
 
         self.addAction(self.open_action)
         self.addAction(self.clear_action)
@@ -58,7 +79,6 @@ class NavigationToolbar(QToolBar):
         self.addAction(self.save_data_action)
         self.addAction(self.save_figure_action)
         self.addSeparator()
-        self.addAction(self.trace_action)
         self.addAction(self.trace_multiple_action)
         self.addAction(self.copy_trace_action)
         self.addAction(self.save_trace_action)
@@ -69,14 +89,12 @@ class NavigationToolbar(QToolBar):
         self.clear_action.setEnabled(False)
         self.save_data_action.setEnabled(False)
         self.save_figure_action.setEnabled(False)
-        self.trace_action.setEnabled(False)
         self.trace_multiple_action.setEnabled(False)
         self.copy_trace_action.setEnabled(False)
         self.save_trace_action.setEnabled(False)
         self.clear_trace_action.setEnabled(False)
         self.configure_action.setEnabled(False)
 
-        self.trace_action.setCheckable(True)
         self.trace_multiple_action.setCheckable(True)
 
         # Aesthetic adjustments - we need to set these explicitly in PyQt5
