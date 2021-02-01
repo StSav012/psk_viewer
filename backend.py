@@ -1,12 +1,12 @@
 ﻿# -*- coding: utf-8 -*-
 
 import os
-from typing import Callable, List, Optional, Dict, Tuple, Any, Type
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type
 
 import numpy as np
 import pandas as pd
 import pyqtgraph as pg
-from PyQt5.QtCore import QCoreApplication, QSettings, Qt, QPointF
+from PyQt5.QtCore import QCoreApplication, QPointF, QSettings, Qt
 from PyQt5.QtGui import QBrush, QPalette
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QStatusBar
 from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent
@@ -93,7 +93,6 @@ class Plot:
             [self._canvas.scatterPlot(np.empty(0),
                                       pen=pg.intColor(5 * i), brush=pg.intColor(5 * i))
              for i in range(LINES_COUNT)]
-        # TODO: remove points on right click
         self.automatically_found_lines: List[pg.PlotDataItem] = \
             [self._canvas.scatterPlot(np.empty(0),
                                       pen=pg.intColor(5 * i), brush=pg.intColor(5 * i))
@@ -166,6 +165,19 @@ class Plot:
                 self._canvas.ctrlMenu.removeAction(action)
 
         self._figure.sceneObj.sigMouseClicked.connect(self.on_plot_clicked)
+
+        def remove_points(item: pg.PlotDataItem, points: List[pg.SpotItem], ev: MouseClickEvent):
+            # TODO: delete a point exclusively when a modifier is used
+            print(ev.button(), ev.modifiers())
+            items: np.ndarray = item.scatter.data['item']
+            point: pg.SpotItem
+            for point in points:
+                index: np.ndarray = (items != point)
+                item.setData(item.xData[index], item.yData[index])
+
+        line: pg.PlotDataItem
+        for line in self.automatically_found_lines + self.user_found_lines:
+            line.sigPointsClicked.connect(remove_points)
 
     def translate_ui(self):
         _translate: Callable[[str, str, Optional[str], int], str] = QCoreApplication.translate
