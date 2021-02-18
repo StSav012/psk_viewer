@@ -167,12 +167,15 @@ class Plot:
         self._figure.sceneObj.sigMouseClicked.connect(self.on_plot_clicked)
 
         def remove_points(item: pg.PlotDataItem, points: List[pg.SpotItem], ev: MouseClickEvent):
-            if ev.modifiers() == Qt.ShiftModifier:
+            if item.xData is None or item.yData is None:
+                return
+            if self.trace_mode and ev.modifiers() == Qt.ShiftModifier:
                 point: pg.SpotItem
+                items: np.ndarray = item.scatter.data['item']
+                index: np.ndarray = np.full(items.shape, True, np.bool_)
                 for point in points:
-                    items: np.ndarray = item.scatter.data['item']
-                    index: np.ndarray = (items != point)
-                    item.setData(item.xData[index], item.yData[index])
+                    index &= (items != point)
+                item.setData(item.xData[index], item.yData[index])
 
         line: pg.PlotDataItem
         for line in self.automatically_found_lines + self.user_found_lines:
@@ -250,7 +253,7 @@ class Plot:
 
     def on_plot_clicked(self, event: MouseClickEvent):
         pos: QPointF = event.scenePos()
-        if self.trace_mode and self._figure.sceneBoundingRect().contains(pos):
+        if self.trace_mode and event.modifiers() == Qt.NoModifier and self._figure.sceneBoundingRect().contains(pos):
             x_span: float = np.ptp(self._canvas.axes['bottom']['item'].range)
             y_span: float = np.ptp(self._canvas.axes['left']['item'].range)
             point: QPointF = self._canvas.vb.mapSceneToView(pos)
@@ -267,8 +270,12 @@ class Plot:
                     line = self._plot_lines[clicked_line_index]
                     closest_point_index: int = np.argmin(np.hypot((line.xData - point.x()) / x_span,
                                                                   (line.yData - point.y()) / y_span))
-                    self.user_found_lines[clicked_line_index].scatter.addPoints([line.xData[closest_point_index]],
-                                                                                [line.yData[closest_point_index]])
+                    self.user_found_lines[clicked_line_index].setData(
+                        np.append(self.user_found_lines[clicked_line_index].xData or np.empty(0),
+                                  line.xData[closest_point_index]),
+                        np.append(self.user_found_lines[clicked_line_index].yData or np.empty(0),
+                                  line.yData[closest_point_index])
+                    )
                     # TODO: add the point to a table
 
     def on_lim_changed(self, *args):
