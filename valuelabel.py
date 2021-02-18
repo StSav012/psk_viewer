@@ -93,6 +93,6 @@ class ValueLabel(QLabel):
             # no SI prefix /suffix requested; scale is 1
             parts.update({'siPrefix': '', 'scaledValue': val})
 
-        parts['suffixGap'] = ' ' if (parts['suffix'] and parts['siPrefix']) else ''
+        parts['suffixGap'] = ' ' if (parts['suffix'] or parts['siPrefix']) else ''
 
         return self.formatStr.format(**parts)
