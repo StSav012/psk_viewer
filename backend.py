@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QFileDialog, QMessageBox, QStatusBar
 from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent
 
 import detection
+from data_model import DataModel
 from toolbar import NavigationToolbar
 from valuelabel import ValueLabel
 
@@ -31,6 +32,7 @@ class Plot:
     _canvas: pg.PlotItem
     _toolbar: NavigationToolbar
     _status_bar: Optional[QStatusBar]
+    _found_lines_data_model: Optional[DataModel]
     _plot_lines: List[pg.PlotDataItem]
     _plot_lines_labels: List[str]
     _plot_frequencies: List[np.ndarray]
@@ -48,6 +50,7 @@ class Plot:
                  status_bar: Optional[QStatusBar] = None,
                  legend: Optional[pg.GraphicsLayoutWidget] = None,
                  settings: Optional[QSettings] = None,
+                 found_lines_data_model: Optional[DataModel] = None,
                  **kwargs):
         if settings is None:
             self.settings = QSettings("SavSoft", "Fast Sweep Viewer")
@@ -67,6 +70,8 @@ class Plot:
         self._status_bar = status_bar
         self._cursor_x = ValueLabel(self._status_bar, siPrefix=True, decimals=6)
         self._cursor_y = ValueLabel(self._status_bar, siPrefix=True, decimals=3)
+
+        self._found_lines_data_model = found_lines_data_model
 
         self._plot_lines = [self._figure.plot(np.empty(0), name='', pen=pg.intColor(5 * i))
                             for i in range(LINES_COUNT)]
@@ -169,13 +174,20 @@ class Plot:
         def remove_points(item: pg.PlotDataItem, points: List[pg.SpotItem], ev: MouseClickEvent):
             if item.xData is None or item.yData is None:
                 return
-            if self.trace_mode and ev.modifiers() == Qt.ShiftModifier:
+            if not self.trace_mode:
+                return
+            if ev.modifiers() == Qt.ShiftModifier:
                 point: pg.SpotItem
                 items: np.ndarray = item.scatter.data['item']
                 index: np.ndarray = np.full(items.shape, True, np.bool_)
                 for point in points:
                     index &= (items != point)
                 item.setData(item.xData[index], item.yData[index])
+            # elif self._found_lines_data_model.all_data.shape[1] > 1:
+            #     point: pg.SpotItem
+            #     selected_points: List[QPointF] = [point.pos() for point in points]
+            #     # TODO: highlight the table row that stores the point data
+            #     #  emit signal with the data
 
         line: pg.PlotDataItem
         for line in self.automatically_found_lines + self.user_found_lines:
@@ -270,13 +282,28 @@ class Plot:
                     line = self._plot_lines[clicked_line_index]
                     closest_point_index: int = np.argmin(np.hypot((line.xData - point.x()) / x_span,
                                                                   (line.yData - point.y()) / y_span))
-                    self.user_found_lines[clicked_line_index].setData(
-                        np.append(self.user_found_lines[clicked_line_index].xData or np.empty(0),
-                                  line.xData[closest_point_index]),
-                        np.append(self.user_found_lines[clicked_line_index].yData or np.empty(0),
-                                  line.yData[closest_point_index])
-                    )
-                    # TODO: add the point to a table
+                    if self.user_found_lines[clicked_line_index].xData is None \
+                            or self.user_found_lines[clicked_line_index].yData.size is None:
+                        self.user_found_lines[clicked_line_index].setData(
+                            [line.xData[closest_point_index]], [line.yData[closest_point_index]]
+                        )
+                    else:
+                        # avoid the same point to be marked several times
+                        if np.any(
+                                (self.user_found_lines[clicked_line_index].xData == line.xData[closest_point_index])
+                                &
+                                (self.user_found_lines[clicked_line_index].yData == line.yData[closest_point_index])
+                        ):
+                            return
+                        self.user_found_lines[clicked_line_index].setData(
+                            np.append(self.user_found_lines[clicked_line_index].xData,
+                                      line.xData[closest_point_index]),
+                            np.append(self.user_found_lines[clicked_line_index].yData,
+                                      line.yData[closest_point_index])
+                        )
+                    # TODO: scale the table to several lines
+                    self._found_lines_data_model.append_data([line.xData[closest_point_index],
+                                                              line.yData[closest_point_index]])
 
     def on_lim_changed(self, *args):
         rect: List[List[float]] = args[0][1]
@@ -344,6 +371,7 @@ class Plot:
                 self.automatically_found_lines[i].setData(x[found_lines], y[found_lines])
             else:
                 self.automatically_found_lines[i].setData(np.empty(0), np.empty(0))
+            # TODO: update the table
         self._ignore_scale_change = False
 
     def prev_found_line(self, init_frequency: float) -> float:

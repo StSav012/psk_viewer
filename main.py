@@ -7,11 +7,13 @@ from typing import List
 
 import pyqtgraph as pg
 from PyQt5.QtCore import QCoreApplication, QLibraryInfo, QLocale, QSettings, QTranslator, Qt
-from PyQt5.QtWidgets import QApplication, QCheckBox, QDesktopWidget, QDockWidget, QFileDialog, QFormLayout,\
-    QGridLayout, QMainWindow, QMessageBox, QPushButton, QVBoxLayout, QWidget, QStatusBar
+from PyQt5.QtWidgets import QApplication, QCheckBox, QDesktopWidget, QDockWidget, QFileDialog, QFormLayout, \
+    QGridLayout, QMainWindow, QMessageBox, QPushButton, QVBoxLayout, QWidget, QStatusBar, QTableView, \
+    QAbstractItemView, QHeaderView
 
 import backend
 from backend import NavigationToolbar as NavigationToolbar
+from data_model import DataModel
 from utils import load_icon, resource_path
 
 
@@ -88,6 +90,12 @@ class App(QMainWindow):
         self.button_prev_line: QPushButton = QPushButton(self.group_find_lines)
         self.button_next_line: QPushButton = QPushButton(self.group_find_lines)
 
+        # Found Lines table
+        self.box_found_lines: QDockWidget = QDockWidget(self.central_widget)
+        self.box_found_lines.setObjectName('box_found_lines')
+        self.table_found_lines: QTableView = QTableView(self.box_found_lines)
+        self.model_found_lines: DataModel = DataModel(self)
+
         self.status_bar: QStatusBar = QStatusBar()
         self.setStatusBar(self.status_bar)
 
@@ -99,10 +107,11 @@ class App(QMainWindow):
         self.box_legend.setObjectName('box_legend')
         self.legend: pg.GraphicsLayoutWidget = pg.GraphicsLayoutWidget()
         self.plot = backend.Plot(figure=self.figure,
-                                 legend=self.legend,
                                  toolbar=self.plot_toolbar,
                                  status_bar=self.status_bar,
+                                 legend=self.legend,
                                  settings=self.settings,
+                                 found_lines_data_model=self.model_found_lines,
                                  on_xlim_changed=self.on_xlim_changed,
                                  on_ylim_changed=self.on_ylim_changed,
                                  on_data_loaded=self.load_data)
@@ -178,20 +187,24 @@ class App(QMainWindow):
 
         self.box_legend.setWidget(self.legend)
         self.box_legend.setFeatures(self.box_legend.features() & ~self.box_legend.DockWidgetClosable)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.box_legend)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.box_legend)
 
         # TODO: adjust size when undocked
         self.box_frequency.setWidget(self.group_frequency)
         self.box_frequency.setFeatures(self.box_frequency.features() & ~self.box_frequency.DockWidgetClosable)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.box_frequency)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.box_frequency)
 
         self.box_voltage.setWidget(self.group_voltage)
         self.box_voltage.setFeatures(self.box_voltage.features() & ~self.box_voltage.DockWidgetClosable)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.box_voltage)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.box_voltage)
 
         self.box_find_lines.setWidget(self.group_find_lines)
         self.box_find_lines.setFeatures(self.box_find_lines.features() & ~self.box_find_lines.DockWidgetClosable)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.box_find_lines)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.box_find_lines)
+
+        self.box_found_lines.setWidget(self.table_found_lines)
+        self.box_found_lines.setFeatures(self.box_found_lines.features() & ~self.box_found_lines.DockWidgetClosable)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.box_found_lines)
 
         self.addToolBar(self.plot_toolbar)
         self.grid_layout.addWidget(self.figure)
@@ -232,6 +245,24 @@ class App(QMainWindow):
         self.button_clear_lines.setText(_translate('main window', 'Clear Lines'))
         self.button_prev_line.setText(_translate('main window', 'Previous Line'))
         self.button_next_line.setText(_translate('main window', 'Next Line'))
+
+        self.box_found_lines.setWindowTitle(_translate('main window', 'Found Lines'))
+        self.model_found_lines.set_format([(3, 1e-6), (4, 1.)])
+        self.table_found_lines.setModel(self.model_found_lines)
+        self.table_found_lines.setMouseTracking(True)
+        self.table_found_lines.setContextMenuPolicy(Qt.ActionsContextMenu)
+        self.table_found_lines.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table_found_lines.setDropIndicatorShown(False)
+        self.table_found_lines.setDragDropOverwriteMode(False)
+        self.table_found_lines.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table_found_lines.setCornerButtonEnabled(False)
+        self.table_found_lines.setSortingEnabled(True)
+        self.table_found_lines.setAlternatingRowColors(True)
+        self.table_found_lines.horizontalHeader().setDefaultSectionSize(90)
+        self.table_found_lines.horizontalHeader().setHighlightSections(False)
+        self.table_found_lines.horizontalHeader().setStretchLastSection(True)
+        self.table_found_lines.verticalHeader().setVisible(False)
+        self.table_found_lines.verticalHeader().setHighlightSections(False)
 
         opts = {
             'suffix': _translate('unit', 'Hz'),
@@ -289,6 +320,15 @@ class App(QMainWindow):
         self.button_clear_lines.clicked.connect(self.plot.clear_found_lines)
         self.button_prev_line.clicked.connect(self.prev_found_line)
         self.button_next_line.clicked.connect(self.next_found_line)
+
+        def adjust_columns():
+            _translate = QCoreApplication.translate
+            self.model_found_lines.set_header(
+                [_translate('main window', 'Frequency [MHz]')] +
+                [_translate('main window', 'Voltage [V]')] * (self.table_found_lines.horizontalHeader().count() - 1))
+            for i in range(self.table_found_lines.horizontalHeader().count()):
+                self.table_found_lines.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
+        self.model_found_lines.modelReset.connect(adjust_columns)
 
     def closeEvent(self, event):
         """ senseless joke in the loop """
