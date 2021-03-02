@@ -23,79 +23,79 @@ class App(QMainWindow):
         # prevent config from being re-written while loading
         self._loading = True
 
-        self.central_widget = QWidget(self, flags=Qt.WindowFlags())
-        self.grid_layout = QGridLayout(self.central_widget)
+        self.central_widget: QWidget = QWidget(self, flags=Qt.WindowFlags())
+        self.grid_layout: QGridLayout = QGridLayout(self.central_widget)
 
         # Frequency box
-        self.box_frequency = QDockWidget(self.central_widget)
+        self.box_frequency: QDockWidget = QDockWidget(self.central_widget)
         self.box_frequency.setObjectName('box_frequency')
-        self.group_frequency = QWidget(self.box_frequency)
-        self.v_layout_frequency = QVBoxLayout(self.group_frequency)
-        self.form_layout_frequency = QFormLayout()
-        self.grid_layout_frequency = QGridLayout()
+        self.group_frequency: QWidget = QWidget(self.box_frequency)
+        self.v_layout_frequency: QVBoxLayout = QVBoxLayout(self.group_frequency)
+        self.form_layout_frequency: QFormLayout = QFormLayout()
+        self.grid_layout_frequency: QGridLayout = QGridLayout()
 
-        self.spin_frequency_min = pg.SpinBox(self.group_frequency)
-        self.spin_frequency_max = pg.SpinBox(self.group_frequency)
-        self.spin_frequency_center = pg.SpinBox(self.group_frequency)
-        self.spin_frequency_span = pg.SpinBox(self.group_frequency)
+        self.spin_frequency_min: pg.SpinBox = pg.SpinBox(self.group_frequency)
+        self.spin_frequency_max: pg.SpinBox = pg.SpinBox(self.group_frequency)
+        self.spin_frequency_center: pg.SpinBox = pg.SpinBox(self.group_frequency)
+        self.spin_frequency_span: pg.SpinBox = pg.SpinBox(self.group_frequency)
         self.spin_frequency_span.setMinimum(0.01)
 
-        self.check_frequency_persists = QCheckBox(self.group_frequency)
+        self.check_frequency_persists: QCheckBox = QCheckBox(self.group_frequency)
 
         # Zoom X
-        self.button_zoom_x_out_coarse = QPushButton(self.group_frequency)
-        self.button_zoom_x_out_fine = QPushButton(self.group_frequency)
-        self.button_zoom_x_in_fine = QPushButton(self.group_frequency)
-        self.button_zoom_x_in_coarse = QPushButton(self.group_frequency)
+        self.button_zoom_x_out_coarse: QPushButton = QPushButton(self.group_frequency)
+        self.button_zoom_x_out_fine: QPushButton = QPushButton(self.group_frequency)
+        self.button_zoom_x_in_fine: QPushButton = QPushButton(self.group_frequency)
+        self.button_zoom_x_in_coarse: QPushButton = QPushButton(self.group_frequency)
 
         # Move X
-        self.button_move_x_left_coarse = QPushButton(self.group_frequency)
-        self.button_move_x_left_fine = QPushButton(self.group_frequency)
-        self.button_move_x_right_fine = QPushButton(self.group_frequency)
-        self.button_move_x_right_coarse = QPushButton(self.group_frequency)
+        self.button_move_x_left_coarse: QPushButton = QPushButton(self.group_frequency)
+        self.button_move_x_left_fine: QPushButton = QPushButton(self.group_frequency)
+        self.button_move_x_right_fine: QPushButton = QPushButton(self.group_frequency)
+        self.button_move_x_right_coarse: QPushButton = QPushButton(self.group_frequency)
 
         # Voltage box
-        self.box_voltage = QDockWidget(self.central_widget)
+        self.box_voltage: QDockWidget = QDockWidget(self.central_widget)
         self.box_voltage.setObjectName('box_voltage')
-        self.group_voltage = QWidget(self.box_voltage)
-        self.v_layout_voltage = QVBoxLayout(self.group_voltage)
-        self.form_layout_voltage = QFormLayout()
-        self.grid_layout_voltage = QGridLayout()
+        self.group_voltage: QWidget = QWidget(self.box_voltage)
+        self.v_layout_voltage: QVBoxLayout = QVBoxLayout(self.group_voltage)
+        self.form_layout_voltage: QFormLayout = QFormLayout()
+        self.grid_layout_voltage: QGridLayout = QGridLayout()
 
-        self.spin_voltage_min = pg.SpinBox(self.group_voltage)
-        self.spin_voltage_max = pg.SpinBox(self.group_voltage)
+        self.spin_voltage_min: pg.SpinBox = pg.SpinBox(self.group_voltage)
+        self.spin_voltage_max: pg.SpinBox = pg.SpinBox(self.group_voltage)
 
-        self.check_voltage_persists = QCheckBox(self.group_voltage)
+        self.check_voltage_persists: QCheckBox = QCheckBox(self.group_voltage)
 
         # Zoom Y
-        self.button_zoom_y_out_coarse = QPushButton(self.group_voltage)
-        self.button_zoom_y_out_fine = QPushButton(self.group_voltage)
-        self.button_zoom_y_in_fine = QPushButton(self.group_voltage)
-        self.button_zoom_y_in_coarse = QPushButton(self.group_voltage)
+        self.button_zoom_y_out_coarse: QPushButton = QPushButton(self.group_voltage)
+        self.button_zoom_y_out_fine: QPushButton = QPushButton(self.group_voltage)
+        self.button_zoom_y_in_fine: QPushButton = QPushButton(self.group_voltage)
+        self.button_zoom_y_in_coarse: QPushButton = QPushButton(self.group_voltage)
 
         # Find Lines box
-        self.box_find_lines = QDockWidget(self.central_widget)
+        self.box_find_lines: QDockWidget = QDockWidget(self.central_widget)
         self.box_find_lines.setObjectName('box_find_lines')
-        self.group_find_lines = QWidget(self.box_find_lines)
-        self.v_layout_find_lines = QVBoxLayout(self.group_find_lines)
-        self.form_layout_find_lines = QFormLayout()
-        self.grid_layout_find_lines = QGridLayout()
-        self.spin_threshold = pg.SpinBox(self.group_find_lines)
+        self.group_find_lines: QWidget = QWidget(self.box_find_lines)
+        self.v_layout_find_lines: QVBoxLayout = QVBoxLayout(self.group_find_lines)
+        self.form_layout_find_lines: QFormLayout = QFormLayout()
+        self.grid_layout_find_lines: QGridLayout = QGridLayout()
+        self.spin_threshold: pg.SpinBox = pg.SpinBox(self.group_find_lines)
         self.spin_threshold.setMinimum(1.0)
         self.spin_threshold.setMaximum(1000.0)
-        self.button_find_lines = QPushButton(self.group_find_lines)
-        self.button_clear_lines = QPushButton(self.group_find_lines)
-        self.button_prev_line = QPushButton(self.group_find_lines)
-        self.button_next_line = QPushButton(self.group_find_lines)
+        self.button_find_lines: QPushButton = QPushButton(self.group_find_lines)
+        self.button_clear_lines: QPushButton = QPushButton(self.group_find_lines)
+        self.button_prev_line: QPushButton = QPushButton(self.group_find_lines)
+        self.button_next_line: QPushButton = QPushButton(self.group_find_lines)
 
         self.status_bar: QStatusBar = QStatusBar()
         self.setStatusBar(self.status_bar)
 
         # plot
-        self.figure = pg.PlotWidget(self.central_widget)
+        self.figure: pg.PlotWidget = pg.PlotWidget(self.central_widget)
         self.figure.setFocusPolicy(Qt.ClickFocus)
         self.plot_toolbar = NavigationToolbar(self, parameters_icon='configure')
-        self.box_legend = QDockWidget(self.central_widget)
+        self.box_legend: QDockWidget = QDockWidget(self.central_widget)
         self.box_legend.setObjectName('box_legend')
         self.legend: pg.GraphicsLayoutWidget = pg.GraphicsLayoutWidget()
         self.plot = backend.Plot(figure=self.figure,
@@ -107,42 +107,13 @@ class App(QMainWindow):
                                  on_ylim_changed=self.on_ylim_changed,
                                  on_data_loaded=self.load_data)
 
-        self.setup_ui()
+        self.setup_ui_appearance()
 
-        # config
         self.load_config()
 
-        # actions
-        self.spin_frequency_min.valueChanged.connect(self.spin_frequency_min_changed)
-        self.spin_frequency_max.valueChanged.connect(self.spin_frequency_max_changed)
-        self.spin_frequency_center.valueChanged.connect(self.spin_frequency_center_changed)
-        self.spin_frequency_span.valueChanged.connect(self.spin_frequency_span_changed)
-        self.button_zoom_x_out_coarse.clicked.connect(lambda: self.button_zoom_x_clicked(1. / 0.5))
-        self.button_zoom_x_out_fine.clicked.connect(lambda: self.button_zoom_x_clicked(1. / 0.9))
-        self.button_zoom_x_in_fine.clicked.connect(lambda: self.button_zoom_x_clicked(0.9))
-        self.button_zoom_x_in_coarse.clicked.connect(lambda: self.button_zoom_x_clicked(0.5))
-        self.button_move_x_left_coarse.clicked.connect(lambda: self.button_move_x_clicked(-500.))
-        self.button_move_x_left_fine.clicked.connect(lambda: self.button_move_x_clicked(-50.))
-        self.button_move_x_right_fine.clicked.connect(lambda: self.button_move_x_clicked(50.))
-        self.button_move_x_right_coarse.clicked.connect(lambda: self.button_move_x_clicked(500.))
-        self.check_frequency_persists.toggled.connect(self.check_frequency_persists_toggled)
+        self.setup_ui_actions()
 
-        self.spin_voltage_min.valueChanged.connect(self.spin_voltage_min_changed)
-        self.spin_voltage_max.valueChanged.connect(self.spin_voltage_max_changed)
-        self.button_zoom_y_out_coarse.clicked.connect(lambda: self.button_zoom_y_clicked(1. / 0.5))
-        self.button_zoom_y_out_fine.clicked.connect(lambda: self.button_zoom_y_clicked(1. / 0.9))
-        self.button_zoom_y_in_fine.clicked.connect(lambda: self.button_zoom_y_clicked(0.9))
-        self.button_zoom_y_in_coarse.clicked.connect(lambda: self.button_zoom_y_clicked(0.5))
-        self.check_voltage_persists.toggled.connect(self.check_voltage_persists_toggled)
-
-        self.spin_threshold.valueChanged.connect(lambda new_value:
-                                                 self.set_config_value('lineSearch', 'threshold', new_value))
-        self.button_find_lines.clicked.connect(lambda: self.plot.find_lines(self.spin_threshold.value()))
-        self.button_clear_lines.clicked.connect(self.plot.clear_found_lines)
-        self.button_prev_line.clicked.connect(self.prev_found_line)
-        self.button_next_line.clicked.connect(self.next_found_line)
-
-    def setup_ui(self):
+    def setup_ui_appearance(self):
         _translate = QCoreApplication.translate
 
         pg.fn.SI_PREFIXES = _translate('si prefixes', 'y,z,a,f,p,n,µ,m, ,k,M,G,T,P,E,Z,Y').split(',')
@@ -288,6 +259,36 @@ class App(QMainWindow):
         self.spin_threshold.setOpts(compactHeight=False)
 
         self.adjustSize()
+
+    def setup_ui_actions(self):
+        self.spin_frequency_min.valueChanged.connect(self.spin_frequency_min_changed)
+        self.spin_frequency_max.valueChanged.connect(self.spin_frequency_max_changed)
+        self.spin_frequency_center.valueChanged.connect(self.spin_frequency_center_changed)
+        self.spin_frequency_span.valueChanged.connect(self.spin_frequency_span_changed)
+        self.button_zoom_x_out_coarse.clicked.connect(lambda: self.button_zoom_x_clicked(1. / 0.5))
+        self.button_zoom_x_out_fine.clicked.connect(lambda: self.button_zoom_x_clicked(1. / 0.9))
+        self.button_zoom_x_in_fine.clicked.connect(lambda: self.button_zoom_x_clicked(0.9))
+        self.button_zoom_x_in_coarse.clicked.connect(lambda: self.button_zoom_x_clicked(0.5))
+        self.button_move_x_left_coarse.clicked.connect(lambda: self.button_move_x_clicked(-500.))
+        self.button_move_x_left_fine.clicked.connect(lambda: self.button_move_x_clicked(-50.))
+        self.button_move_x_right_fine.clicked.connect(lambda: self.button_move_x_clicked(50.))
+        self.button_move_x_right_coarse.clicked.connect(lambda: self.button_move_x_clicked(500.))
+        self.check_frequency_persists.toggled.connect(self.check_frequency_persists_toggled)
+
+        self.spin_voltage_min.valueChanged.connect(self.spin_voltage_min_changed)
+        self.spin_voltage_max.valueChanged.connect(self.spin_voltage_max_changed)
+        self.button_zoom_y_out_coarse.clicked.connect(lambda: self.button_zoom_y_clicked(1. / 0.5))
+        self.button_zoom_y_out_fine.clicked.connect(lambda: self.button_zoom_y_clicked(1. / 0.9))
+        self.button_zoom_y_in_fine.clicked.connect(lambda: self.button_zoom_y_clicked(0.9))
+        self.button_zoom_y_in_coarse.clicked.connect(lambda: self.button_zoom_y_clicked(0.5))
+        self.check_voltage_persists.toggled.connect(self.check_voltage_persists_toggled)
+
+        self.spin_threshold.valueChanged.connect(lambda new_value:
+                                                 self.set_config_value('lineSearch', 'threshold', new_value))
+        self.button_find_lines.clicked.connect(lambda: self.plot.find_lines(self.spin_threshold.value()))
+        self.button_clear_lines.clicked.connect(self.plot.clear_found_lines)
+        self.button_prev_line.clicked.connect(self.prev_found_line)
+        self.button_next_line.clicked.connect(self.next_found_line)
 
     def closeEvent(self, event):
         """ senseless joke in the loop """
