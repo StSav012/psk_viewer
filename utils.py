@@ -2,7 +2,9 @@
 
 import os
 import sys
+from typing import Union
 
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon, QPalette, QPixmap
 
 
@@ -24,3 +26,18 @@ def load_icon(filename: str) -> QIcon:
     return icon
 
 
+def copy_to_clipboard(plain_text: str, rich_text: str = '', text_type: Union[Qt.TextFormat, str] = Qt.PlainText):
+    from PyQt5.QtGui import QClipboard
+    from PyQt5.QtCore import QMimeData
+    from PyQt5.QtWidgets import QApplication
+
+    clipboard: QClipboard = QApplication.clipboard()
+    mime_data: QMimeData = QMimeData()
+    if isinstance(text_type, str):
+        mime_data.setData(text_type, plain_text.encode())
+    elif text_type == Qt.RichText:
+        mime_data.setHtml(rich_text)
+        mime_data.setText(plain_text)
+    else:
+        mime_data.setText(plain_text)
+    clipboard.setMimeData(mime_data, QClipboard.Clipboard)
