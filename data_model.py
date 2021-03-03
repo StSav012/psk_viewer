@@ -107,6 +107,12 @@ class DataModel(QAbstractTableModel):
             self._data = np.array([new_data_line])
         self.endResetModel()
 
+    def clear(self):
+        self.beginResetModel()
+        self._data: np.ndarray = np.empty((0, 0))
+        self._rows_loaded: int = self.ROW_BATCH_COUNT
+        self.endResetModel()
+
     def sort(self, column: int, order: Qt.SortOrder = Qt.AscendingOrder) -> None:
         if column >= self._data.shape[1]:
             return
