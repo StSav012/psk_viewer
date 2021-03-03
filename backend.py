@@ -16,8 +16,6 @@ from data_model import DataModel
 from toolbar import NavigationToolbar
 from valuelabel import ValueLabel
 
-LINES_COUNT: int = 2
-
 TRACE_AVERAGING_RANGE: float = 25.
 
 pg.ViewBox.suggestPadding = lambda *_: 0.0
@@ -33,10 +31,7 @@ class Plot:
     _toolbar: NavigationToolbar
     _status_bar: Optional[QStatusBar]
     _found_lines_data_model: Optional[DataModel]
-    _plot_lines: List[pg.PlotDataItem]
-    _plot_lines_labels: List[str]
-    _plot_frequencies: List[np.ndarray]
-    _plot_voltages: List[np.ndarray]
+    _plot_line: pg.PlotDataItem
     _min_frequency: float
     _max_frequency: float
     _min_voltage: float
@@ -73,11 +68,8 @@ class Plot:
 
         self._found_lines_data_model = found_lines_data_model
 
-        self._plot_lines = [self._figure.plot(np.empty(0), name='', pen=pg.intColor(5 * i))
-                            for i in range(LINES_COUNT)]
-        self._plot_lines_labels = [''] * LINES_COUNT
-        self._plot_frequencies = [np.empty(0)] * LINES_COUNT
-        self._plot_voltages = [np.empty(0)] * LINES_COUNT
+        self._plot_line = self._figure.plot(np.empty(0), name='', pen=pg.intColor(0))
+        self._plot_line.yData = np.empty(0)
 
         self._min_frequency = np.nan
         self._max_frequency = np.nan
@@ -94,14 +86,12 @@ class Plot:
             self.model_signal: np.ndarray = np.loadtxt('averaged fs signal filtered.csv')
         except (OSError, BlockingIOError):
             self.model_signal: np.ndarray = np.empty(0)
-        self.user_found_lines: List[pg.PlotDataItem] = \
-            [self._canvas.scatterPlot(np.empty(0),
-                                      pen=pg.intColor(5 * i), brush=pg.intColor(5 * i))
-             for i in range(LINES_COUNT)]
-        self.automatically_found_lines: List[pg.PlotDataItem] = \
-            [self._canvas.scatterPlot(np.empty(0),
-                                      pen=pg.intColor(5 * i), brush=pg.intColor(5 * i))
-             for i in range(LINES_COUNT)]
+        self.user_found_lines: pg.PlotDataItem = \
+            self._canvas.scatterPlot(np.empty(0),
+                                     pen=pg.intColor(0), brush=pg.intColor(0))
+        self.automatically_found_lines: pg.PlotDataItem = \
+            self._canvas.scatterPlot(np.empty(0),
+                                     pen=pg.intColor(0), brush=pg.intColor(0))
 
         # cross hair
         self._crosshair_v_line = pg.InfiniteLine(angle=90, movable=False)
@@ -138,13 +128,15 @@ class Plot:
             else:
                 self._legend_box.setBackground(QBrush(pg.mkColor(255, 255, 255, 0)))
                 self._legend.setLabelTextColor(0, 0, 0, 255)
-            self._legend_box.sceneObj.sigMouseClicked.connect(self.on_legend_click)
+            # self._legend_box.sceneObj.sigMouseClicked.connect(self.on_legend_click)
 
         self._toolbar.open_action.triggered.connect(self.load_data)
         self._toolbar.clear_action.triggered.connect(self.clear)
-        self._toolbar.save_data_action.triggered.connect(
-            lambda: self.save_data(*self.save_file_dialog(_filter="CSV (*.csv);;XLSX (*.xlsx)")))
+        self._toolbar.save_data_action.triggered.connect(self.save_data)
         self._toolbar.save_figure_action.triggered.connect(self.save_figure)
+        self._toolbar.copy_trace_action.triggered.connect(self.copy_found_lines)
+        self._toolbar.save_trace_action.triggered.connect(self.save_found_lines)
+        self._toolbar.clear_trace_action.triggered.connect(self.clear_found_lines)
         self._toolbar.configure_action.triggered.connect(self._toolbar.edit_parameters)
 
         self._status_bar.addWidget(self._cursor_x)
@@ -190,7 +182,7 @@ class Plot:
             #     #  emit signal with the data
 
         line: pg.PlotDataItem
-        for line in self.automatically_found_lines + self.user_found_lines:
+        for line in (self.automatically_found_lines, self.user_found_lines):
             line.sigPointsClicked.connect(remove_points)
 
     def translate_ui(self):
@@ -230,21 +222,6 @@ class Plot:
 
         self._canvas.ctrlMenu.setTitle(_translate('menu', 'Plot Options'))
 
-    def on_legend_click(self, event: MouseClickEvent):
-        # rotate lines
-        _modifiers: Qt.KeyboardModifiers = event.modifiers()
-        if _modifiers == Qt.NoModifier:
-            self._plot_lines_labels = self._plot_lines_labels[1:] + [self._plot_lines_labels[0]]
-            self._plot_frequencies = self._plot_frequencies[1:] + [self._plot_frequencies[0]]
-            self._plot_voltages = self._plot_voltages[1:] + [self._plot_voltages[0]]
-        else:
-            self._plot_lines_labels = [self._plot_lines_labels[-1]] + self._plot_lines_labels[:-1]
-            self._plot_frequencies = [self._plot_frequencies[-1]] + self._plot_frequencies[:-1]
-            self._plot_voltages = [self._plot_voltages[-1]] + self._plot_voltages[:-1]
-        self.draw_data()
-        self.update_legend()
-        event.accept()
-
     def on_mouse_moved(self, event: Tuple[QPointF]):
         pos: QPointF = event[0]
         if self._figure.sceneBoundingRect().contains(pos):
@@ -269,41 +246,34 @@ class Plot:
             x_span: float = np.ptp(self._canvas.axes['bottom']['item'].range)
             y_span: float = np.ptp(self._canvas.axes['left']['item'].range)
             point: QPointF = self._canvas.vb.mapSceneToView(pos)
-            distances: np.ndarray = np.full(LINES_COUNT, np.nan)
-            line: pg.PlotDataItem
-            for index, line in enumerate(self._plot_lines):
-                if line.xData is None or not line.xData.size:
-                    continue
-                distances[index] = np.min(np.hypot((line.xData - point.x()) / x_span,
-                                                   (line.yData - point.y()) / y_span))
-            if np.any(~np.isnan(distances)):
-                clicked_line_index: int = np.nanargmin(distances)
-                if distances[clicked_line_index] < 0.01:
-                    line = self._plot_lines[clicked_line_index]
-                    closest_point_index: int = np.argmin(np.hypot((line.xData - point.x()) / x_span,
-                                                                  (line.yData - point.y()) / y_span))
-                    if self.user_found_lines[clicked_line_index].xData is None \
-                            or self.user_found_lines[clicked_line_index].yData.size is None:
-                        self.user_found_lines[clicked_line_index].setData(
-                            [line.xData[closest_point_index]], [line.yData[closest_point_index]]
-                        )
-                    else:
-                        # avoid the same point to be marked several times
-                        if np.any(
-                                (self.user_found_lines[clicked_line_index].xData == line.xData[closest_point_index])
-                                &
-                                (self.user_found_lines[clicked_line_index].yData == line.yData[closest_point_index])
-                        ):
-                            return
-                        self.user_found_lines[clicked_line_index].setData(
-                            np.append(self.user_found_lines[clicked_line_index].xData,
-                                      line.xData[closest_point_index]),
-                            np.append(self.user_found_lines[clicked_line_index].yData,
-                                      line.yData[closest_point_index])
-                        )
-                    # TODO: scale the table to several lines
-                    self._found_lines_data_model.append_data([line.xData[closest_point_index],
-                                                              line.yData[closest_point_index]])
+            if self._plot_line.xData is None or not self._plot_line.xData.size:
+                return
+            distance: np.ndarray = np.min(np.hypot((self._plot_line.xData - point.x()) / x_span,
+                                                   (self._plot_line.yData - point.y()) / y_span))
+            if distance < 0.01:
+                closest_point_index: int = np.argmin(np.hypot((self._plot_line.xData - point.x()) / x_span,
+                                                              (self._plot_line.yData - point.y()) / y_span))
+                if self.user_found_lines.xData is None \
+                        or self.user_found_lines.yData.size is None:
+                    self.user_found_lines.setData(
+                        [self._plot_line.xData[closest_point_index]], [self._plot_line.yData[closest_point_index]]
+                    )
+                else:
+                    # avoid the same point to be marked several times
+                    if np.any(
+                            (self.user_found_lines.xData == self._plot_line.xData[closest_point_index])
+                            &
+                            (self.user_found_lines.yData == self._plot_line.yData[closest_point_index])
+                    ):
+                        return
+                    self.user_found_lines.setData(
+                        np.append(self.user_found_lines.xData,
+                                  self._plot_line.xData[closest_point_index]),
+                        np.append(self.user_found_lines.yData,
+                                  self._plot_line.yData[closest_point_index])
+                    )
+                self._found_lines_data_model.append_data([self._plot_line.xData[closest_point_index],
+                                                          self._plot_line.yData[closest_point_index]])
 
     def on_lim_changed(self, *args):
         rect: List[List[float]] = args[0][1]
@@ -320,35 +290,18 @@ class Plot:
         self._ignore_scale_change = False
 
     @property
-    def lines(self):
-        return self._plot_lines
+    def line(self):
+        return self._plot_line
 
     @property
-    def labels(self):
-        return self._plot_lines_labels
+    def label(self):
+        return self._plot_line.name()
 
     def set_frequency_range(self, lower_value: float, upper_value: float):
         self._figure.plotItem.setXRange(lower_value, upper_value, padding=0.0)
 
     def set_voltage_range(self, lower_value: float, upper_value: float):
         self._figure.plotItem.setYRange(lower_value, upper_value, padding=0.0)
-
-    def draw_data(self):
-        self._ignore_scale_change = True
-        i: int
-        x: np.ndarray
-        y: np.ndarray
-        for i, (x, y) in enumerate(zip(self._plot_frequencies, self._plot_voltages)):
-            if not x.size or not y.size:
-                self._plot_lines[i].clear()
-                continue
-            if (self._plot_lines[i].xData is None
-                    and self._min_frequency is not None and self._max_frequency is not None
-                    and self._min_voltage is not None and self._max_voltage is not None):
-                self._figure.setXRange(self._min_frequency, self._max_frequency)
-                self._figure.setYRange(self._min_voltage, self._max_voltage)
-            self._plot_lines[i].setData(x, y, name=self._plot_lines_labels[i])
-        self._ignore_scale_change = False
 
     def find_lines(self, threshold: float):
         if self.model_signal.size < 2:
@@ -357,21 +310,37 @@ class Plot:
         from scipy import interpolate
 
         self._ignore_scale_change = True
-        for i, (x, y) in enumerate(zip(self._plot_frequencies, self._plot_voltages)):
-            if x.size < 2 or y.size < 2:
-                continue
-            # re-scale the signal to the actual frequency mesh
-            x_model: np.ndarray = np.arange(self.model_signal.size, dtype=x.dtype) * 0.1
-            f = interpolate.interp1d(x_model, self.model_signal, kind=2)
-            x_model_new: np.ndarray = np.arange(x_model[0], x_model[-1], x[1] - x[0])
-            y_model_new: np.ndarray = f(x_model_new)
-            found_lines = detection.peaks_positions(x, detection.correlation(y_model_new, x, y),
-                                                    threshold=1.0 / threshold)
-            if found_lines.size:
-                self.automatically_found_lines[i].setData(x[found_lines], y[found_lines])
-            else:
-                self.automatically_found_lines[i].setData(np.empty(0), np.empty(0))
-            # TODO: update the table
+        if self._plot_line.xData.size < 2 or self._plot_line.yData.size < 2:
+            return
+        # re-scale the signal to the actual frequency mesh
+        x_model: np.ndarray = np.arange(self.model_signal.size, dtype=self._plot_line.xData.dtype) * 0.1
+        f = interpolate.interp1d(x_model, self.model_signal, kind=2)
+        x_model_new: np.ndarray = np.arange(x_model[0], x_model[-1],
+                                            self._plot_line.xData[1] - self._plot_line.xData[0])
+        y_model_new: np.ndarray = f(x_model_new)
+        found_lines = detection.peaks_positions(self._plot_line.xData,
+                                                detection.correlation(y_model_new,
+                                                                      self._plot_line.xData,
+                                                                      self._plot_line.yData),
+                                                threshold=1.0 / threshold)
+        if found_lines.size:
+            self.automatically_found_lines.setData(self._plot_line.xData[found_lines],
+                                                   self._plot_line.yData[found_lines])
+        else:
+            self.automatically_found_lines.setData(np.empty(0), np.empty(0))
+
+        # update the table
+        if self.user_found_lines.xData is not None and self.user_found_lines.yData is not None:
+            self._found_lines_data_model.set_data(np.column_stack((
+                np.concatenate((self.automatically_found_lines.xData, self.user_found_lines.xData)),
+                np.concatenate((self.automatically_found_lines.yData, self.user_found_lines.yData)),
+            )))
+        else:
+            self._found_lines_data_model.set_data(np.column_stack((
+                self.automatically_found_lines.xData,
+                self.automatically_found_lines.yData,
+            )))
+
         self._ignore_scale_change = False
 
     def prev_found_line(self, init_frequency: float) -> float:
@@ -418,18 +387,22 @@ class Plot:
         else:
             return init_frequency
 
+    def copy_found_lines(self):
+        print('not implemented yet')
+        self._canvas.replot()
+
+    def save_found_lines(self):
+        print('not implemented yet')
+        self._canvas.replot()
+
     def clear_found_lines(self):
-        line: pg.ScatterPlotItem
-        for line in self.automatically_found_lines:
-            line.clear()
+        self.automatically_found_lines.clear()
+        self.user_found_lines.clear()
+        self._found_lines_data_model.clear()
+        self._canvas.replot()
 
     def clear(self):
-        self._plot_voltages = [np.empty(0)] * LINES_COUNT
-        self._plot_frequencies = [np.empty(0)] * LINES_COUNT
-        line: pg.PlotDataItem
-        for line in self._plot_lines:
-            line.clear()
-        self._plot_lines_labels = [''] * LINES_COUNT
+        self._plot_line.clear()
         self.clear_found_lines()
         if self._legend is not None:
             self._legend.clear()
@@ -448,10 +421,8 @@ class Plot:
     def update_legend(self):
         if self._legend is not None:
             self._legend.clear()
-            lbl: str
-            for i, lbl in enumerate(self._plot_lines_labels):
-                if lbl:
-                    self._legend.addItem(self._plot_lines[i], lbl)
+            if self._plot_line.name():
+                self._legend.addItem(self._plot_line, self._plot_line.name())
             self._legend_box.setMinimumWidth(self._legend.boundingRect().width())
 
     def load_data(self):
@@ -459,8 +430,6 @@ class Plot:
         _filter: str
         filename, _filter = self.open_file_dialog(_filter="Spectrometer Settings (*.fmd);;All Files (*)")
         fn = os.path.splitext(filename)[0]
-        _min_frequency: Optional[float] = self._min_frequency
-        _max_frequency: Optional[float] = self._max_frequency
         if os.path.exists(fn + '.fmd'):
             with open(fn + '.fmd', 'r') as fin:
                 line: str
@@ -469,28 +438,26 @@ class Plot:
                         t = list(map(lambda w: w.strip(), line.split(':', maxsplit=1)))
                         if len(t) > 1:
                             if t[0].lower() == 'FStart [GHz]'.lower():
-                                _min_frequency = float(t[1]) * 1e6
+                                self._min_frequency = float(t[1]) * 1e6
                             elif t[0].lower() == 'FStop [GHz]'.lower():
-                                _max_frequency = float(t[1]) * 1e6
+                                self._max_frequency = float(t[1]) * 1e6
         else:
             return
         if os.path.exists(fn + '.frd'):
-            self._plot_voltages = self._plot_voltages[1:] + [np.loadtxt(fn + '.frd', usecols=(0,))]
-            self._plot_frequencies = self._plot_frequencies[1:] + [np.linspace(_min_frequency, _max_frequency,
-                                                                               num=self._plot_voltages[-1].size,
-                                                                               endpoint=False)]
-            new_label_base: str = os.path.split(fn)[-1]
-            new_label: str = new_label_base
-            i: int = 1
-            while new_label in self._plot_lines_labels[1:]:
-                i += 1
-                new_label = f'{new_label_base} ({i})'
-            self._plot_lines_labels = self._plot_lines_labels[1:] + [new_label]
-            self._min_frequency = np.nanmin((_min_frequency, self._min_frequency))
-            self._max_frequency = np.nanmin((_max_frequency, self._max_frequency))
-            self._min_voltage = np.nanmin((self._min_voltage, np.min(self._plot_voltages[-1])))
-            self._max_voltage = np.nanmin((self._max_voltage, np.max(self._plot_voltages[-1])))
-            self.draw_data()
+            new_label: str = os.path.split(fn)[-1]
+
+            y: np.ndarray = np.loadtxt(fn + '.frd', usecols=(0,))
+            x: np.ndarray = np.linspace(self._min_frequency, self._max_frequency,
+                                        num=y.size, endpoint=False)
+            self._plot_line.setData(x, y, name=new_label)
+
+            self._min_voltage = np.min(self._plot_line.yData)
+            self._max_voltage = np.max(self._plot_line.yData)
+
+            self._ignore_scale_change = True
+            self._figure.setXRange(self._min_frequency, self._max_frequency)
+            self._figure.setYRange(self._min_voltage, self._max_voltage)
+            self._ignore_scale_change = False
 
             self.update_legend()
 
@@ -517,15 +484,18 @@ class Plot:
     def actions_off(self):
         self._toolbar.trace_action.setChecked(False)
 
-    def save_data(self, filename: str, _filter: str):
-        if self._plot_voltages[-1].size == 0 or not filename:
+    def save_data(self):
+        if self._plot_line.yData is None:
+            return
+        filename, _filter = self.save_file_dialog(_filter='CSV (*.csv);;XLSX (*.xlsx)')
+        if not filename:
             return
         filename_parts: Tuple[str, str] = os.path.splitext(filename)
         if 'CSV' in _filter:
             if filename_parts[1] != '.csv':
                 filename += '.csv'
-            x: np.ndarray = self._plot_frequencies[-1]
-            y: np.ndarray = self._plot_voltages[-1]
+            x: np.ndarray = self._plot_line.xData
+            y: np.ndarray = self._plot_line.yData
             _max_mark: float
             _min_mark: float
             _min_mark, _max_mark = self._canvas.axes['bottom']['item'].range
@@ -544,23 +514,20 @@ class Plot:
             if filename_parts[1] != '.xlsx':
                 filename += '.xlsx'
             with pd.ExcelWriter(filename) as writer:
-                x: np.ndarray
-                y: np.ndarray
+                x: np.ndarray = self._plot_line.xData
+                y: np.ndarray = self._plot_line.yData
                 i: int
-                for i, (x, y) in enumerate(zip(self._plot_frequencies, self._plot_voltages)):
-                    if not self._plot_lines_labels[i]:
-                        continue
-                    _max_mark: float
-                    _min_mark: float
-                    _min_mark, _max_mark = self._canvas.axes['bottom']['item'].range
-                    good: np.ndarray = (_min_mark <= x & x <= _max_mark)
-                    x = x[good]
-                    y = y[good]
-                    del good
-                    data: np.ndarray = np.vstack((x, y)).transpose()
-                    df: pd.DataFrame = pd.DataFrame(data)
-                    df.to_excel(writer, index=False, header=['Frequency [MHz]', 'Voltage [mV]'],
-                                sheet_name=self._plot_lines_labels[i])
+                _max_mark: float
+                _min_mark: float
+                _min_mark, _max_mark = self._canvas.axes['bottom']['item'].range
+                good: np.ndarray = (_min_mark <= x & x <= _max_mark)
+                x = x[good]
+                y = y[good]
+                del good
+                data: np.ndarray = np.vstack((x, y)).transpose()
+                df: pd.DataFrame = pd.DataFrame(data)
+                df.to_excel(writer, index=False, header=['Frequency [MHz]', 'Voltage [mV]'],
+                            sheet_name=self._plot_line.name() or 'Sheet1')
 
     def save_figure(self):
         # TODO: add legend to the figure to save
