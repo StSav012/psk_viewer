@@ -69,7 +69,7 @@ class DataModel(QAbstractTableModel):
             return np.nan
 
     def headerData(self, col, orientation, role: Qt.ItemDataRole = Qt.DisplayRole):
-        if orientation == Qt.Horizontal and role == Qt.DisplayRole and 0 <= col <= len(self._header):
+        if orientation == Qt.Horizontal and role == Qt.DisplayRole and 0 <= col < len(self._header):
             return self._header[col]
         return None
 
