@@ -38,6 +38,10 @@ class DataModel(QAbstractTableModel):
     def all_data(self) -> np.ndarray:
         return self._data
 
+    @property
+    def is_empty(self) -> bool:
+        return self._data.size == 0
+
     def rowCount(self, parent=None, *, available_count: bool = False) -> int:
         if available_count:
             return self._data.shape[0]
