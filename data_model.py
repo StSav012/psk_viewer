@@ -80,9 +80,7 @@ class DataModel(QAbstractTableModel):
         return False
 
     def set_header(self, new_header: List[str]):
-        self.beginResetModel()
         self._header = list(map(str, new_header))
-        self.endResetModel()
 
     def set_format(self, new_format: List[Tuple[int, float]]):
         self.beginResetModel()
