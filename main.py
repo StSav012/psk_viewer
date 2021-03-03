@@ -6,7 +6,7 @@ import sys
 from typing import List
 
 import pyqtgraph as pg
-from PyQt5.QtCore import QCoreApplication, QLibraryInfo, QLocale, QSettings, QTranslator, Qt, QRect, \
+from PyQt5.QtCore import QCoreApplication, QLibraryInfo, QLocale, QTranslator, Qt, \
     QItemSelectionModel, QModelIndex
 from PyQt5.QtWidgets import QApplication, QCheckBox, QDesktopWidget, QDockWidget, QFileDialog, QFormLayout, \
     QGridLayout, QMainWindow, QMessageBox, QPushButton, QVBoxLayout, QWidget, QStatusBar, QTableView, \
@@ -15,17 +15,14 @@ from PyQt5.QtWidgets import QApplication, QCheckBox, QDesktopWidget, QDockWidget
 import backend
 from backend import NavigationToolbar as NavigationToolbar
 from data_model import DataModel
+from settings import Settings
 from utils import load_icon, resource_path
 
 
 class App(QMainWindow):
     def __init__(self):
         super().__init__(flags=Qt.WindowFlags())
-        self.settings = QSettings("SavSoft", "Fast Sweep Viewer")
-
-        # FIXME: use `QSettings` class extension instead of this
-        setattr(self.settings, 'line_end', os.linesep)
-        setattr(self.settings, 'csv_separator', '\t')
+        self.settings = Settings("SavSoft", "Spectrometer Viewer")
 
         # prevent config from being re-written while loading
         self._loading = True

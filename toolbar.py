@@ -5,6 +5,7 @@ from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QAction, QToolBar
 
+from preferences import Preferences
 from utils import load_icon
 
 
@@ -107,10 +108,7 @@ class NavigationToolbar(QToolBar):
         self.setIconSize(QSize(24, 24))
         self.layout().setSpacing(12)
 
-    def load_parameters(self):
-        pass
-
     def edit_parameters(self):
-        print('`edit_parameters` is not implemented yet')
-        self.update()
-        pass
+        preferences_dialog: Preferences = Preferences(self.parent().settings, self)
+        preferences_dialog.exec()
+        self.parent().plot.set_line_color(self.parent().settings.line_color)

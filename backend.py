@@ -6,13 +6,14 @@ from typing import Any, Callable, List, Optional, Tuple, Type
 import numpy as np
 import pandas as pd
 import pyqtgraph as pg
-from PyQt5.QtCore import QCoreApplication, QPointF, QSettings, Qt
-from PyQt5.QtGui import QBrush, QPalette
+from PyQt5.QtCore import QCoreApplication, QPointF, Qt
+from PyQt5.QtGui import QBrush, QPalette, QColor
 from PyQt5.QtWidgets import QFileDialog, QStatusBar, QAction
 from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent
 
 import detection
 from data_model import DataModel
+from settings import Settings
 from toolbar import NavigationToolbar
 from utils import copy_to_clipboard
 from valuelabel import ValueLabel
@@ -23,7 +24,7 @@ pg.ViewBox.suggestPadding = lambda *_: 0.0
 
 
 class Plot:
-    settings: QSettings
+    settings: Settings
     _is_dark: bool
     _legend_box: Optional[pg.GraphicsLayoutWidget]
     _legend: Optional[pg.LegendItem]
@@ -46,11 +47,11 @@ class Plot:
     def __init__(self, figure: pg.PlotWidget, toolbar: NavigationToolbar, *,
                  status_bar: Optional[QStatusBar] = None,
                  legend: Optional[pg.GraphicsLayoutWidget] = None,
-                 settings: Optional[QSettings] = None,
+                 settings: Optional[Settings] = None,
                  found_lines_data_model: Optional[DataModel] = None,
                  **kwargs):
         if settings is None:
-            self.settings = QSettings("SavSoft", "Fast Sweep Viewer")
+            self.settings = Settings("SavSoft", "Spectrometer Viewer")
         else:
             self.settings = settings
 
@@ -71,7 +72,7 @@ class Plot:
 
         self._found_lines_data_model = found_lines_data_model
 
-        self._plot_line = self._figure.plot(np.empty(0), name='', pen=pg.intColor(0))
+        self._plot_line = self._figure.plot(np.empty(0), name='', pen=self.settings.line_color)
         self._plot_line.yData = np.empty(0)
 
         self._min_frequency = np.nan
@@ -92,10 +93,10 @@ class Plot:
             self.model_signal: np.ndarray = np.empty(0)
         self.user_found_lines: pg.PlotDataItem = \
             self._canvas.scatterPlot(np.empty(0),
-                                     pen=pg.intColor(0), brush=pg.intColor(0))
+                                     pen=self.settings.line_color, brush=self.settings.line_color)
         self.automatically_found_lines: pg.PlotDataItem = \
             self._canvas.scatterPlot(np.empty(0),
-                                     pen=pg.intColor(0), brush=pg.intColor(0))
+                                     pen=self.settings.line_color, brush=self.settings.line_color)
 
         # cross hair
         self._crosshair_v_line = pg.InfiniteLine(angle=90, movable=False)
@@ -154,8 +155,6 @@ class Plot:
 
         self.translate_ui()
 
-        self._toolbar.load_parameters()
-
         # customize menu
         titles_to_leave: List[str] = [
             self._canvas.ctrl.alphaGroup.parent().title(),
@@ -166,7 +165,7 @@ class Plot:
                 self._canvas.ctrlMenu.removeAction(action)
         self._canvas.vb.menu = self._canvas.ctrlMenu
         self._canvas.ctrlMenu = None
-        self._view_all_action.triggered.connect(lambda: self._canvas.vb.autoRange(padding=0))
+        self._view_all_action.triggered.connect(lambda: self._canvas.vb.autoRange(padding=0.0))
         self._canvas.vb.menu.addAction(self._view_all_action)
         self._figure.sceneObj.contextMenu = None
 
@@ -227,7 +226,7 @@ class Plot:
         self._toolbar.clear_trace_action.setIconText(_translate("plot toolbar action", "Clear Marked"))
         self._toolbar.clear_trace_action.setToolTip(_translate("plot toolbar action", "Clear marked points"))
         self._toolbar.configure_action.setIconText(_translate("plot toolbar action", "Configure"))
-        self._toolbar.configure_action.setToolTip(_translate("plot toolbar action", "Edit curve parameters"))
+        self._toolbar.configure_action.setToolTip(_translate("plot toolbar action", "Edit parameters"))
 
         self._view_all_action.setText(_translate("plot context menu action", "View All"))
         self._canvas.ctrl.alphaGroup.parent().setTitle(_translate("plot context menu action", "Alpha"))
@@ -321,6 +320,15 @@ class Plot:
 
     def set_voltage_range(self, lower_value: float, upper_value: float):
         self._figure.plotItem.setYRange(lower_value, upper_value, padding=0.0)
+
+    def set_line_color(self, color: QColor):
+        self._plot_line.setPen(color)
+        self._plot_line.setBrush(color)
+        self.automatically_found_lines.setSymbolPen(color)
+        self.automatically_found_lines.setSymbolBrush(color)
+        self.user_found_lines.setSymbolPen(color)
+        self.user_found_lines.setSymbolBrush(color)
+        self._canvas.replot()
 
     def find_lines(self, threshold: float):
         if self.model_signal.size < 2:
