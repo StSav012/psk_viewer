@@ -5,7 +5,6 @@ from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QAction, QToolBar
 
-import figureoptions
 from utils import load_icon
 
 
@@ -23,6 +22,7 @@ class NavigationToolbar(QToolBar):
         self.open_action: QAction = QAction(self)
         self.clear_action: QAction = QAction(self)
         self.save_data_action: QAction = QAction(self)
+        self.copy_figure_action: QAction = QAction(self)
         self.save_figure_action: QAction = QAction(self)
         self.trace_action: QAction = QAction(self)
         self.copy_trace_action: QAction = QAction(self)
@@ -36,6 +36,7 @@ class NavigationToolbar(QToolBar):
         for a, i in zip([self.open_action,
                          self.clear_action,
                          self.save_data_action,
+                         self.copy_figure_action,
                          self.save_figure_action,
                          self.trace_action,
                          self.copy_trace_action,
@@ -44,6 +45,7 @@ class NavigationToolbar(QToolBar):
                          self.configure_action],
                         ['open', 'delete',
                          'saveTable',
+                         'copyImage',
                          'saveImage',
                          'selectObject',
                          'copySelected', 'saveSelected', 'clearSelected',
@@ -54,6 +56,7 @@ class NavigationToolbar(QToolBar):
         for a, i in zip([self.open_action,
                          self.clear_action,
                          self.save_data_action,
+                         self.copy_figure_action,
                          self.save_figure_action,
                          self.trace_action,
                          self.copy_trace_action,
@@ -76,6 +79,7 @@ class NavigationToolbar(QToolBar):
         self.addAction(self.clear_action)
         self.addSeparator()
         self.addAction(self.save_data_action)
+        self.addAction(self.copy_figure_action)
         self.addAction(self.save_figure_action)
         self.addSeparator()
         self.addAction(self.trace_action)
@@ -87,6 +91,7 @@ class NavigationToolbar(QToolBar):
 
         self.clear_action.setEnabled(False)
         self.save_data_action.setEnabled(False)
+        self.copy_figure_action.setEnabled(False)
         self.save_figure_action.setEnabled(False)
         self.trace_action.setEnabled(False)
         self.copy_trace_action.setEnabled(False)
@@ -103,9 +108,9 @@ class NavigationToolbar(QToolBar):
         self.layout().setSpacing(12)
 
     def load_parameters(self):
-        # figureoptions.load_settings(ax, self)
         pass
 
     def edit_parameters(self):
-        ax, = self.canvas.figure.get_axes()
-        figureoptions.figure_edit(ax, self, title=self.parameters_title, icon=self.parameters_icon)
+        print('`edit_parameters` is not implemented yet')
+        self.update()
+        pass

@@ -1,19 +1,20 @@
 ﻿# -*- coding: utf-8 -*-
 
 import os
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type
+from typing import Any, Callable, List, Optional, Tuple, Type
 
 import numpy as np
 import pandas as pd
 import pyqtgraph as pg
 from PyQt5.QtCore import QCoreApplication, QPointF, QSettings, Qt
 from PyQt5.QtGui import QBrush, QPalette
-from PyQt5.QtWidgets import QFileDialog, QMessageBox, QStatusBar
+from PyQt5.QtWidgets import QFileDialog, QStatusBar, QAction
 from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent
 
 import detection
 from data_model import DataModel
 from toolbar import NavigationToolbar
+from utils import copy_to_clipboard
 from valuelabel import ValueLabel
 
 TRACE_AVERAGING_RANGE: float = 25.
@@ -59,6 +60,7 @@ class Plot:
 
         self._figure = figure
         self._canvas = figure.getPlotItem()
+        self._view_all_action: QAction = QAction()
 
         self._toolbar = toolbar
 
@@ -133,6 +135,7 @@ class Plot:
         self._toolbar.open_action.triggered.connect(self.load_data)
         self._toolbar.clear_action.triggered.connect(self.clear)
         self._toolbar.save_data_action.triggered.connect(self.save_data)
+        self._toolbar.copy_figure_action.triggered.connect(self.copy_figure)
         self._toolbar.save_figure_action.triggered.connect(self.save_figure)
         self._toolbar.copy_trace_action.triggered.connect(self.copy_found_lines)
         self._toolbar.save_trace_action.triggered.connect(self.save_found_lines)
@@ -150,7 +153,6 @@ class Plot:
         self.translate_ui()
 
         self._toolbar.load_parameters()
-        # self.load_settings()
 
         # customize menu
         titles_to_leave: List[str] = [
@@ -160,6 +162,11 @@ class Plot:
         for action in self._canvas.ctrlMenu.actions():
             if action.text() not in titles_to_leave:
                 self._canvas.ctrlMenu.removeAction(action)
+        self._canvas.vb.menu = self._canvas.ctrlMenu
+        self._canvas.ctrlMenu = None
+        self._view_all_action.triggered.connect(lambda: self._canvas.vb.autoRange(padding=0))
+        self._canvas.vb.menu.addAction(self._view_all_action)
+        self._figure.sceneObj.contextMenu = None
 
         self._figure.sceneObj.sigMouseClicked.connect(self.on_plot_clicked)
 
@@ -202,20 +209,26 @@ class Plot:
         self._toolbar.clear_action.setIconText(_translate("plot toolbar action", "Clear"))
         self._toolbar.clear_action.setToolTip(_translate("plot toolbar action", "Clear lines and markers"))
         self._toolbar.save_data_action.setIconText(_translate("plot toolbar action", "Save Data"))
-        self._toolbar.save_data_action.setToolTip(_translate("plot toolbar action", "Export the selected data"))
+        self._toolbar.save_data_action.setToolTip(_translate("plot toolbar action", "Export the visible data"))
+        self._toolbar.copy_figure_action.setIconText(_translate("plot toolbar action", "Copy Figure"))
+        self._toolbar.copy_figure_action.setToolTip(_translate("plot toolbar action", "Copy the plot as an image"))
         self._toolbar.save_figure_action.setIconText(_translate("plot toolbar action", "Save Figure"))
-        self._toolbar.save_figure_action.setToolTip(_translate("plot toolbar action", "Save the plot as an image"))
+        self._toolbar.save_figure_action.setToolTip(_translate("plot toolbar action", "Save the plot into clipboard"))
         self._toolbar.trace_action.setIconText(_translate("plot toolbar action", "Mark"))
-        self._toolbar.trace_action.setToolTip(_translate("plot toolbar action", "Mark several data points"))
+        self._toolbar.trace_action.setToolTip(_translate("plot toolbar action", "Mark data points"))
         self._toolbar.copy_trace_action.setIconText(_translate("plot toolbar action", "Copy Marked"))
         self._toolbar.copy_trace_action.setToolTip(_translate("plot toolbar action",
                                                               "Copy marked points values into clipboard"))
         self._toolbar.save_trace_action.setIconText(_translate("plot toolbar action", "Save Marked"))
         self._toolbar.save_trace_action.setToolTip(_translate("plot toolbar action", "Save marked points values"))
         self._toolbar.clear_trace_action.setIconText(_translate("plot toolbar action", "Clear Marked"))
-        self._toolbar.clear_trace_action.setToolTip(_translate("plot toolbar action", "Clear marked points values"))
+        self._toolbar.clear_trace_action.setToolTip(_translate("plot toolbar action", "Clear marked points"))
         self._toolbar.configure_action.setIconText(_translate("plot toolbar action", "Configure"))
         self._toolbar.configure_action.setToolTip(_translate("plot toolbar action", "Edit curve parameters"))
+
+        self._view_all_action.setText(_translate("plot context menu action", "View All"))
+        self._canvas.ctrl.alphaGroup.parent().setTitle(_translate("plot context menu action", "Alpha"))
+        self._canvas.ctrl.gridGroup.parent().setTitle(_translate("plot context menu action", "Grid"))
 
         self._cursor_x.suffix = _translate('unit', 'Hz')
         self._cursor_y.suffix = _translate('unit', 'V')
@@ -274,6 +287,9 @@ class Plot:
                     )
                 self._found_lines_data_model.append_data([self._plot_line.xData[closest_point_index],
                                                           self._plot_line.yData[closest_point_index]])
+                self._toolbar.copy_trace_action.setEnabled(True)
+                self._toolbar.save_trace_action.setEnabled(True)
+                self._toolbar.clear_trace_action.setEnabled(True)
 
     def on_lim_changed(self, *args):
         rect: List[List[float]] = args[0][1]
@@ -341,6 +357,11 @@ class Plot:
                 self.automatically_found_lines.yData,
             )))
 
+        if not self._found_lines_data_model.is_empty:
+            self._toolbar.copy_trace_action.setEnabled(True)
+            self._toolbar.save_trace_action.setEnabled(True)
+            self._toolbar.clear_trace_action.setEnabled(True)
+
         self._ignore_scale_change = False
 
     def prev_found_line(self, init_frequency: float) -> float:
@@ -387,18 +408,68 @@ class Plot:
         else:
             return init_frequency
 
+    def stringify_table_plain_text(self) -> str:
+        """
+        Convert table cells to string for copying as plain text
+        :return: the plain text representation of the table
+        """
+        text_matrix: List[List[str]] = [[self._found_lines_data_model.formatted_item(row, column)
+                                         for column in range(self._found_lines_data_model.columnCount())]
+                                        for row in range(self._found_lines_data_model.rowCount(available_count=True))]
+        row_texts: List[str]
+        text: List[str] = [self.settings.csv_separator.join(row_texts) for row_texts in text_matrix]
+        return self.settings.line_end.join(text)
+
+    def stringify_table_html(self) -> str:
+        """
+        Convert table cells to string for copying as rich text
+        :return: the rich text representation of the table
+        """
+        text_matrix: List[List[str]] = [[('<td>' + self._found_lines_data_model.formatted_item(row, column) + '</td>')
+                                         for column in range(self._found_lines_data_model.columnCount())]
+                                        for row in range(self._found_lines_data_model.rowCount(available_count=True))]
+        row_texts: List[str]
+        text: List[str] = [('<tr>' + self.settings.csv_separator.join(row_texts) + '</tr>')
+                           for row_texts in text_matrix]
+        text.insert(0, '<table>')
+        text.append('</table>')
+        return self.settings.line_end.join(text)
+
     def copy_found_lines(self):
-        print('not implemented yet')
-        self._canvas.replot()
+        copy_to_clipboard(self.stringify_table_plain_text(), self.stringify_table_html(), Qt.RichText)
 
     def save_found_lines(self):
-        print('not implemented yet')
-        self._canvas.replot()
+        filename, _filter = self.save_file_dialog(_filter='CSV (*.csv);;XLSX (*.xlsx)')
+        if not filename:
+            return
+        filename_parts: Tuple[str, str] = os.path.splitext(filename)
+        x: np.ndarray = self._found_lines_data_model.all_data[:, 0] * 1e-6
+        y: np.ndarray = self._found_lines_data_model.all_data[:, 1]
+        data: np.ndarray = np.vstack((x, y)).transpose()
+        if 'CSV' in _filter:
+            if filename_parts[1] != '.csv':
+                filename += '.csv'
+            sep: str = self.settings.csv_separator
+            # noinspection PyTypeChecker
+            np.savetxt(filename, data,
+                       delimiter=sep,
+                       header=sep.join(('frequency', 'voltage')) + '\n' + sep.join(('MHz', 'mV')),
+                       fmt='%s')
+        elif 'XLSX' in _filter:
+            if filename_parts[1] != '.xlsx':
+                filename += '.xlsx'
+            with pd.ExcelWriter(filename) as writer:
+                df: pd.DataFrame = pd.DataFrame(data)
+                df.to_excel(writer, index=False, header=['Frequency [MHz]', 'Voltage [mV]'],
+                            sheet_name=self._plot_line.name() or 'Sheet1')
 
     def clear_found_lines(self):
         self.automatically_found_lines.clear()
         self.user_found_lines.clear()
         self._found_lines_data_model.clear()
+        self._toolbar.copy_trace_action.setEnabled(False)
+        self._toolbar.save_trace_action.setEnabled(False)
+        self._toolbar.clear_trace_action.setEnabled(False)
         self._canvas.replot()
 
     def clear(self):
@@ -410,6 +481,7 @@ class Plot:
         self._toolbar.trace_action.setChecked(False)
         self._toolbar.clear_action.setEnabled(False)
         self._toolbar.save_data_action.setEnabled(False)
+        self._toolbar.copy_figure_action.setEnabled(False)
         self._toolbar.save_figure_action.setEnabled(False)
         self._toolbar.trace_action.setEnabled(False)
         self._toolbar.copy_trace_action.setEnabled(False)
@@ -463,11 +535,9 @@ class Plot:
 
             self._toolbar.clear_action.setEnabled(True)
             self._toolbar.save_data_action.setEnabled(True)
+            self._toolbar.copy_figure_action.setEnabled(True)
             self._toolbar.save_figure_action.setEnabled(True)
             self._toolbar.trace_action.setEnabled(True)
-            self._toolbar.copy_trace_action.setEnabled(True)
-            self._toolbar.save_trace_action.setEnabled(True)
-            self._toolbar.clear_trace_action.setEnabled(True)
             self._toolbar.configure_action.setEnabled(True)
 
             if self.on_data_loaded_callback is not None and callable(self.on_data_loaded_callback):
@@ -491,107 +561,52 @@ class Plot:
         if not filename:
             return
         filename_parts: Tuple[str, str] = os.path.splitext(filename)
+        x: np.ndarray = self._plot_line.xData
+        y: np.ndarray = self._plot_line.yData
+        _max_mark: float
+        _min_mark: float
+        _min_mark, _max_mark = self._canvas.axes['bottom']['item'].range
+        good: np.ndarray = (_min_mark <= x & x <= _max_mark)
+        x = x[good]
+        y = y[good]
+        del good
+        data: np.ndarray = np.vstack((x * 1e-6, y)).transpose()
         if 'CSV' in _filter:
             if filename_parts[1] != '.csv':
                 filename += '.csv'
-            x: np.ndarray = self._plot_line.xData
-            y: np.ndarray = self._plot_line.yData
-            _max_mark: float
-            _min_mark: float
-            _min_mark, _max_mark = self._canvas.axes['bottom']['item'].range
-            good: np.ndarray = (_min_mark <= x & x <= _max_mark)
-            x = x[good]
-            y = y[good]
-            del good
-            data: np.ndarray = np.vstack((x, y)).transpose()
-            sep: str = '\t'
+            sep: str = self.settings.csv_separator
             # noinspection PyTypeChecker
             np.savetxt(filename, data,
                        delimiter=sep,
-                       header=sep.join(('frequency', 'voltage')) + os.linesep + sep.join(('MHz', 'mV')),
+                       header=sep.join(('frequency', 'voltage')) + '\n' + sep.join(('MHz', 'mV')),
                        fmt='%s')
         elif 'XLSX' in _filter:
             if filename_parts[1] != '.xlsx':
                 filename += '.xlsx'
             with pd.ExcelWriter(filename) as writer:
-                x: np.ndarray = self._plot_line.xData
-                y: np.ndarray = self._plot_line.yData
-                i: int
-                _max_mark: float
-                _min_mark: float
-                _min_mark, _max_mark = self._canvas.axes['bottom']['item'].range
-                good: np.ndarray = (_min_mark <= x & x <= _max_mark)
-                x = x[good]
-                y = y[good]
-                del good
-                data: np.ndarray = np.vstack((x, y)).transpose()
                 df: pd.DataFrame = pd.DataFrame(data)
                 df.to_excel(writer, index=False, header=['Frequency [MHz]', 'Voltage [mV]'],
                             sheet_name=self._plot_line.name() or 'Sheet1')
 
+    def copy_figure(self):
+        # TODO: add legend to the figure to save
+        import pyqtgraph.exporters
+        exporter = pg.exporters.ImageExporter(self._canvas)
+        self._crosshair_h_line.setPos(np.nan)
+        self._crosshair_v_line.setPos(np.nan)
+        exporter.export(copy=True)
+
     def save_figure(self):
         # TODO: add legend to the figure to save
-        filetypes: Dict[str, List[str]] = self._figure.get_supported_filetypes_grouped()
-        # noinspection PyTypeChecker
-        sorted_filetypes: List[Tuple[str, List[str]]] = sorted(filetypes.items())
-
-        filters: str = ';;'.join([
-            f'{name} ({" ".join([("*." + ext) for ext in extensions])})'
-            for name, extensions in sorted_filetypes
-        ])
-
-        figure_file_name: str
-        _filter: str
-        figure_file_name, _filter = self.save_file_dialog(_filter=filters)
-        if figure_file_name:
-            try:
-                self._figure.savefig(figure_file_name)
-            except Exception as e:
-                QMessageBox.critical(self._figure.parent(), "Error saving file", str(e),
-                                     QMessageBox.Ok, QMessageBox.NoButton)
-
-    @staticmethod
-    def save_arbitrary_data(data, filename: str, _filter: str, *,
-                            csv_header: str = '', csv_sep: str = '\t',
-                            xlsx_header=None, sheet_name: str = 'Markings'):
+        import pyqtgraph.exporters
+        exporter = pg.exporters.ImageExporter(self._canvas)
+        _filter: str = 'Image files (' + ' '.join(exporter.getSupportedImageFormats()) + ')'
+        filename, _filter = self.save_file_dialog(_filter=_filter)
         if not filename:
             return
-        if xlsx_header is None:
-            xlsx_header = True
-        filename_parts: Tuple[str, str] = os.path.splitext(filename)
-        if 'CSV' in _filter:
-            if filename_parts[1].lower() != '.csv':
-                filename += '.csv'
-            if isinstance(data, dict):
-                joined_data: Optional[np.ndarray] = None
-                for key, value in data.items():
-                    if joined_data is None:
-                        joined_data = np.vstack(value).transpose()
-                    else:
-                        joined_data = np.vstack((joined_data, np.vstack(value).transpose()))
-                data = joined_data
-            else:
-                data = np.vstack(data).transpose()
-            # noinspection PyTypeChecker
-            np.savetxt(filename, data,
-                       delimiter=csv_sep,
-                       header=csv_header,
-                       fmt='%s')
-        elif 'XLSX' in _filter:
-            if filename_parts[1].lower() != '.xlsx':
-                filename += '.xlsx'
-            with pd.ExcelWriter(filename) as writer:
-                if isinstance(data, dict):
-                    for sheet_name in data:
-                        sheet_data = np.vstack(data[sheet_name]).transpose()
-                        df = pd.DataFrame(sheet_data)
-                        df.to_excel(writer, index=False, header=xlsx_header,
-                                    sheet_name=sheet_name)
-                else:
-                    data = np.vstack(data).transpose()
-                    df = pd.DataFrame(data)
-                    df.to_excel(writer, index=False, header=xlsx_header,
-                                sheet_name=sheet_name)
+        self._crosshair_h_line.setPos(np.nan)
+        self._crosshair_v_line.setPos(np.nan)
+        exporter.export(filename)
 
     def get_config_value(self, section: str, key: str, default, _type: Type):
         if section not in self.settings.childGroups():

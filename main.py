@@ -22,6 +22,10 @@ class App(QMainWindow):
         super().__init__(flags=Qt.WindowFlags())
         self.settings = QSettings("SavSoft", "Fast Sweep Viewer")
 
+        # FIXME: use `QSettings` class extension instead of this
+        setattr(self.settings, 'line_end', os.linesep)
+        setattr(self.settings, 'csv_separator', '\t')
+
         # prevent config from being re-written while loading
         self._loading = True
 
