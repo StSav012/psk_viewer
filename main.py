@@ -6,7 +6,8 @@ import sys
 from typing import List
 
 import pyqtgraph as pg
-from PyQt5.QtCore import QCoreApplication, QLibraryInfo, QLocale, QSettings, QTranslator, Qt
+from PyQt5.QtCore import QCoreApplication, QLibraryInfo, QLocale, QSettings, QTranslator, Qt, QRect, \
+    QItemSelectionModel, QModelIndex
 from PyQt5.QtWidgets import QApplication, QCheckBox, QDesktopWidget, QDockWidget, QFileDialog, QFormLayout, \
     QGridLayout, QMainWindow, QMessageBox, QPushButton, QVBoxLayout, QWidget, QStatusBar, QTableView, \
     QAbstractItemView, QHeaderView
@@ -118,7 +119,8 @@ class App(QMainWindow):
                                  found_lines_data_model=self.model_found_lines,
                                  on_xlim_changed=self.on_xlim_changed,
                                  on_ylim_changed=self.on_ylim_changed,
-                                 on_data_loaded=self.load_data)
+                                 on_data_loaded=self.on_data_loaded,
+                                 on_points_selected=self.on_points_selected)
 
         self.setup_ui_appearance()
 
@@ -426,7 +428,7 @@ class App(QMainWindow):
         self.settings.setValue(key, value)
         self.settings.endGroup()
 
-    def load_data(self, limits):
+    def on_data_loaded(self, limits):
         if self._loading:
             return
         if limits is not None:
@@ -459,6 +461,14 @@ class App(QMainWindow):
                                           upper_value=self.spin_frequency_max.value())
             self.plot.set_voltage_range(lower_value=self.spin_voltage_min.value(),
                                         upper_value=self.spin_voltage_max.value())
+
+    def on_points_selected(self, rows: List[int]):
+        self.table_found_lines.clearSelection()
+        sm: QItemSelectionModel = self.table_found_lines.selectionModel()
+        row: int
+        for row in rows:
+            index: QModelIndex = self.model_found_lines.index(row, 0)
+            sm.select(index, QItemSelectionModel.Select | QItemSelectionModel.Rows)
 
     def spin_frequency_min_changed(self, new_value):
         if self._loading:

@@ -41,6 +41,7 @@ class Plot:
     on_xlim_changed_callback: Optional[Callable]
     on_ylim_changed_callback: Optional[Callable]
     on_data_loaded_callback: Optional[Callable]
+    highlight_data: Optional[Callable]
 
     def __init__(self, figure: pg.PlotWidget, toolbar: NavigationToolbar, *,
                  status_bar: Optional[QStatusBar] = None,
@@ -83,6 +84,7 @@ class Plot:
         self.on_xlim_changed_callback = kwargs.pop('on_xlim_changed', None)
         self.on_ylim_changed_callback = kwargs.pop('on_ylim_changed', None)
         self.on_data_loaded_callback = kwargs.pop('on_data_loaded', None)
+        self.highlight_data = kwargs.pop('on_points_selected', None)
 
         try:
             self.model_signal: np.ndarray = np.loadtxt('averaged fs signal filtered.csv')
@@ -170,7 +172,7 @@ class Plot:
 
         self._figure.sceneObj.sigMouseClicked.connect(self.on_plot_clicked)
 
-        def remove_points(item: pg.PlotDataItem, points: List[pg.SpotItem], ev: MouseClickEvent):
+        def on_points_clicked(item: pg.PlotDataItem, points: List[pg.SpotItem], ev: MouseClickEvent):
             if item.xData is None or item.yData is None:
                 return
             if not self.trace_mode:
@@ -182,15 +184,16 @@ class Plot:
                 for point in points:
                     index &= (items != point)
                 item.setData(item.xData[index], item.yData[index])
-            # elif self._found_lines_data_model.all_data.shape[1] > 1:
-            #     point: pg.SpotItem
-            #     selected_points: List[QPointF] = [point.pos() for point in points]
-            #     # TODO: highlight the table row that stores the point data
-            #     #  emit signal with the data
+            elif callable(self.highlight_data):
+                point: pg.SpotItem
+                found_lines_frequencies: np.ndarray = self._found_lines_data_model.all_data[:, 0]
+                selected_points: List[int] = [np.argmin(np.abs(point.pos().x() - found_lines_frequencies))
+                                              for point in points]
+                self.highlight_data(selected_points)
 
         line: pg.PlotDataItem
         for line in (self.automatically_found_lines, self.user_found_lines):
-            line.sigPointsClicked.connect(remove_points)
+            line.sigPointsClicked.connect(on_points_clicked)
 
     def translate_ui(self):
         _translate: Callable[[str, str, Optional[str], int], str] = QCoreApplication.translate
