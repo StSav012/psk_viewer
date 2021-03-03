@@ -107,6 +107,18 @@ class DataModel(QAbstractTableModel):
             self._data = np.array([new_data_line])
         self.endResetModel()
 
+    def extend_data(self, new_data_lines: Union[List[List[float]], np.ndarray]):
+        self.beginResetModel()
+        for new_data_line in new_data_lines:
+            if self._data.shape[1] == len(new_data_line):
+                self._data = np.row_stack((self._data, new_data_line))
+        if self._sort_column < self._data.shape[1]:
+            sort_indices: np.ndarray = np.argsort(self._data[:, self._sort_column], kind='heapsort')
+            if self._sort_order == Qt.DescendingOrder:
+                sort_indices = sort_indices[::-1]
+            self._data = self._data[sort_indices]
+        self.endResetModel()
+
     def clear(self):
         self.beginResetModel()
         self._data: np.ndarray = np.empty((0, 0))
