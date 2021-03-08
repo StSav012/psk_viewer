@@ -49,8 +49,7 @@ class Plot:
     on_data_loaded_callback: Optional[Callable]
     highlight_data: Optional[Callable]
 
-    LEGACY_PSK_DATA_MODE: Final[int] = 1
-    CSV_PSK_DATA_MODE: Final[int] = 2
+    PSK_DATA_MODE: Final[int] = 1
     FS_DATA_MODE: Final[int] = -1
 
     def __init__(self, figure: pg.PlotWidget, toolbar: NavigationToolbar, *,
@@ -534,7 +533,7 @@ class Plot:
             fn: str = os.path.splitext(filename)[0]
             x, y = load_data_scandat(filename)
             if x.size and y.size:
-                self._data_mode = self.LEGACY_PSK_DATA_MODE
+                self._data_mode = self.PSK_DATA_MODE
         elif filename.casefold().endswith(('.fmd', '.frd')):
             fn: str = os.path.splitext(filename)[0]
             x, y = load_data_fs(filename)
