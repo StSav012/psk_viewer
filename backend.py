@@ -15,16 +15,25 @@ import detection
 from data_model import DataModel
 from settings import Settings
 from toolbar import NavigationToolbar
-from utils import copy_to_clipboard
+from utils import copy_to_clipboard, load_data_fs, load_data_scandat
 from valuelabel import ValueLabel
 
-TRACE_AVERAGING_RANGE: float = 25.
+try:
+    from typing import Final
+except ImportError:
+    class _Final:
+        def __getitem__(self, item):
+            return item
+
+
+    Final = _Final()
 
 pg.ViewBox.suggestPadding = lambda *_: 0.0
 
 
 class Plot:
     settings: Settings
+    _data_mode: Optional[int]
     _is_dark: bool
     _legend_box: Optional[pg.GraphicsLayoutWidget]
     _legend: Optional[pg.LegendItem]
@@ -34,15 +43,15 @@ class Plot:
     _status_bar: Optional[QStatusBar]
     _found_lines_data_model: Optional[DataModel]
     _plot_line: pg.PlotDataItem
-    _min_frequency: float
-    _max_frequency: float
-    _min_voltage: float
-    _max_voltage: float
     _ignore_scale_change: bool
     on_xlim_changed_callback: Optional[Callable]
     on_ylim_changed_callback: Optional[Callable]
     on_data_loaded_callback: Optional[Callable]
     highlight_data: Optional[Callable]
+
+    LEGACY_PSK_DATA_MODE: Final[int] = 1
+    CSV_PSK_DATA_MODE: Final[int] = 2
+    FS_DATA_MODE: Final[int] = -1
 
     def __init__(self, figure: pg.PlotWidget, toolbar: NavigationToolbar, *,
                  status_bar: Optional[QStatusBar] = None,
@@ -54,6 +63,8 @@ class Plot:
             self.settings = Settings("SavSoft", "Spectrometer Viewer")
         else:
             self.settings = settings
+
+        self._data_mode = None
 
         self._is_dark = QPalette().color(QPalette.Window).lightness() < 128
 
@@ -74,11 +85,6 @@ class Plot:
 
         self._plot_line = self._figure.plot(np.empty(0), name='', pen=self.settings.line_color)
         self._plot_line.yData = np.empty(0)
-
-        self._min_frequency = np.nan
-        self._max_frequency = np.nan
-        self._min_voltage = np.nan
-        self._max_voltage = np.nan
 
         self._ignore_scale_change = False
 
@@ -331,7 +337,12 @@ class Plot:
         self._canvas.replot()
 
     def find_lines(self, threshold: float):
-        if self.model_signal.size < 2:
+        # TODO: re-write this for PSK spectrometer data
+        if self._data_mode is None or self.model_signal.size < 2:
+            return
+
+        if self._data_mode != self.FS_DATA_MODE:
+            print('not implemented yet')
             return
 
         from scipy import interpolate
@@ -509,37 +520,42 @@ class Plot:
             self._legend_box.setMinimumWidth(self._legend.boundingRect().width())
 
     def load_data(self):
+        # TODO: re-write this to load PSK spectrometer data
         filename: str
         _filter: str
-        filename, _filter = self.open_file_dialog(_filter="Spectrometer Settings (*.fmd);;All Files (*)")
-        fn = os.path.splitext(filename)[0]
-        if os.path.exists(fn + '.fmd'):
-            with open(fn + '.fmd', 'r') as fin:
-                line: str
-                for line in fin:
-                    if line and not line.startswith('*'):
-                        t = list(map(lambda w: w.strip(), line.split(':', maxsplit=1)))
-                        if len(t) > 1:
-                            if t[0].lower() == 'FStart [GHz]'.lower():
-                                self._min_frequency = float(t[1]) * 1e6
-                            elif t[0].lower() == 'FStop [GHz]'.lower():
-                                self._max_frequency = float(t[1]) * 1e6
+        _formats: List[str] = [
+            'PSK Spectrometer (*.scandat)',
+            'Fast Sweep Spectrometer (*.fmd)',
+        ]
+        filename, _filter = self.open_file_dialog(_filter=';;'.join(_formats))
+        y: np.ndarray
+        x: np.ndarray
+        if filename.casefold().endswith('.scandat'):
+            fn: str = os.path.splitext(filename)[0]
+            x, y = load_data_scandat(filename)
+            if x.size and y.size:
+                self._data_mode = self.LEGACY_PSK_DATA_MODE
+        elif filename.casefold().endswith(('.fmd', '.frd')):
+            fn: str = os.path.splitext(filename)[0]
+            x, y = load_data_fs(filename)
+            if x.size and y.size:
+                self._data_mode = self.FS_DATA_MODE
         else:
             return
-        if os.path.exists(fn + '.frd'):
+
+        if x.size and y.size:
             new_label: str = os.path.split(fn)[-1]
 
-            y: np.ndarray = np.loadtxt(fn + '.frd', usecols=(0,))
-            x: np.ndarray = np.linspace(self._min_frequency, self._max_frequency,
-                                        num=y.size, endpoint=False)
             self._plot_line.setData(x, y, name=new_label)
 
-            self._min_voltage = np.min(self._plot_line.yData)
-            self._max_voltage = np.max(self._plot_line.yData)
+            min_frequency: float = x[0]
+            max_frequency: float = x[-1]
+            min_voltage: float = np.min(y)
+            max_voltage: float = np.max(y)
 
             self._ignore_scale_change = True
-            self._figure.setXRange(self._min_frequency, self._max_frequency)
-            self._figure.setYRange(self._min_voltage, self._max_voltage)
+            self._figure.setXRange(min_frequency, max_frequency)
+            self._figure.setYRange(min_voltage, max_voltage)
             self._ignore_scale_change = False
 
             self.update_legend()
@@ -552,11 +568,8 @@ class Plot:
             self._toolbar.configure_action.setEnabled(True)
 
             if self.on_data_loaded_callback is not None and callable(self.on_data_loaded_callback):
-                self.on_data_loaded_callback((self._min_frequency, self._max_frequency,
-                                              self._min_voltage, self._max_voltage))
-
-            return
-        return
+                self.on_data_loaded_callback((min_frequency, max_frequency,
+                                              min_voltage, max_voltage))
 
     @property
     def trace_mode(self):
