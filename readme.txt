@@ -1,9 +1,14 @@
-To add a translation, use
-   pylupdate5 -noobsolete main.py backend.py figureoptions.py -ts xy_XY.ts
+IPM RAS PSK and FS spectrometer files viewer
+
+Required packages:
+- PyQt5
+- pyqtgraph
+- pandas
+- numpy
+
+Required Python: >= 3.6
+Never tested with Python < 3.7, though.
+
+For developers. To add a translation, use
+   pylupdate5 -noobsolete *.py -ts xy_XY.ts
    lrelease *.ts
-
-To compile, use
-    python -m compileall -b -d . main.py backend.py figureoptions.py mplcursors/__init__.py mplcursors/_mplcursors.py mplcursors/_pick_info.py
-    PyInstaller -y build_folder.spec
-    PyInstaller -F build_exe.spec
-
