@@ -140,7 +140,7 @@ class App(QMainWindow):
         pg.fn.INT_REGEX = pg.re.compile(r'(?P<number>[+-]?\d+)\s*'
                                         r'(?P<siPrefix>[u(' + '|'.join(pg.fn.SI_PREFIXES) + r')]?)(?P<suffix>.*)$')
 
-        self.setWindowIcon(load_icon('sweep'))
+        self.setWindowIcon(load_icon('main'))
 
         self.form_layout_frequency.addRow(_translate('main window', 'Minimum') + ':', self.spin_frequency_min)
         self.form_layout_frequency.addRow(_translate('main window', 'Maximum') + ':', self.spin_frequency_max)
@@ -214,7 +214,7 @@ class App(QMainWindow):
 
         self.setCentralWidget(self.central_widget)
 
-        self.setWindowTitle(_translate('main window', 'Fast Sweep Viewer'))
+        self.setWindowTitle(_translate('main window', 'Spectrometer Data Viewer'))
 
         self.plot_toolbar.parameters_title = _translate('plot config window title', 'Figure options')
 
@@ -398,7 +398,7 @@ class App(QMainWindow):
             self.plot.set_voltage_range(lower_value=min_voltage, upper_value=max_voltage)
         self.check_voltage_persists.setChecked(self.get_config_value('voltage', 'persists', False, bool))
 
-        self.spin_threshold.setValue(self.get_config_value('lineSearch', 'threshold', 200.0, float))
+        self.spin_threshold.setValue(self.get_config_value('lineSearch', 'threshold', 12.0, float))
 
         self._loading = False
         return
