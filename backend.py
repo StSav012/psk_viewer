@@ -15,7 +15,7 @@ import detection
 from data_model import DataModel
 from settings import Settings
 from toolbar import NavigationToolbar
-from utils import copy_to_clipboard, load_data_fs, load_data_scandat, load_data_csv
+from utils import copy_to_clipboard, load_data_fs, load_data_scandat, load_data_csv, resource_path
 from valuelabel import ValueLabel
 
 try:
@@ -93,7 +93,7 @@ class Plot:
         self.highlight_data = kwargs.pop('on_points_selected', None)
 
         try:
-            self.model_signal: np.ndarray = np.loadtxt('averaged fs signal filtered.csv')
+            self.model_signal: np.ndarray = np.loadtxt(resource_path('averaged fs signal filtered.csv'))
         except (OSError, BlockingIOError):
             self.model_signal: np.ndarray = np.empty(0)
         self.user_found_lines: pg.PlotDataItem = \
@@ -336,33 +336,40 @@ class Plot:
         self._canvas.replot()
 
     def find_lines(self, threshold: float):
-        # TODO: re-write this for PSK spectrometer data
         if self._data_mode == 0 or self.model_signal.size < 2:
-            return
-
-        if self._data_mode != self.FS_DATA_MODE:
-            print('not implemented yet')
             return
 
         from scipy import interpolate
 
-        self._ignore_scale_change = True
-        if self._plot_line.xData.size < 2 or self._plot_line.yData.size < 2:
+        x: Final[np.ndarray] = self._plot_line.xData
+        y: Final[np.ndarray] = self._plot_line.yData
+        if x.size < 2 or y.size < 2:
             return
-        # re-scale the signal to the actual frequency mesh
-        x_model: np.ndarray = np.arange(self.model_signal.size, dtype=self._plot_line.xData.dtype) * 0.1
-        f = interpolate.interp1d(x_model, self.model_signal, kind=2)
-        x_model_new: np.ndarray = np.arange(x_model[0], x_model[-1],
-                                            self._plot_line.xData[1] - self._plot_line.xData[0])
-        y_model_new: np.ndarray = f(x_model_new)
-        found_lines = detection.peaks_positions(self._plot_line.xData,
-                                                detection.correlation(y_model_new,
-                                                                      self._plot_line.xData,
-                                                                      self._plot_line.yData),
-                                                threshold=1.0 / threshold)
+
+        found_lines: np.ndarray
+        if self._data_mode == self.FS_DATA_MODE:
+            # re-scale the signal to the actual frequency mesh
+            x_model: np.ndarray = np.arange(self.model_signal.size, dtype=x.dtype) * 0.1
+            f = interpolate.interp1d(x_model, self.model_signal, kind=2)
+            x_model_new: np.ndarray = np.arange(x_model[0], x_model[-1],
+                                                x[1] - x[0])
+            y_model_new: np.ndarray = f(x_model_new)
+            found_lines = detection.peaks_positions(x,
+                                                    detection.correlation(y_model_new,
+                                                                          x,
+                                                                          y),
+                                                    threshold=1.0 / threshold)
+        elif self._data_mode == self.PSK_DATA_MODE:
+            found_lines = detection.peaks_positions(x,
+                                                    y,
+                                                    threshold=1.0 / threshold)
+        else:
+            return
+
+        self._ignore_scale_change = True
         if found_lines.size:
-            self.automatically_found_lines.setData(self._plot_line.xData[found_lines],
-                                                   self._plot_line.yData[found_lines])
+            self.automatically_found_lines.setData(x[found_lines],
+                                                   y[found_lines])
         else:
             self.automatically_found_lines.setData(np.empty(0), np.empty(0))
 
