@@ -142,6 +142,7 @@ class Plot:
 
         self._toolbar.open_action.triggered.connect(self.load_data)
         self._toolbar.clear_action.triggered.connect(self.clear)
+        self._toolbar.differentiate_action.triggered.connect(self.calculate_second_derivative)
         self._toolbar.save_data_action.triggered.connect(self.save_data)
         self._toolbar.copy_figure_action.triggered.connect(self.copy_figure)
         self._toolbar.save_figure_action.triggered.connect(self.save_figure)
@@ -215,6 +216,9 @@ class Plot:
         self._toolbar.open_action.setToolTip(_translate("plot toolbar action", "Load spectrometer data"))
         self._toolbar.clear_action.setIconText(_translate("plot toolbar action", "Clear"))
         self._toolbar.clear_action.setToolTip(_translate("plot toolbar action", "Clear lines and markers"))
+        self._toolbar.differentiate_action.setIconText(_translate("plot toolbar action", "Calculate second derivative"))
+        self._toolbar.differentiate_action.setToolTip(_translate("plot toolbar action",
+                                                                 "Calculate finite-step second derivative"))
         self._toolbar.save_data_action.setIconText(_translate("plot toolbar action", "Save Data"))
         self._toolbar.save_data_action.setToolTip(_translate("plot toolbar action", "Export the visible data"))
         self._toolbar.copy_figure_action.setIconText(_translate("plot toolbar action", "Copy Figure"))
@@ -508,6 +512,7 @@ class Plot:
             # self._legend.setVisible(False)
         self._toolbar.trace_action.setChecked(False)
         self._toolbar.clear_action.setEnabled(False)
+        self._toolbar.differentiate_action.setEnabled(False)
         self._toolbar.save_data_action.setEnabled(False)
         self._toolbar.copy_figure_action.setEnabled(False)
         self._toolbar.save_figure_action.setEnabled(False)
@@ -571,6 +576,7 @@ class Plot:
             self.update_legend()
 
             self._toolbar.clear_action.setEnabled(True)
+            self._toolbar.differentiate_action.setEnabled(True)
             self._toolbar.save_data_action.setEnabled(True)
             self._toolbar.copy_figure_action.setEnabled(True)
             self._toolbar.save_figure_action.setEnabled(True)
@@ -588,6 +594,14 @@ class Plot:
     def actions_off(self):
         self._toolbar.trace_action.setChecked(False)
 
+    def calculate_second_derivative(self):
+        x: np.ndarray = self._plot_line.xData
+        y: np.ndarray = self._plot_line.yData
+        step: int = round(self.settings.jump / ((x[-1] - x[0]) / (x.size - 1)))
+        y = y[step:-step] - (y[2 * step:] + y[:-2 * step]) / 2.
+        x = x[step:-step]
+        self._plot_line.setData(x, y)
+
     def save_data(self):
         if self._plot_line.yData is None:
             return
@@ -597,10 +611,10 @@ class Plot:
         filename_parts: Tuple[str, str] = os.path.splitext(filename)
         x: np.ndarray = self._plot_line.xData
         y: np.ndarray = self._plot_line.yData
-        _max_mark: float
-        _min_mark: float
-        _min_mark, _max_mark = self._canvas.axes['bottom']['item'].range
-        good: np.ndarray = (_min_mark <= x & x <= _max_mark)
+        max_mark: float
+        min_mark: float
+        min_mark, max_mark = self._canvas.axes['bottom']['item'].range
+        good: np.ndarray = (min_mark <= x & x <= max_mark)
         x = x[good]
         y = y[good]
         del good

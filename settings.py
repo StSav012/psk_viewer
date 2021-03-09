@@ -3,7 +3,7 @@ import os
 from typing import List, Type
 
 import pyqtgraph as pg
-from PyQt5.QtCore import QSettings
+from PyQt5.QtCore import QCoreApplication, QSettings
 from PyQt5.QtGui import QColor
 
 try:
@@ -32,7 +32,19 @@ class Settings(QSettings):
 
     @property
     def dialog(self):
+        _translate = QCoreApplication.translate
+        opts = {
+            'suffix': _translate('unit', 'Hz'),
+            'siPrefix': True,
+            'decimals': 0,
+            'dec': True,
+            'compactHeight': False,
+            'format': '{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}'
+        }
         return {
+            'Processing': {
+                'Jump:': (opts, 'jump',)
+            },
             'Line': {
                 'Color:': ('line_color',)
             },
@@ -79,4 +91,17 @@ class Settings(QSettings):
     def line_color(self, new_value: QColor):
         self.beginGroup('plotLine')
         self.setValue('color', new_value)
+        self.endGroup()
+
+    @property
+    def jump(self) -> float:
+        self.beginGroup('processing')
+        v: float = self.value('jump', 600e3, float)
+        self.endGroup()
+        return v
+
+    @jump.setter
+    def jump(self, new_value: float):
+        self.beginGroup('processing')
+        self.setValue('jump', new_value)
         self.endGroup()

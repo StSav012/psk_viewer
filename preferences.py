@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import pyqtgraph as pg
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QCheckBox, QComboBox, \
     QDialog, QDialogButtonBox, QDoubleSpinBox, QFormLayout, QGroupBox, \
@@ -55,6 +56,13 @@ class Preferences(QDialog):
                                 widget.currentIndexChanged.connect(
                                     lambda x: setattr(self.settings, getattr(self.sender(), 'callback'), x))
                                 box_layout.addRow(self.tr(key2), widget)
+                            elif isinstance(getattr(self.settings, value2[-1]), float) and isinstance(value3, dict):
+                                widget: pg.SpinBox = pg.SpinBox(box, getattr(self.settings, value2[-1]))
+                                widget.setOpts(**value3)
+                                setattr(widget, 'callback', value2[-1])
+                                widget.valueChanged.connect(
+                                    lambda x: setattr(self.settings, getattr(self.sender(), 'callback'), x))
+                                box_layout.addRow(key2, widget)
                             # no else
                         elif len(value2) == 3:
                             value3a = value2[0]
