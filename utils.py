@@ -52,9 +52,9 @@ def load_data_fs(filename: str) -> Tuple[np.ndarray, np.ndarray]:
     min_frequency: float = np.nan
     max_frequency: float = np.nan
     if os.path.exists(fn + '.fmd'):
-        with open(fn + '.fmd', 'rt') as fin:
+        with open(fn + '.fmd', 'rt') as f_in:
             line: str
-            for line in fin:
+            for line in f_in:
                 if line and not line.startswith('*'):
                     t = list(map(lambda w: w.strip(), line.split(':', maxsplit=1)))
                     if len(t) > 1:
@@ -110,3 +110,17 @@ def load_data_scandat(filename: str) -> Tuple[np.ndarray, np.ndarray]:
         y = np.array([float(line) for line in lines[::2]])
     x = np.arange(y.size, dtype=float) * frequency_step + min_frequency
     return x, y
+
+
+def load_data_csv(filename: str) -> Tuple[np.ndarray, np.ndarray]:
+    if filename.casefold().endswith(('.csv', '.conf')):
+        fn: str = os.path.splitext(filename)[0]
+    else:
+        fn: str = filename
+    if os.path.exists(fn + '.csv'):
+        with open(fn + '.csv', 'rt') as f_in:
+            lines: List[str] = list(filter(lambda line: line[0].isdigit(), f_in.readlines()))
+        x: np.ndarray = np.array([float(line.split()[1]) for line in lines]) * 1e6
+        y: np.ndarray = np.array([float(line.split()[2]) for line in lines])
+        return x, y
+    return np.empty(0), np.empty(0)

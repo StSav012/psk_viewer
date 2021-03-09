@@ -436,20 +436,20 @@ class App(QMainWindow):
             self.set_config_value('voltage', 'upper', max_voltage)
             self._loading = True
             if not self.check_frequency_persists.isChecked():
+                self.spin_frequency_min.setMaximum(max_freq)
+                self.spin_frequency_max.setMinimum(min_freq)
                 self.spin_frequency_min.setValue(min_freq)
                 self.spin_frequency_max.setValue(max_freq)
                 self.spin_frequency_span.setValue(max_freq - min_freq)
                 self.spin_frequency_center.setValue(0.5 * (max_freq + min_freq))
-                self.spin_frequency_min.setMaximum(max_freq)
-                self.spin_frequency_max.setMinimum(min_freq)
             else:
                 self.spin_frequency_min.setMaximum(max(max_freq, self.spin_frequency_min.value()))
                 self.spin_frequency_max.setMinimum(min(min_freq, self.spin_frequency_max.value()))
             if not self.check_voltage_persists.isChecked():
-                self.spin_voltage_min.setValue(min_voltage)
-                self.spin_voltage_max.setValue(max_voltage)
                 self.spin_voltage_min.setMaximum(max_voltage)
                 self.spin_voltage_max.setMinimum(min_voltage)
+                self.spin_voltage_min.setValue(min_voltage)
+                self.spin_voltage_max.setValue(max_voltage)
             else:
                 self.spin_voltage_min.setMaximum(max(max_voltage, self.spin_voltage_min.value()))
                 self.spin_voltage_max.setMinimum(min(min_voltage, self.spin_voltage_max.value()))

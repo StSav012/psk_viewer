@@ -15,7 +15,7 @@ import detection
 from data_model import DataModel
 from settings import Settings
 from toolbar import NavigationToolbar
-from utils import copy_to_clipboard, load_data_fs, load_data_scandat
+from utils import copy_to_clipboard, load_data_fs, load_data_scandat, load_data_csv
 from valuelabel import ValueLabel
 
 try:
@@ -519,11 +519,10 @@ class Plot:
             self._legend_box.setMinimumWidth(self._legend.boundingRect().width())
 
     def load_data(self):
-        # TODO: re-write this to load PSK spectrometer data
         filename: str
         _filter: str
         _formats: List[str] = [
-            'PSK Spectrometer (*.scandat)',
+            'PSK Spectrometer (*.csv *.scandat)',
             'Fast Sweep Spectrometer (*.fmd)',
         ]
         filename, _filter = self.open_file_dialog(_filter=';;'.join(_formats))
@@ -532,6 +531,11 @@ class Plot:
         if filename.casefold().endswith('.scandat'):
             fn: str = os.path.splitext(filename)[0]
             x, y = load_data_scandat(filename)
+            if x.size and y.size:
+                self._data_mode = self.PSK_DATA_MODE
+        elif filename.casefold().endswith(('.csv', '.conf')):
+            fn: str = os.path.splitext(filename)[0]
+            x, y = load_data_csv(filename)
             if x.size and y.size:
                 self._data_mode = self.PSK_DATA_MODE
         elif filename.casefold().endswith(('.fmd', '.frd')):
