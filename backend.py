@@ -33,7 +33,7 @@ pg.ViewBox.suggestPadding = lambda *_: 0.0
 
 class Plot:
     settings: Settings
-    _data_mode: Optional[int]
+    _data_mode: int
     _is_dark: bool
     _legend_box: Optional[pg.GraphicsLayoutWidget]
     _legend: Optional[pg.LegendItem]
@@ -63,7 +63,7 @@ class Plot:
         else:
             self.settings = settings
 
-        self._data_mode = None
+        self._data_mode = 0
 
         self._is_dark = QPalette().color(QPalette.Window).lightness() < 128
 
@@ -337,7 +337,7 @@ class Plot:
 
     def find_lines(self, threshold: float):
         # TODO: re-write this for PSK spectrometer data
-        if self._data_mode is None or self.model_signal.size < 2:
+        if self._data_mode == 0 or self.model_signal.size < 2:
             return
 
         if self._data_mode != self.FS_DATA_MODE:
