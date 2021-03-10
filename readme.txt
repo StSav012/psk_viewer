@@ -4,6 +4,7 @@ Required packages:
 - PyQt5
 - pyqtgraph
 - pandas
+- scipy
 - numpy
 
 Required Python: >= 3.6
