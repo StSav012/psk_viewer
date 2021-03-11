@@ -189,6 +189,23 @@ class Plot:
                 for point in points:
                     index &= (items != point)
                 item.setData(item.xData[index], item.yData[index])
+
+                # update the table
+                if self.user_found_lines.xData is not None and self.user_found_lines.yData is not None:
+                    self._found_lines_data_model.set_data(np.column_stack((
+                        np.concatenate((self.automatically_found_lines.xData, self.user_found_lines.xData)),
+                        np.concatenate((self.automatically_found_lines.yData, self.user_found_lines.yData)),
+                    )))
+                else:
+                    self._found_lines_data_model.set_data(np.column_stack((
+                        self.automatically_found_lines.xData,
+                        self.automatically_found_lines.yData,
+                    )))
+
+                self._toolbar.copy_trace_action.setEnabled(not self._found_lines_data_model.is_empty)
+                self._toolbar.save_trace_action.setEnabled(not self._found_lines_data_model.is_empty)
+                self._toolbar.clear_trace_action.setEnabled(not self._found_lines_data_model.is_empty)
+
             elif callable(self.highlight_data):
                 point: pg.SpotItem
                 found_lines_frequencies: np.ndarray = self._found_lines_data_model.all_data[:, 0]
@@ -250,6 +267,7 @@ class Plot:
         pos: QPointF = event[0]
         if self._figure.sceneBoundingRect().contains(pos):
             point: QPointF = self._canvas.vb.mapSceneToView(pos)
+            self._status_bar.clearMessage()
             self._crosshair_v_line.setPos(point.x())
             self._crosshair_h_line.setPos(point.y())
             self._crosshair_h_line.setVisible(True)
@@ -277,8 +295,7 @@ class Plot:
             if distance < 0.01:
                 closest_point_index: int = np.argmin(np.hypot((self._plot_line.xData - point.x()) / x_span,
                                                               (self._plot_line.yData - point.y()) / y_span))
-                if self.user_found_lines.xData is None \
-                        or self.user_found_lines.yData.size is None:
+                if self.user_found_lines.xData is None or self.user_found_lines.yData.size is None:
                     self.user_found_lines.setData(
                         [self._plot_line.xData[closest_point_index]], [self._plot_line.yData[closest_point_index]]
                     )
@@ -288,6 +305,12 @@ class Plot:
                             (self.user_found_lines.xData == self._plot_line.xData[closest_point_index])
                             &
                             (self.user_found_lines.yData == self._plot_line.yData[closest_point_index])
+                    ):
+                        return
+                    if np.any(
+                            (self.automatically_found_lines.xData == self._plot_line.xData[closest_point_index])
+                            &
+                            (self.automatically_found_lines.yData == self._plot_line.yData[closest_point_index])
                     ):
                         return
                     self.user_found_lines.setData(
@@ -339,16 +362,16 @@ class Plot:
         self.user_found_lines.setSymbolBrush(color)
         self._canvas.replot()
 
-    def find_lines(self, threshold: float):
+    def find_lines(self, threshold: float) -> int:
         if self._data_mode == 0 or self.model_signal.size < 2:
-            return
+            return 0
 
         from scipy import interpolate
 
         x: Final[np.ndarray] = self._plot_line.xData
         y: Final[np.ndarray] = self._plot_line.yData
         if x.size < 2 or y.size < 2:
-            return
+            return 0
 
         found_lines: np.ndarray
         if self._data_mode == self.FS_DATA_MODE:
@@ -368,7 +391,7 @@ class Plot:
                                                     y,
                                                     threshold=1.0 / threshold)
         else:
-            return
+            return 0
 
         self._ignore_scale_change = True
         if found_lines.size:
@@ -389,12 +412,13 @@ class Plot:
                 self.automatically_found_lines.yData,
             )))
 
-        if not self._found_lines_data_model.is_empty:
-            self._toolbar.copy_trace_action.setEnabled(True)
-            self._toolbar.save_trace_action.setEnabled(True)
-            self._toolbar.clear_trace_action.setEnabled(True)
+        self._toolbar.copy_trace_action.setEnabled(not self._found_lines_data_model.is_empty)
+        self._toolbar.save_trace_action.setEnabled(not self._found_lines_data_model.is_empty)
+        self._toolbar.clear_trace_action.setEnabled(not self._found_lines_data_model.is_empty)
 
         self._ignore_scale_change = False
+
+        return found_lines.size
 
     def prev_found_line(self, init_frequency: float) -> float:
         if self.model_signal.size < 2:

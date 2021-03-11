@@ -319,7 +319,7 @@ class App(QMainWindow):
 
         self.spin_threshold.valueChanged.connect(lambda new_value:
                                                  self.set_config_value('lineSearch', 'threshold', new_value))
-        self.button_find_lines.clicked.connect(lambda: self.plot.find_lines(self.spin_threshold.value()))
+        self.button_find_lines.clicked.connect(self.on_button_find_lines_clicked)
         self.button_clear_lines.clicked.connect(self.plot.clear_found_lines)
         self.button_prev_line.clicked.connect(self.prev_found_line)
         self.button_next_line.clicked.connect(self.next_found_line)
@@ -466,6 +466,7 @@ class App(QMainWindow):
         for row in rows:
             index: QModelIndex = self.model_found_lines.index(row, 0)
             sm.select(index, QItemSelectionModel.Select | QItemSelectionModel.Rows)
+            # TODO: scroll into view
 
     def spin_frequency_min_changed(self, new_value):
         if self._loading:
@@ -603,6 +604,9 @@ class App(QMainWindow):
         if self._loading:
             return
         self.set_config_value('voltage', 'persists', new_value)
+
+    def on_button_find_lines_clicked(self):
+        self.status_bar.showMessage(f'Found {self.plot.find_lines(self.spin_threshold.value())} lines')
 
     def prev_found_line(self):
         self.spin_frequency_center.setValue(self.plot.prev_found_line(self.spin_frequency_center.value()))
