@@ -462,7 +462,7 @@ class App(QMainWindow):
         for row in rows:
             index: QModelIndex = self.model_found_lines.index(row, 0)
             sm.select(index, QItemSelectionModel.Select | QItemSelectionModel.Rows)
-            # TODO: scroll into view
+            self.table_found_lines.scrollTo(index)
 
     def spin_frequency_min_changed(self, new_value):
         if self._loading:
