@@ -69,13 +69,14 @@ class NavigationToolbar(QToolBar):
                          self.clear_trace_action,
                          self.configure_action],
                         ['Ctrl+O',
-                         '',
+                         'Ctrl+W',
+                         'Ctrl+/',
                          '',
                          '',
                          '',
                          '',
                          '', '', '',
-                         '']):
+                         'Ctrl+,']):
             if isinstance(i, str) and i:
                 a.setShortcut(i)
             elif not isinstance(i, str) and isinstance(i, Iterable):
