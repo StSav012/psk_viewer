@@ -35,7 +35,7 @@ if __name__ == '__main__':
     from PyQt5.QtWidgets import QApplication
 
     from utils import resource_path
-    from gui import App
+    from backend import App
 
     app: QApplication = QApplication(sys.argv)
 

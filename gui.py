@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*-
 
 import os
-from typing import List
+from typing import Tuple
 
 import pyqtgraph as pg
-from PyQt5.QtCore import QCoreApplication, QItemSelectionModel, QModelIndex, Qt
-from PyQt5.QtWidgets import QAbstractItemView, QCheckBox, QDesktopWidget, QDockWidget, QFileDialog, QFormLayout, \
-    QGridLayout, QHeaderView, QMainWindow, QMessageBox, QPushButton, QStatusBar, QTableView, QVBoxLayout, QWidget
+from PyQt5.QtCore import QCoreApplication, Qt
+from PyQt5.QtWidgets import QAbstractItemView, QCheckBox, QDockWidget, QFileDialog, QFormLayout, \
+    QGridLayout, QMainWindow, QMessageBox, QPushButton, QStatusBar, QTableView, QVBoxLayout, QWidget
 
-import backend
-from backend import NavigationToolbar as NavigationToolbar
 from data_model import DataModel
 from settings import Settings
+from toolbar import NavigationToolbar
 from utils import load_icon
+from valuelabel import ValueLabel
 
 
-class App(QMainWindow):
-    def __init__(self):
-        super().__init__(flags=Qt.WindowFlags())
+class GUI(QMainWindow):
+    def __init__(self, flags=Qt.WindowFlags()):
+        super().__init__(flags=flags)
         self.settings = Settings("SavSoft", "Spectrometer Viewer")
 
         # prevent config from being re-written while loading
@@ -95,31 +95,18 @@ class App(QMainWindow):
         self.model_found_lines: DataModel = DataModel(self)
 
         self.status_bar: QStatusBar = QStatusBar()
-        self.setStatusBar(self.status_bar)
 
         # plot
         self.figure: pg.PlotWidget = pg.PlotWidget(self.central_widget)
         self.figure.setFocusPolicy(Qt.ClickFocus)
         self.plot_toolbar = NavigationToolbar(self, parameters_icon='configure')
+        self.legend: pg.GraphicsLayoutWidget = pg.GraphicsLayoutWidget()
         self.box_legend: QDockWidget = QDockWidget(self.central_widget)
         self.box_legend.setObjectName('box_legend')
-        self.legend: pg.GraphicsLayoutWidget = pg.GraphicsLayoutWidget()
-        self.plot = backend.Plot(figure=self.figure,
-                                 toolbar=self.plot_toolbar,
-                                 status_bar=self.status_bar,
-                                 legend=self.legend,
-                                 settings=self.settings,
-                                 found_lines_data_model=self.model_found_lines,
-                                 on_xlim_changed=self.on_xlim_changed,
-                                 on_ylim_changed=self.on_ylim_changed,
-                                 on_data_loaded=self.on_data_loaded,
-                                 on_points_selected=self.on_points_selected)
+        self._cursor_x: ValueLabel = ValueLabel(self.status_bar, siPrefix=True, decimals=6)
+        self._cursor_y: ValueLabel = ValueLabel(self.status_bar, siPrefix=True, decimals=3)
 
         self.setup_ui_appearance()
-
-        self.load_config()
-
-        self.setup_ui_actions()
 
     def setup_ui_appearance(self):
         _translate = QCoreApplication.translate
@@ -205,14 +192,17 @@ class App(QMainWindow):
         self.box_found_lines.setFeatures(self.box_found_lines.features() & ~self.box_found_lines.DockWidgetClosable)
         self.addDockWidget(Qt.RightDockWidgetArea, self.box_found_lines)
 
-        self.addToolBar(self.plot_toolbar)
         self.grid_layout.addWidget(self.figure)
 
         self.setCentralWidget(self.central_widget)
-
         self.setWindowTitle(_translate('main window', 'Spectrometer Data Viewer'))
+        self.setStatusBar(self.status_bar)
 
-        self.plot_toolbar.parameters_title = _translate('plot config window title', 'Figure options')
+        self.status_bar.addWidget(self._cursor_x)
+        self.status_bar.addWidget(self._cursor_y)
+
+        self._cursor_x.suffix = _translate('unit', 'Hz')
+        self._cursor_y.suffix = _translate('unit', 'V')
 
         self.box_legend.setWindowTitle(_translate('main window', 'Legend'))
 
@@ -290,45 +280,6 @@ class App(QMainWindow):
 
         self.adjustSize()
 
-    def setup_ui_actions(self):
-        self.spin_frequency_min.valueChanged.connect(self.spin_frequency_min_changed)
-        self.spin_frequency_max.valueChanged.connect(self.spin_frequency_max_changed)
-        self.spin_frequency_center.valueChanged.connect(self.spin_frequency_center_changed)
-        self.spin_frequency_span.valueChanged.connect(self.spin_frequency_span_changed)
-        self.button_zoom_x_out_coarse.clicked.connect(lambda: self.button_zoom_x_clicked(1. / 0.5))
-        self.button_zoom_x_out_fine.clicked.connect(lambda: self.button_zoom_x_clicked(1. / 0.9))
-        self.button_zoom_x_in_fine.clicked.connect(lambda: self.button_zoom_x_clicked(0.9))
-        self.button_zoom_x_in_coarse.clicked.connect(lambda: self.button_zoom_x_clicked(0.5))
-        self.button_move_x_left_coarse.clicked.connect(lambda: self.button_move_x_clicked(-500.))
-        self.button_move_x_left_fine.clicked.connect(lambda: self.button_move_x_clicked(-50.))
-        self.button_move_x_right_fine.clicked.connect(lambda: self.button_move_x_clicked(50.))
-        self.button_move_x_right_coarse.clicked.connect(lambda: self.button_move_x_clicked(500.))
-        self.check_frequency_persists.toggled.connect(self.check_frequency_persists_toggled)
-
-        self.spin_voltage_min.valueChanged.connect(self.spin_voltage_min_changed)
-        self.spin_voltage_max.valueChanged.connect(self.spin_voltage_max_changed)
-        self.button_zoom_y_out_coarse.clicked.connect(lambda: self.button_zoom_y_clicked(1. / 0.5))
-        self.button_zoom_y_out_fine.clicked.connect(lambda: self.button_zoom_y_clicked(1. / 0.9))
-        self.button_zoom_y_in_fine.clicked.connect(lambda: self.button_zoom_y_clicked(0.9))
-        self.button_zoom_y_in_coarse.clicked.connect(lambda: self.button_zoom_y_clicked(0.5))
-        self.check_voltage_persists.toggled.connect(self.check_voltage_persists_toggled)
-
-        self.spin_threshold.valueChanged.connect(lambda new_value:
-                                                 self.set_config_value('lineSearch', 'threshold', new_value))
-        self.button_find_lines.clicked.connect(self.on_button_find_lines_clicked)
-        self.button_clear_lines.clicked.connect(self.plot.clear_found_lines)
-        self.button_prev_line.clicked.connect(self.prev_found_line)
-        self.button_next_line.clicked.connect(self.next_found_line)
-
-        def adjust_columns():
-            _translate = QCoreApplication.translate
-            self.model_found_lines.set_header(
-                [_translate('main window', 'Frequency [MHz]')] +
-                [_translate('main window', 'Voltage [V]')] * (self.table_found_lines.horizontalHeader().count() - 1))
-            for i in range(self.table_found_lines.horizontalHeader().count()):
-                self.table_found_lines.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
-        self.model_found_lines.modelReset.connect(adjust_columns)
-
     def closeEvent(self, event):
         """ senseless joke in the loop """
         _translate = QCoreApplication.translate
@@ -349,54 +300,6 @@ class App(QMainWindow):
                 event.accept()
             elif close_code == QMessageBox.Cancel:
                 event.ignore()
-        return
-
-    def load_config(self):
-        self._loading = True
-        # common settings
-        if self.settings.contains('windowGeometry'):
-            self.restoreGeometry(self.settings.value('windowGeometry', ''))
-        else:
-            window_frame = self.frameGeometry()
-            desktop_center = QDesktopWidget().availableGeometry().center()
-            window_frame.moveCenter(desktop_center)
-            self.move(window_frame.topLeft())
-        _v = self.settings.value('windowState', '')
-        if isinstance(_v, str):
-            self.restoreState(_v.encode())
-        else:
-            self.restoreState(_v)
-
-        min_freq = self.get_config_value('frequency', 'lower',
-                                         0.0,
-                                         float)
-        max_freq = self.get_config_value('frequency', 'upper',
-                                         1e12,
-                                         float)
-        self.spin_frequency_min.setValue(min_freq)
-        self.spin_frequency_max.setValue(max_freq)
-        self.spin_frequency_min.setMaximum(max_freq)
-        self.spin_frequency_max.setMinimum(min_freq)
-        self.spin_frequency_span.setValue(max_freq - min_freq)
-        self.spin_frequency_center.setValue(0.5 * (max_freq + min_freq))
-        self.plot.set_frequency_range(lower_value=min_freq, upper_value=max_freq)
-        self.check_frequency_persists.setChecked(self.get_config_value('frequency', 'persists', False, bool))
-
-        min_voltage: float = self.get_config_value('voltage', 'lower', pg.np.nan, float)
-        max_voltage: float = self.get_config_value('voltage', 'upper', pg.np.nan, float)
-        if not pg.np.isnan(min_voltage):
-            self.spin_voltage_min.setValue(min_voltage)
-            self.spin_voltage_max.setMinimum(min_voltage)
-        if not pg.np.isnan(max_voltage):
-            self.spin_voltage_max.setValue(max_voltage)
-            self.spin_voltage_min.setMaximum(max_voltage)
-        if not pg.np.isnan(min_voltage) and not pg.np.isnan(max_voltage):
-            self.plot.set_voltage_range(lower_value=min_voltage, upper_value=max_voltage)
-        self.check_voltage_persists.setChecked(self.get_config_value('voltage', 'persists', False, bool))
-
-        self.spin_threshold.setValue(self.get_config_value('lineSearch', 'threshold', 12.0, float))
-
-        self._loading = False
         return
 
     def get_config_value(self, section: str, key: str, default, _type):
@@ -421,195 +324,6 @@ class App(QMainWindow):
         self.settings.setValue(key, value)
         self.settings.endGroup()
 
-    def on_data_loaded(self, limits):
-        if self._loading:
-            return
-        if limits is not None:
-            min_freq, max_freq, min_voltage, max_voltage = limits
-            self.set_config_value('frequency', 'lower', min_freq)
-            self.set_config_value('frequency', 'upper', max_freq)
-            self.set_config_value('voltage', 'lower', min_voltage)
-            self.set_config_value('voltage', 'upper', max_voltage)
-            self._loading = True
-            if not self.check_frequency_persists.isChecked():
-                self.spin_frequency_min.setMaximum(max_freq)
-                self.spin_frequency_max.setMinimum(min_freq)
-                self.spin_frequency_min.setValue(min_freq)
-                self.spin_frequency_max.setValue(max_freq)
-                self.spin_frequency_span.setValue(max_freq - min_freq)
-                self.spin_frequency_center.setValue(0.5 * (max_freq + min_freq))
-            else:
-                self.spin_frequency_min.setMaximum(max(max_freq, self.spin_frequency_min.value()))
-                self.spin_frequency_max.setMinimum(min(min_freq, self.spin_frequency_max.value()))
-            if not self.check_voltage_persists.isChecked():
-                self.spin_voltage_min.setMaximum(max_voltage)
-                self.spin_voltage_max.setMinimum(min_voltage)
-                self.spin_voltage_min.setValue(min_voltage)
-                self.spin_voltage_max.setValue(max_voltage)
-            else:
-                self.spin_voltage_min.setMaximum(max(max_voltage, self.spin_voltage_min.value()))
-                self.spin_voltage_max.setMinimum(min(min_voltage, self.spin_voltage_max.value()))
-            self._loading = False
-            self.plot.set_frequency_range(lower_value=self.spin_frequency_min.value(),
-                                          upper_value=self.spin_frequency_max.value())
-            self.plot.set_voltage_range(lower_value=self.spin_voltage_min.value(),
-                                        upper_value=self.spin_voltage_max.value())
-
-    def on_points_selected(self, rows: List[int]):
-        self.table_found_lines.clearSelection()
-        sm: QItemSelectionModel = self.table_found_lines.selectionModel()
-        row: int
-        for row in rows:
-            index: QModelIndex = self.model_found_lines.index(row, 0)
-            sm.select(index, QItemSelectionModel.Select | QItemSelectionModel.Rows)
-            self.table_found_lines.scrollTo(index)
-
-    def spin_frequency_min_changed(self, new_value):
-        if self._loading:
-            return
-        self.set_config_value('frequency', 'lower', new_value)
-        self._loading = True
-        self.spin_frequency_max.setMinimum(new_value)
-        self.spin_frequency_center.setValue(0.5 * (new_value + self.spin_frequency_max.value()))
-        self.spin_frequency_span.setValue(self.spin_frequency_max.value() - new_value)
-        self.plot.set_frequency_range(lower_value=new_value, upper_value=self.spin_frequency_max.value())
-        self._loading = False
-
-    def spin_frequency_max_changed(self, new_value):
-        if self._loading:
-            return
-        self.set_config_value('frequency', 'upper', new_value)
-        self._loading = True
-        self.spin_frequency_min.setMaximum(new_value)
-        self.spin_frequency_center.setValue(0.5 * (self.spin_frequency_min.value() + new_value))
-        self.spin_frequency_span.setValue(new_value - self.spin_frequency_min.value())
-        self.plot.set_frequency_range(lower_value=self.spin_frequency_min.value(), upper_value=new_value)
-        self._loading = False
-
-    def spin_frequency_center_changed(self, new_value):
-        if self._loading:
-            return
-        freq_span = self.spin_frequency_span.value()
-        min_freq = new_value - 0.5 * freq_span
-        max_freq = new_value + 0.5 * freq_span
-        self._loading = True
-        self.set_config_value('frequency', 'lower', min_freq)
-        self.set_config_value('frequency', 'upper', max_freq)
-        self.spin_frequency_min.setMaximum(max_freq)
-        self.spin_frequency_max.setMinimum(min_freq)
-        self.spin_frequency_min.setValue(min_freq)
-        self.spin_frequency_max.setValue(max_freq)
-        self.plot.set_frequency_range(upper_value=max_freq, lower_value=min_freq)
-        self._loading = False
-
-    def spin_frequency_span_changed(self, new_value):
-        if self._loading:
-            return
-        freq_center = self.spin_frequency_center.value()
-        min_freq = freq_center - 0.5 * new_value
-        max_freq = freq_center + 0.5 * new_value
-        self._loading = True
-        self.set_config_value('frequency', 'lower', min_freq)
-        self.set_config_value('frequency', 'upper', max_freq)
-        self.spin_frequency_min.setMaximum(max_freq)
-        self.spin_frequency_max.setMinimum(min_freq)
-        self.spin_frequency_min.setValue(min_freq)
-        self.spin_frequency_max.setValue(max_freq)
-        self.plot.set_frequency_range(upper_value=max_freq, lower_value=min_freq)
-        self._loading = False
-
-    def button_zoom_x_clicked(self, factor):
-        if self._loading:
-            return
-        freq_span = self.spin_frequency_span.value() * factor
-        freq_center = self.spin_frequency_center.value()
-        min_freq = freq_center - 0.5 * freq_span
-        max_freq = freq_center + 0.5 * freq_span
-        self._loading = True
-        self.set_config_value('frequency', 'lower', min_freq)
-        self.set_config_value('frequency', 'upper', max_freq)
-        self.spin_frequency_min.setMaximum(max_freq)
-        self.spin_frequency_max.setMinimum(min_freq)
-        self.spin_frequency_min.setValue(min_freq)
-        self.spin_frequency_max.setValue(max_freq)
-        self.spin_frequency_span.setValue(freq_span)
-        self.plot.set_frequency_range(upper_value=max_freq, lower_value=min_freq)
-        self._loading = False
-
-    def button_move_x_clicked(self, shift):
-        if self._loading:
-            return
-        freq_span = self.spin_frequency_span.value()
-        freq_center = self.spin_frequency_center.value() + shift
-        min_freq = freq_center - 0.5 * freq_span
-        max_freq = freq_center + 0.5 * freq_span
-        self._loading = True
-        self.set_config_value('frequency', 'lower', min_freq)
-        self.set_config_value('frequency', 'upper', max_freq)
-        self.spin_frequency_min.setMaximum(max_freq)
-        self.spin_frequency_max.setMinimum(min_freq)
-        self.spin_frequency_min.setValue(min_freq)
-        self.spin_frequency_max.setValue(max_freq)
-        self.spin_frequency_center.setValue(freq_center)
-        self.plot.set_frequency_range(upper_value=max_freq, lower_value=min_freq)
-        self._loading = False
-
-    def check_frequency_persists_toggled(self, new_value):
-        if self._loading:
-            return
-        self.set_config_value('frequency', 'persists', new_value)
-
-    def spin_voltage_min_changed(self, new_value):
-        if self._loading:
-            return
-        self.set_config_value('voltage', 'lower', new_value)
-        self._loading = True
-        self.spin_voltage_max.setMinimum(new_value)
-        self.plot.set_voltage_range(lower_value=new_value, upper_value=self.spin_voltage_max.value())
-        self._loading = False
-
-    def spin_voltage_max_changed(self, new_value):
-        if self._loading:
-            return
-        self.set_config_value('voltage', 'upper', new_value)
-        self._loading = True
-        self.spin_voltage_min.setMaximum(new_value)
-        self.plot.set_voltage_range(lower_value=self.spin_voltage_min.value(), upper_value=new_value)
-        self._loading = False
-
-    def button_zoom_y_clicked(self, factor):
-        if self._loading:
-            return
-        min_voltage = self.spin_voltage_min.value()
-        max_voltage = self.spin_voltage_max.value()
-        voltage_span = abs(max_voltage - min_voltage) * factor
-        voltage_center = (max_voltage + min_voltage) * 0.5
-        min_voltage = voltage_center - 0.5 * voltage_span
-        max_voltage = voltage_center + 0.5 * voltage_span
-        self._loading = True
-        self.set_config_value('voltage', 'lower', min_voltage)
-        self.set_config_value('voltage', 'upper', max_voltage)
-        self.spin_voltage_min.setMaximum(max_voltage)
-        self.spin_voltage_max.setMinimum(min_voltage)
-        self.spin_voltage_min.setValue(min_voltage)
-        self.spin_voltage_max.setValue(max_voltage)
-        self.plot.set_voltage_range(upper_value=max_voltage, lower_value=min_voltage)
-        self._loading = False
-
-    def check_voltage_persists_toggled(self, new_value):
-        if self._loading:
-            return
-        self.set_config_value('voltage', 'persists', new_value)
-
-    def on_button_find_lines_clicked(self):
-        self.status_bar.showMessage(f'Found {self.plot.find_lines(self.spin_threshold.value())} lines')
-
-    def prev_found_line(self):
-        self.spin_frequency_center.setValue(self.plot.prev_found_line(self.spin_frequency_center.value()))
-
-    def next_found_line(self):
-        self.spin_frequency_center.setValue(self.plot.next_found_line(self.spin_frequency_center.value()))
-
     def open_file_dialog(self, _filter=''):
         directory = self.get_config_value('open', 'location', '', str)
         # native dialog misbehaves when running inside snap but Qt dialog is tortoise-like in NT
@@ -620,34 +334,18 @@ class App(QMainWindow):
         self.set_config_value('open', 'location', os.path.split(filename)[0])
         return filename, _filter
 
-    def on_xlim_changed(self, xlim: List[float]):
-        if not hasattr(self, 'plot'):
-            return
-        min_freq, max_freq = xlim
-        self.set_config_value('frequency', 'lower', min_freq)
-        self.set_config_value('frequency', 'upper', max_freq)
-        self._loading = True
-        self.spin_frequency_min.setValue(min_freq)
-        self.spin_frequency_max.setValue(max_freq)
-        self.spin_frequency_span.setValue(max_freq - min_freq)
-        self.spin_frequency_center.setValue(0.5 * (max_freq + min_freq))
-        self.spin_frequency_min.setMaximum(max_freq)
-        self.spin_frequency_max.setMinimum(min_freq)
-        self._loading = False
-        self.plot.set_frequency_range(lower_value=self.spin_frequency_min.value(),
-                                      upper_value=self.spin_frequency_max.value())
-
-    def on_ylim_changed(self, ylim: List[float]):
-        if not hasattr(self, 'plot'):
-            return
-        min_voltage, max_voltage = ylim
-        self.set_config_value('voltage', 'lower', min_voltage)
-        self.set_config_value('voltage', 'upper', max_voltage)
-        self._loading = True
-        self.spin_voltage_min.setValue(min_voltage)
-        self.spin_voltage_max.setValue(max_voltage)
-        self.spin_voltage_min.setMaximum(max_voltage)
-        self.spin_voltage_max.setMinimum(min_voltage)
-        self._loading = False
-        self.plot.set_voltage_range(lower_value=self.spin_voltage_min.value(),
-                                    upper_value=self.spin_voltage_max.value())
+    def save_file_dialog(self, _filter: str = '') -> Tuple[str, str]:
+        directory: str = self.get_config_value('save', 'location', '', str)
+        initial_filter: str = self.get_config_value('save', 'filter', '', str)
+        # native dialog misbehaves when running inside snap but Qt dialog is tortoise-like in NT
+        options: QFileDialog.Option = QFileDialog.DontUseNativeDialog if os.name != 'nt' else QFileDialog.DontUseSheet
+        filename: str
+        _filter: str
+        filename, _filter = QFileDialog.getSaveFileName(filter=_filter,
+                                                        directory=directory,
+                                                        initialFilter=initial_filter,
+                                                        options=options)
+        if os.path.split(filename)[0]:
+            self.set_config_value('save', 'location', os.path.split(filename)[0])
+        self.set_config_value('save', 'filter', _filter)
+        return filename, _filter
