@@ -681,9 +681,11 @@ class App(GUI):
 
         return found_lines.size
 
-    def prev_found_line(self, init_frequency: float):
+    def prev_found_line(self) -> None:
         if self.model_signal.size < 2:
-            return init_frequency
+            return
+
+        init_frequency: float = self.spin_frequency_center.value()
 
         prev_line_freq: np.ndarray = np.full(len(self.automatically_found_lines), np.nan)
         index: int
@@ -701,9 +703,11 @@ class App(GUI):
         if prev_line_freq.size:
             self.spin_frequency_center.setValue(prev_line_freq[np.argmin(init_frequency - prev_line_freq)])
 
-    def next_found_line(self, init_frequency: float):
+    def next_found_line(self) -> None:
         if self.model_signal.size < 2:
-            return init_frequency
+            return
+
+        init_frequency: float = self.spin_frequency_center.value()
 
         next_line_freq: np.ndarray = np.full(len(self.automatically_found_lines), np.nan)
         index: int
