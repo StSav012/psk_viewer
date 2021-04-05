@@ -99,7 +99,7 @@ class GUI(QMainWindow):
         # plot
         self.figure: pg.PlotWidget = pg.PlotWidget(self.central_widget)
         self.figure.setFocusPolicy(Qt.ClickFocus)
-        self.plot_toolbar = NavigationToolbar(self, parameters_icon='configure')
+        self.plot_toolbar: NavigationToolbar = NavigationToolbar(self, parameters_icon='configure')
         self.legend: pg.GraphicsLayoutWidget = pg.GraphicsLayoutWidget()
         self.box_legend: QDockWidget = QDockWidget(self.central_widget)
         self.box_legend.setObjectName('box_legend')
