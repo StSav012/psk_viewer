@@ -8,6 +8,18 @@ import numpy as np
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon, QPalette, QPixmap
 
+try:
+    from typing import Final
+except ImportError:
+    class _Final:
+        def __getitem__(self, item):
+            return item
+
+
+    Final = _Final()
+
+VOLTAGE_GAIN: Final[float] = 5.0
+
 
 # https://www.reddit.com/r/learnpython/comments/4kjie3/how_to_include_gui_images_with_pyinstaller/d3gjmom
 def resource_path(relative_path: str) -> str:
@@ -72,55 +84,82 @@ def load_data_fs(filename: str) -> Tuple[np.ndarray, np.ndarray]:
     return np.empty(0), np.empty(0)
 
 
-def load_data_scandat(filename: str) -> Tuple[np.ndarray, np.ndarray]:
+def load_data_scandat(filename: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
     with open(filename, 'rt') as f_in:
         lines: List[str] = f_in.readlines()
 
     min_frequency: float
     frequency_step: float
+    frequency_jump: float
     x: np.ndarray
     y: np.ndarray
+    bias_offset: float
+    bias: np.ndarray
+    cell_length: float
 
     if lines[0].startswith('*****'):
         min_frequency = float(lines[lines.index(next(filter(lambda line: line.startswith('F(start) [MHz]:'),
                                                             lines))) + 1]) * 1e3
         frequency_step = float(lines[lines.index(next(filter(lambda line: line.startswith('F(stept) [MHz]:'),
                                                              lines))) + 1]) * 1e3
+        frequency_jump = float(lines[lines.index(next(filter(lambda line: line.startswith('F(jump) [MHz]:'),
+                                                             lines))) + 1]) * 1e3
+        bias_offset = float(lines[lines.index(next(filter(lambda line: line.startswith('U - shift:'), lines))) + 1])
+        cell_length = float(lines[lines.index(next(filter(lambda line: line.startswith('Length of Cell:'),
+                                                          lines))) + 1])
         lines = lines[lines.index(next(filter(lambda line: line.startswith('Finish'),
                                               lines))) + 1:-2]
-        y = np.array([float(line.split()[0]) for line in lines])
+        y = np.array([float(line.split()[0]) for line in lines]) * 1e-3
+        bias = np.array([bias_offset - float(line.split()[1]) for line in lines])
     elif lines[0].startswith('   Spectrometer(PhSw)-2014   '):
         min_frequency = float(lines[14]) * 1e3
         frequency_step = float(lines[16]) * 1e3
+        frequency_jump = float(lines[2]) * 1e3
+        cell_length = float(lines[25])
+        bias_offset = float(lines[26])
         lines = lines[32:]
         if lines[-1] == '0':
             lines = lines[:-2]
-        y = np.array([float(line) for line in lines[::2]])
+        y = np.array([float(line) for line in lines[::2]]) * 1e-3
+        bias = np.array([bias_offset - float(line) for line in lines[1::2]])
     elif lines[0].startswith('   Spectrometer(PhSw)   '):
         min_frequency = float(lines[12]) * 1e3
         frequency_step = float(lines[14]) * 1e3
+        frequency_jump = float(lines[2]) * 1e3
+        cell_length = float(lines[23])
+        bias_offset = float(lines[24])
         lines = lines[30:]
         if lines[-1].split()[-1] == '0':
             lines = lines[:-1]
-        y = np.array([float(line.split()[0]) for line in lines])
+        y = np.array([float(line.split()[0]) for line in lines]) * 1e-3
+        bias = np.array([bias_offset - float(line.split()[1]) for line in lines])
     else:
         min_frequency = float(lines[13]) * 1e3
         frequency_step = float(lines[15]) * 1e3
+        frequency_jump = float(lines[2]) * 1e3
+        cell_length = float(lines[24])
+        bias_offset = float(lines[25])
         lines = lines[31:]
-        y = np.array([float(line) for line in lines[::2]])
+        y = np.array([float(line) for line in lines[::2]]) * 1e-3
+        bias = np.array([bias_offset - float(line) for line in lines[1::2]])
     x = np.arange(y.size, dtype=float) * frequency_step + min_frequency
-    return x, y
+    return x, y, y / bias / cell_length / VOLTAGE_GAIN, frequency_jump
 
 
-def load_data_csv(filename: str) -> Tuple[np.ndarray, np.ndarray]:
+def load_data_csv(filename: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
     if filename.casefold().endswith(('.csv', '.conf')):
         fn: str = os.path.splitext(filename)[0]
     else:
         fn: str = filename
-    if os.path.exists(fn + '.csv'):
+    if os.path.exists(fn + '.csv') and os.path.exists(fn + '.conf'):
         with open(fn + '.csv', 'rt') as f_in:
             lines: List[str] = list(filter(lambda line: line[0].isdigit(), f_in.readlines()))
         x: np.ndarray = np.array([float(line.split()[1]) for line in lines]) * 1e6
-        y: np.ndarray = np.array([float(line.split()[2]) for line in lines])
-        return x, y
-    return np.empty(0), np.empty(0)
+        y: np.ndarray = np.array([float(line.split()[2]) for line in lines]) * 1e-3
+        g: np.ndarray = np.array([float(line.split()[4]) for line in lines])
+        with open(fn + '.conf', 'rt') as f_in:
+            frequency_jump: float = float(next(
+                filter(lambda line: line.startswith('F(jump) [MHz]:'), f_in.readlines())
+            ).split()[-1]) * 1e3
+        return x, y, g, frequency_jump
+    return np.empty(0), np.empty(0), np.empty(0), np.nan

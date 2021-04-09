@@ -1,7 +1,7 @@
 ﻿# -*- coding: utf-8 -*-
 
 import os
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, Iterable, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -13,6 +13,8 @@ from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent
 
 import detection
 from gui import GUI
+from preferences import Preferences
+from toolbar import NavigationToolbar
 from utils import copy_to_clipboard, load_data_fs, load_data_scandat, load_data_csv, resource_path
 
 try:
@@ -28,9 +30,69 @@ except ImportError:
 pg.ViewBox.suggestPadding = lambda *_: 0.0
 
 
+def tick_strings(self, values, scale, spacing):
+    """ improve formatting of `AxisItem.tickStrings` """
+
+    if self.logMode:
+        return self.logTickStrings(values, scale, spacing)
+
+    def superscript(number: str) -> str:
+        ss_dict = {
+            '0': '⁰',
+            '1': '¹',
+            '2': '²',
+            '3': '³',
+            '4': '⁴',
+            '5': '⁵',
+            '6': '⁶',
+            '7': '⁷',
+            '8': '⁸',
+            '9': '⁹',
+            '-': '⁻'
+        }
+        for d in ss_dict:
+            number = number.replace(d, ss_dict[d])
+        return number
+
+    places: int = max(0, int(np.ceil(-np.log10(spacing * scale))))
+    strings: List[str] = []
+    for v in values:
+        vs = v * scale
+        if abs(vs) < .001 or abs(vs) >= 10000:
+            v_str: str = f'{vs:g}'.casefold()
+            while 'e-0' in v_str:
+                v_str = v_str.replace('e-0', 'e-')
+            v_str = v_str.replace('+', '')
+            if 'e' in v_str:
+                e_pos: int = v_str.find('e')
+                man: str = v_str[:e_pos]
+                exp: str = superscript(v_str[e_pos + 1:])
+                v_str = man + '×10' + exp
+            v_str = v_str.replace('-', '−')
+        else:
+            v_str: str = f'{vs:0.{places}f}'
+        strings.append(v_str)
+    return strings
+
+
+pg.AxisItem.tickStrings = tick_strings
+
+
+class PlotDataItem(pg.PlotDataItem):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.voltage_data: np.ndarray = np.empty(0)
+        self.gamma_data: np.ndarray = np.empty(0)
+
+
 class App(GUI):
     PSK_DATA_MODE: Final[int] = 1
+    PSK_WITH_JUMP_DATA_MODE: Final[int] = 2
     FS_DATA_MODE: Final[int] = -1
+
+    _GAMMA_DATA: Final[str] = 'gammaData'
+    _VOLTAGE_DATA: Final[str] = 'voltageData'
 
     def __init__(self, flags=Qt.WindowFlags()):
         super().__init__(flags=flags)
@@ -39,26 +101,28 @@ class App(GUI):
 
         self._is_dark: bool = QPalette().color(QPalette.Window).lightness() < 128
 
-        self.legend_item: Optional[pg.LegendItem] = None
+        self.legend_item: pg.LegendItem = pg.LegendItem(offset=(0, 0))
+        self.plot_toolbar: NavigationToolbar = NavigationToolbar(self, parameters_icon='configure')
 
         self._canvas: pg.PlotItem = self.figure.getPlotItem()
         self._view_all_action: QAction = QAction()
 
-        self._plot_line: pg.PlotDataItem = self.figure.plot(np.empty(0), name='', pen=self.settings.line_color)
-        self._plot_line.yData = np.empty(0)
+        self._plot_line: PlotDataItem = self.figure.plot(np.empty(0), name='', pen=self.settings.line_color)
 
         self._ignore_scale_change: bool = False
 
         try:
-            self.model_signal: np.ndarray = np.loadtxt(resource_path('averaged fs signal filtered.csv'))
+            self.model_signal: np.ndarray = pd.read_csv(resource_path('averaged fs signal filtered.csv')).values
         except (OSError, BlockingIOError):
             self.model_signal: np.ndarray = np.empty(0)
-        self.user_found_lines: pg.PlotDataItem = \
-            self._canvas.scatterPlot(np.empty(0),
-                                     pen=self.settings.line_color, brush=self.settings.line_color)
-        self.automatically_found_lines: pg.PlotDataItem = \
-            self._canvas.scatterPlot(np.empty(0),
-                                     pen=self.settings.line_color, brush=self.settings.line_color)
+            self.box_find_lines.setDisabled(True)
+            self.box_find_lines.hide()
+        self.user_found_lines: PlotDataItem = \
+            self._canvas.scatterPlot(np.empty(0), pen=self.settings.line_color, brush=self.settings.line_color)
+        self.automatically_found_lines: PlotDataItem = \
+            self._canvas.scatterPlot(np.empty(0), pen=self.settings.line_color, brush=self.settings.line_color)
+
+        self._data_type: str = self._VOLTAGE_DATA
 
         # cross hair
         self._crosshair_v_line = pg.InfiniteLine(angle=90, movable=False)
@@ -90,16 +154,15 @@ class App(GUI):
                 ax: pg.AxisItem = ax_d['item']
                 ax.setPen('k')
                 ax.setTextPen('k')
-        if self.legend is not None:
-            self.legend_item = pg.LegendItem(offset=(0, 0))
-            self.legend.setCentralItem(self.legend_item)
-            if self._is_dark:
-                self.legend.setBackground(QBrush(pg.mkColor(0, 0, 0, 0)))
-                self.legend_item.setLabelTextColor(255, 255, 255, 255)
-            else:
-                self.legend.setBackground(QBrush(pg.mkColor(255, 255, 255, 0)))
-                self.legend_item.setLabelTextColor(0, 0, 0, 255)
-            # self._legend_box.sceneObj.sigMouseClicked.connect(self.on_legend_click)
+
+        self.legend.setCentralItem(self.legend_item)
+        if self._is_dark:
+            self.legend.setBackground(QBrush(pg.mkColor(0, 0, 0, 0)))
+            self.legend_item.setLabelTextColor(255, 255, 255, 255)
+        else:
+            self.legend.setBackground(QBrush(pg.mkColor(255, 255, 255, 0)))
+            self.legend_item.setLabelTextColor(0, 0, 0, 255)
+        # self._legend_box.sceneObj.sigMouseClicked.connect(self.on_legend_click)
 
         self.figure.plotItem.addItem(self._crosshair_v_line, ignoreBounds=True)
         self.figure.plotItem.addItem(self._crosshair_h_line, ignoreBounds=True)
@@ -131,7 +194,8 @@ class App(GUI):
         self.figure.setLabel('left',
                              text=_translate("plot axes labels", 'Voltage'),
                              units=_translate('unit', 'V'),
-                             unitPrefix=_translate('unit prefix', 'm'))
+                             # unitPrefix=_translate('unit prefix', 'm')
+                             )
 
         self.plot_toolbar.open_action.setIconText(_translate("plot toolbar action", "Open"))
         self.plot_toolbar.open_action.setToolTip(_translate("plot toolbar action", "Load spectrometer data"))
@@ -141,6 +205,8 @@ class App(GUI):
                                                                       "Calculate second derivative"))
         self.plot_toolbar.differentiate_action.setToolTip(_translate("plot toolbar action",
                                                                      "Calculate finite-step second derivative"))
+        self.plot_toolbar.switch_data_action.setIconText(_translate("plot toolbar action", "Switch Y data"))
+        self.plot_toolbar.switch_data_action.setToolTip(_translate("plot toolbar action", "Switch Y data"))
         self.plot_toolbar.save_data_action.setIconText(_translate("plot toolbar action", "Save Data"))
         self.plot_toolbar.save_data_action.setToolTip(_translate("plot toolbar action", "Export the visible data"))
         self.plot_toolbar.copy_figure_action.setIconText(_translate("plot toolbar action", "Copy Figure"))
@@ -184,34 +250,13 @@ class App(GUI):
         else:
             self.restoreState(_v)
 
-        min_freq = self.get_config_value('frequency', 'lower',
-                                         0.0,
-                                         float)
-        max_freq = self.get_config_value('frequency', 'upper',
-                                         1e12,
-                                         float)
-        self.spin_frequency_min.setValue(min_freq)
-        self.spin_frequency_max.setValue(max_freq)
-        self.spin_frequency_min.setMaximum(max_freq)
-        self.spin_frequency_max.setMinimum(min_freq)
-        self.spin_frequency_span.setValue(max_freq - min_freq)
-        self.spin_frequency_center.setValue(0.5 * (max_freq + min_freq))
-        self.set_frequency_range(lower_value=min_freq, upper_value=max_freq)
         self.check_frequency_persists.setChecked(self.get_config_value('frequency', 'persists', False, bool))
-
-        min_voltage: float = self.get_config_value('voltage', 'lower', pg.np.nan, float)
-        max_voltage: float = self.get_config_value('voltage', 'upper', pg.np.nan, float)
-        if not pg.np.isnan(min_voltage):
-            self.spin_voltage_min.setValue(min_voltage)
-            self.spin_voltage_max.setMinimum(min_voltage)
-        if not pg.np.isnan(max_voltage):
-            self.spin_voltage_max.setValue(max_voltage)
-            self.spin_voltage_min.setMaximum(max_voltage)
-        if not pg.np.isnan(min_voltage) and not pg.np.isnan(max_voltage):
-            self.set_voltage_range(lower_value=min_voltage, upper_value=max_voltage)
         self.check_voltage_persists.setChecked(self.get_config_value('voltage', 'persists', False, bool))
 
         self.spin_threshold.setValue(self.get_config_value('lineSearch', 'threshold', 12.0, float))
+
+        self._data_type = self.get_config_value('display', 'unit', self._VOLTAGE_DATA, str)
+        self.plot_toolbar.switch_data_action.setChecked(self._data_type == self._GAMMA_DATA)
 
         self._loading = False
         return
@@ -220,13 +265,14 @@ class App(GUI):
         self.plot_toolbar.open_action.triggered.connect(self.load_data)
         self.plot_toolbar.clear_action.triggered.connect(self.clear)
         self.plot_toolbar.differentiate_action.triggered.connect(self.calculate_second_derivative)
+        self.plot_toolbar.switch_data_action.toggled.connect(self.display_gamma_or_voltage)
         self.plot_toolbar.save_data_action.triggered.connect(self.save_data)
         self.plot_toolbar.copy_figure_action.triggered.connect(self.copy_figure)
         self.plot_toolbar.save_figure_action.triggered.connect(self.save_figure)
         self.plot_toolbar.copy_trace_action.triggered.connect(self.copy_found_lines)
         self.plot_toolbar.save_trace_action.triggered.connect(self.save_found_lines)
         self.plot_toolbar.clear_trace_action.triggered.connect(self.clear_found_lines)
-        self.plot_toolbar.configure_action.triggered.connect(self.plot_toolbar.edit_parameters)
+        self.plot_toolbar.configure_action.triggered.connect(self.edit_parameters)
 
         self.spin_frequency_min.valueChanged.connect(self.spin_frequency_min_changed)
         self.spin_frequency_max.valueChanged.connect(self.spin_frequency_max_changed)
@@ -259,15 +305,17 @@ class App(GUI):
 
         def adjust_columns():
             _translate = QCoreApplication.translate
-            self.model_found_lines.set_header(
+            self.model_found_lines.header = (
                 [_translate('main window', 'Frequency [MHz]')] +
-                [_translate('main window', 'Voltage [V]')] * (self.table_found_lines.horizontalHeader().count() - 1))
+                ([_translate('main window', 'Voltage [mV]'), _translate('main window', 'Absorption [cm⁻¹ × 10⁻⁶]')]
+                 * (self.table_found_lines.horizontalHeader().count() - 1))
+            )
             for i in range(self.table_found_lines.horizontalHeader().count()):
                 self.table_found_lines.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
 
         self.model_found_lines.modelReset.connect(adjust_columns)
 
-        line: pg.PlotDataItem
+        line: PlotDataItem
         for line in (self.automatically_found_lines, self.user_found_lines):
             line.sigPointsClicked.connect(self.on_points_clicked)
 
@@ -275,12 +323,8 @@ class App(GUI):
 
         self.figure.sceneObj.sigMouseClicked.connect(self.on_plot_clicked)
 
-    def on_xlim_changed(self, xlim: List[float]):
-        if not hasattr(self, 'plot'):
-            return
-        min_freq, max_freq = xlim
-        self.set_config_value('frequency', 'lower', min_freq)
-        self.set_config_value('frequency', 'upper', max_freq)
+    def on_xlim_changed(self, xlim: Iterable[float]):
+        min_freq, max_freq = min(xlim), max(xlim)
         self._loading = True
         self.spin_frequency_min.setValue(min_freq)
         self.spin_frequency_max.setValue(max_freq)
@@ -292,22 +336,18 @@ class App(GUI):
         self.set_frequency_range(lower_value=self.spin_frequency_min.value(),
                                  upper_value=self.spin_frequency_max.value())
 
-    def on_ylim_changed(self, ylim: List[float]):
-        if not hasattr(self, 'plot'):
-            return
-        min_voltage, max_voltage = ylim
-        self.set_config_value('voltage', 'lower', min_voltage)
-        self.set_config_value('voltage', 'upper', max_voltage)
+    def on_ylim_changed(self, ylim: Iterable[float]):
+        min_voltage, max_voltage = min(ylim), max(ylim)
         self._loading = True
         self.spin_voltage_min.setValue(min_voltage)
         self.spin_voltage_max.setValue(max_voltage)
         self.spin_voltage_min.setMaximum(max_voltage)
         self.spin_voltage_max.setMinimum(min_voltage)
         self._loading = False
-        self.set_voltage_range(lower_value=self.spin_voltage_min.value(),
-                               upper_value=self.spin_voltage_max.value())
+        self.set_voltage_range(lower_value=min_voltage,
+                               upper_value=max_voltage)
 
-    def on_points_clicked(self, item: pg.PlotDataItem, points: List[pg.SpotItem], ev: MouseClickEvent):
+    def on_points_clicked(self, item: pg.PlotDataItem, points: Iterable[pg.SpotItem], ev: MouseClickEvent):
         if item.xData is None or item.yData is None:
             return
         if not self.trace_mode:
@@ -322,15 +362,31 @@ class App(GUI):
 
             # update the table
             if self.user_found_lines.xData is not None and self.user_found_lines.yData is not None:
-                self.model_found_lines.set_data(np.column_stack((
-                    np.concatenate((self.automatically_found_lines.xData, self.user_found_lines.xData)),
-                    np.concatenate((self.automatically_found_lines.yData, self.user_found_lines.yData)),
-                )))
+                if self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE):
+                    self.model_found_lines.set_data(np.column_stack((
+                        np.concatenate((self.automatically_found_lines.xData, self.user_found_lines.xData)),
+                        np.concatenate((self.automatically_found_lines.voltage_data,
+                                        self.user_found_lines.voltage_data)),
+                        np.concatenate((self.automatically_found_lines.gamma_data, self.user_found_lines.gamma_data)),
+                    )))
+                else:
+                    self.model_found_lines.set_data(np.column_stack((
+                        np.concatenate((self.automatically_found_lines.xData, self.user_found_lines.xData)),
+                        np.concatenate((self.automatically_found_lines.voltage_data,
+                                        self.user_found_lines.voltage_data)),
+                    )))
             else:
-                self.model_found_lines.set_data(np.column_stack((
-                    self.automatically_found_lines.xData,
-                    self.automatically_found_lines.yData,
-                )))
+                if self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE):
+                    self.model_found_lines.set_data(np.column_stack((
+                        self.automatically_found_lines.xData,
+                        self.automatically_found_lines.voltage_data,
+                    )))
+                else:
+                    self.model_found_lines.set_data(np.column_stack((
+                        self.automatically_found_lines.xData,
+                        self.automatically_found_lines.voltage_data,
+                        self.automatically_found_lines.gamma_data,
+                    )))
 
             self.plot_toolbar.copy_trace_action.setEnabled(not self.model_found_lines.is_empty)
             self.plot_toolbar.save_trace_action.setEnabled(not self.model_found_lines.is_empty)
@@ -382,36 +438,66 @@ class App(GUI):
                     self.user_found_lines.setData(
                         [self._plot_line.xData[closest_point_index]], [self._plot_line.yData[closest_point_index]]
                     )
+                    self.user_found_lines.voltage_data = np.array([self._plot_line.voltage_data[closest_point_index]])
+                    self.user_found_lines.gamma_data = np.array([self._plot_line.gamma_data[closest_point_index]])
                 else:
                     # avoid the same point to be marked several times
-                    if np.any(
+                    if self._data_type == self._VOLTAGE_DATA and np.any(
                             (self.user_found_lines.xData == self._plot_line.xData[closest_point_index])
                             &
-                            (self.user_found_lines.yData == self._plot_line.yData[closest_point_index])
+                            (self.user_found_lines.voltage_data == self._plot_line.yData[closest_point_index])
                     ):
                         return
-                    if np.any(
+                    if self._data_type == self._GAMMA_DATA and np.any(
+                            (self.user_found_lines.xData == self._plot_line.xData[closest_point_index])
+                            &
+                            (self.user_found_lines.gamma_data == self._plot_line.yData[closest_point_index])
+                    ):
+                        return
+                    if self._data_type == self._VOLTAGE_DATA and np.any(
                             (self.automatically_found_lines.xData == self._plot_line.xData[closest_point_index])
                             &
-                            (self.automatically_found_lines.yData == self._plot_line.yData[closest_point_index])
+                            (self.automatically_found_lines.voltage_data == self._plot_line.yData[closest_point_index])
                     ):
                         return
-                    self.user_found_lines.setData(
-                        np.append(self.user_found_lines.xData,
-                                  self._plot_line.xData[closest_point_index]),
-                        np.append(self.user_found_lines.yData,
-                                  self._plot_line.yData[closest_point_index])
-                    )
-                self.model_found_lines.append_data([self._plot_line.xData[closest_point_index],
-                                                    self._plot_line.yData[closest_point_index]])
+                    if self._data_type == self._GAMMA_DATA and np.any(
+                            (self.automatically_found_lines.xData == self._plot_line.xData[closest_point_index])
+                            &
+                            (self.automatically_found_lines.gamma_data == self._plot_line.yData[closest_point_index])
+                    ):
+                        return
+                    self.user_found_lines.voltage_data = np.append(self.user_found_lines.voltage_data,
+                                                                   self._plot_line.voltage_data[closest_point_index])
+                    self.user_found_lines.gamma_data = np.append(self.user_found_lines.gamma_data,
+                                                                 self._plot_line.gamma_data[closest_point_index])
+
+                    if self._data_type == self._VOLTAGE_DATA:
+                        self.user_found_lines.setData(
+                            np.append(self.user_found_lines.xData, self._plot_line.xData[closest_point_index]),
+                            self.user_found_lines.voltage_data
+                        )
+                    elif self._data_type == self._GAMMA_DATA:
+                        self.user_found_lines.setData(
+                            np.append(self.user_found_lines.xData, self._plot_line.xData[closest_point_index]),
+                            self.user_found_lines.gamma_data
+                        )
+                if self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE):
+                    self.model_found_lines.append_data([self._plot_line.xData[closest_point_index],
+                                                        self._plot_line.voltage_data[closest_point_index],
+                                                        self._plot_line.gamma_data[closest_point_index],
+                                                        ])
+                else:
+                    self.model_found_lines.append_data([self._plot_line.xData[closest_point_index],
+                                                        self._plot_line.voltage_data[closest_point_index],
+                                                        ])
                 self.plot_toolbar.copy_trace_action.setEnabled(True)
                 self.plot_toolbar.save_trace_action.setEnabled(True)
                 self.plot_toolbar.clear_trace_action.setEnabled(True)
 
     def on_lim_changed(self, *args):
-        rect: List[List[float]] = args[0][1]
         if self._ignore_scale_change:
             return
+        rect: List[List[float]] = args[0][1]
         xlim: List[float]
         ylim: List[float]
         xlim, ylim = rect
@@ -419,40 +505,6 @@ class App(GUI):
         self.on_xlim_changed(xlim)
         self.on_ylim_changed(ylim)
         self._ignore_scale_change = False
-
-    def on_data_loaded(self, limits):
-        if self._loading:
-            return
-        if limits is not None:
-            min_freq, max_freq, min_voltage, max_voltage = limits
-            self.set_config_value('frequency', 'lower', min_freq)
-            self.set_config_value('frequency', 'upper', max_freq)
-            self.set_config_value('voltage', 'lower', min_voltage)
-            self.set_config_value('voltage', 'upper', max_voltage)
-            self._loading = True
-            if not self.check_frequency_persists.isChecked():
-                self.spin_frequency_min.setMaximum(max_freq)
-                self.spin_frequency_max.setMinimum(min_freq)
-                self.spin_frequency_min.setValue(min_freq)
-                self.spin_frequency_max.setValue(max_freq)
-                self.spin_frequency_span.setValue(max_freq - min_freq)
-                self.spin_frequency_center.setValue(0.5 * (max_freq + min_freq))
-            else:
-                self.spin_frequency_min.setMaximum(max(max_freq, self.spin_frequency_min.value()))
-                self.spin_frequency_max.setMinimum(min(min_freq, self.spin_frequency_max.value()))
-            if not self.check_voltage_persists.isChecked():
-                self.spin_voltage_min.setMaximum(max_voltage)
-                self.spin_voltage_max.setMinimum(min_voltage)
-                self.spin_voltage_min.setValue(min_voltage)
-                self.spin_voltage_max.setValue(max_voltage)
-            else:
-                self.spin_voltage_min.setMaximum(max(max_voltage, self.spin_voltage_min.value()))
-                self.spin_voltage_max.setMinimum(min(min_voltage, self.spin_voltage_max.value()))
-            self._loading = False
-            self.set_frequency_range(lower_value=self.spin_frequency_min.value(),
-                                     upper_value=self.spin_frequency_max.value())
-            self.set_voltage_range(lower_value=self.spin_voltage_min.value(),
-                                   upper_value=self.spin_voltage_max.value())
 
     def on_points_selected(self, rows: List[int]):
         self.table_found_lines.clearSelection()
@@ -466,7 +518,6 @@ class App(GUI):
     def spin_frequency_min_changed(self, new_value):
         if self._loading:
             return
-        self.set_config_value('frequency', 'lower', new_value)
         self._loading = True
         self.spin_frequency_max.setMinimum(new_value)
         self.spin_frequency_center.setValue(0.5 * (new_value + self.spin_frequency_max.value()))
@@ -477,7 +528,6 @@ class App(GUI):
     def spin_frequency_max_changed(self, new_value):
         if self._loading:
             return
-        self.set_config_value('frequency', 'upper', new_value)
         self._loading = True
         self.spin_frequency_min.setMaximum(new_value)
         self.spin_frequency_center.setValue(0.5 * (self.spin_frequency_min.value() + new_value))
@@ -492,8 +542,6 @@ class App(GUI):
         min_freq = new_value - 0.5 * freq_span
         max_freq = new_value + 0.5 * freq_span
         self._loading = True
-        self.set_config_value('frequency', 'lower', min_freq)
-        self.set_config_value('frequency', 'upper', max_freq)
         self.spin_frequency_min.setMaximum(max_freq)
         self.spin_frequency_max.setMinimum(min_freq)
         self.spin_frequency_min.setValue(min_freq)
@@ -508,8 +556,6 @@ class App(GUI):
         min_freq = freq_center - 0.5 * new_value
         max_freq = freq_center + 0.5 * new_value
         self._loading = True
-        self.set_config_value('frequency', 'lower', min_freq)
-        self.set_config_value('frequency', 'upper', max_freq)
         self.spin_frequency_min.setMaximum(max_freq)
         self.spin_frequency_max.setMinimum(min_freq)
         self.spin_frequency_min.setValue(min_freq)
@@ -525,8 +571,6 @@ class App(GUI):
         min_freq = freq_center - 0.5 * freq_span
         max_freq = freq_center + 0.5 * freq_span
         self._loading = True
-        self.set_config_value('frequency', 'lower', min_freq)
-        self.set_config_value('frequency', 'upper', max_freq)
         self.spin_frequency_min.setMaximum(max_freq)
         self.spin_frequency_max.setMinimum(min_freq)
         self.spin_frequency_min.setValue(min_freq)
@@ -543,8 +587,6 @@ class App(GUI):
         min_freq = freq_center - 0.5 * freq_span
         max_freq = freq_center + 0.5 * freq_span
         self._loading = True
-        self.set_config_value('frequency', 'lower', min_freq)
-        self.set_config_value('frequency', 'upper', max_freq)
         self.spin_frequency_min.setMaximum(max_freq)
         self.spin_frequency_max.setMinimum(min_freq)
         self.spin_frequency_min.setValue(min_freq)
@@ -561,7 +603,6 @@ class App(GUI):
     def spin_voltage_min_changed(self, new_value):
         if self._loading:
             return
-        self.set_config_value('voltage', 'lower', new_value)
         self._loading = True
         self.spin_voltage_max.setMinimum(new_value)
         self.set_voltage_range(lower_value=new_value, upper_value=self.spin_voltage_max.value())
@@ -570,7 +611,6 @@ class App(GUI):
     def spin_voltage_max_changed(self, new_value):
         if self._loading:
             return
-        self.set_config_value('voltage', 'upper', new_value)
         self._loading = True
         self.spin_voltage_min.setMaximum(new_value)
         self.set_voltage_range(lower_value=self.spin_voltage_min.value(), upper_value=new_value)
@@ -586,8 +626,6 @@ class App(GUI):
         min_voltage = voltage_center - 0.5 * voltage_span
         max_voltage = voltage_center + 0.5 * voltage_span
         self._loading = True
-        self.set_config_value('voltage', 'lower', min_voltage)
-        self.set_config_value('voltage', 'upper', max_voltage)
         self.spin_voltage_min.setMaximum(max_voltage)
         self.spin_voltage_max.setMinimum(min_voltage)
         self.spin_voltage_min.setValue(min_voltage)
@@ -599,6 +637,11 @@ class App(GUI):
         if self._loading:
             return
         self.set_config_value('voltage', 'persists', new_value)
+
+    def edit_parameters(self):
+        preferences_dialog: Preferences = Preferences(self.settings, self)
+        preferences_dialog.exec()
+        self.set_line_color(self.settings.line_color)
 
     @property
     def line(self):
@@ -638,16 +681,16 @@ class App(GUI):
         if self._data_mode == self.FS_DATA_MODE:
             # re-scale the signal to the actual frequency mesh
             x_model: np.ndarray = np.arange(self.model_signal.size, dtype=x.dtype) * 0.1
-            f = interpolate.interp1d(x_model, self.model_signal, kind=2)
+            interpol = interpolate.interp1d(x_model, self.model_signal, kind=2)
             x_model_new: np.ndarray = np.arange(x_model[0], x_model[-1],
                                                 x[1] - x[0])
-            y_model_new: np.ndarray = f(x_model_new)
+            y_model_new: np.ndarray = interpol(x_model_new)
             found_lines = detection.peaks_positions(x,
                                                     detection.correlation(y_model_new,
                                                                           x,
                                                                           y),
                                                     threshold=1.0 / threshold)
-        elif self._data_mode == self.PSK_DATA_MODE:
+        elif self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE):
             found_lines = detection.peaks_positions(x,
                                                     y,
                                                     threshold=1.0 / threshold)
@@ -658,20 +701,43 @@ class App(GUI):
         if found_lines.size:
             self.automatically_found_lines.setData(x[found_lines],
                                                    y[found_lines])
+            self.automatically_found_lines.voltage_data = self._plot_line.voltage_data[found_lines]
+            if self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE):
+                self.automatically_found_lines.gamma_data = self._plot_line.gamma_data[found_lines]
+            else:
+                self.automatically_found_lines.gamma_data = np.empty(0)
         else:
             self.automatically_found_lines.setData(np.empty(0), np.empty(0))
+            self.automatically_found_lines.voltage_data = np.empty(0)
+            self.automatically_found_lines.gamma_data = np.empty(0)
 
         # update the table
         if self.user_found_lines.xData is not None and self.user_found_lines.yData is not None:
-            self.model_found_lines.set_data(np.column_stack((
-                np.concatenate((self.automatically_found_lines.xData, self.user_found_lines.xData)),
-                np.concatenate((self.automatically_found_lines.yData, self.user_found_lines.yData)),
-            )))
+            if self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE):
+                self.model_found_lines.set_data(np.column_stack((
+                    np.concatenate((self.automatically_found_lines.xData, self.user_found_lines.xData)),
+                    np.concatenate((self.automatically_found_lines.voltage_data,
+                                    self.user_found_lines.voltage_data)),
+                    np.concatenate((self.automatically_found_lines.gamma_data, self.user_found_lines.gamma_data)),
+                )))
+            else:
+                self.model_found_lines.set_data(np.column_stack((
+                    np.concatenate((self.automatically_found_lines.xData, self.user_found_lines.xData)),
+                    np.concatenate((self.automatically_found_lines.voltage_data,
+                                    self.user_found_lines.voltage_data)),
+                )))
         else:
-            self.model_found_lines.set_data(np.column_stack((
-                self.automatically_found_lines.xData,
-                self.automatically_found_lines.yData,
-            )))
+            if self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE):
+                self.model_found_lines.set_data(np.column_stack((
+                    self.automatically_found_lines.xData,
+                    self.automatically_found_lines.voltage_data,
+                    self.automatically_found_lines.gamma_data,
+                )))
+            else:
+                self.model_found_lines.set_data(np.column_stack((
+                    self.automatically_found_lines.xData,
+                    self.automatically_found_lines.voltage_data,
+                )))
 
         self.plot_toolbar.copy_trace_action.setEnabled(not self.model_found_lines.is_empty)
         self.plot_toolbar.save_trace_action.setEnabled(not self.model_found_lines.is_empty)
@@ -760,9 +826,10 @@ class App(GUI):
         if not filename:
             return
         filename_parts: Tuple[str, str] = os.path.splitext(filename)
-        x: np.ndarray = self.model_found_lines.all_data[:, 0] * 1e-6
-        y: np.ndarray = self.model_found_lines.all_data[:, 1]
-        data: np.ndarray = np.vstack((x, y)).transpose()
+        f: np.ndarray = self.model_found_lines.all_data[:, 0] * 1e-6
+        v: np.ndarray = self.model_found_lines.all_data[:, 1] * 1e3
+        g: np.ndarray = self.model_found_lines.all_data[:, 2]
+        data: np.ndarray = np.vstack((f, v, g)).transpose()
         if 'CSV' in _filter:
             if filename_parts[1] != '.csv':
                 filename += '.csv'
@@ -770,14 +837,16 @@ class App(GUI):
             # noinspection PyTypeChecker
             np.savetxt(filename, data,
                        delimiter=sep,
-                       header=sep.join(('frequency', 'voltage')) + '\n' + sep.join(('MHz', 'mV')),
+                       header=(sep.join(('frequency', 'voltage', 'absorption')) + '\n'
+                               + sep.join(('MHz', 'mV', 'cm⁻¹'))),
                        fmt='%s')
         elif 'XLSX' in _filter:
             if filename_parts[1] != '.xlsx':
                 filename += '.xlsx'
             with pd.ExcelWriter(filename) as writer:
                 df: pd.DataFrame = pd.DataFrame(data)
-                df.to_excel(writer, index=False, header=['Frequency [MHz]', 'Voltage [mV]'],
+                df.to_excel(writer, index=False,
+                            header=['Frequency [MHz]', 'Voltage [mV]', 'Absorption [cm⁻¹]'],
                             sheet_name=self._plot_line.name() or 'Sheet1')
 
     def clear_found_lines(self):
@@ -809,67 +878,95 @@ class App(GUI):
         self._canvas.replot()
 
     def update_legend(self):
-        if self.legend_item is not None:
-            self.legend_item.clear()
-            if self._plot_line.name():
-                self.legend_item.addItem(self._plot_line, self._plot_line.name())
-            self.legend.setMinimumWidth(self.legend_item.boundingRect().width())
+        self.legend_item.clear()
+        if self._plot_line.name():
+            self.legend_item.addItem(self._plot_line, self._plot_line.name())
+        self.legend.setMinimumWidth(self.legend_item.boundingRect().width())
 
     def load_data(self):
         filename: str
         _filter: str
         _formats: List[str] = [
-            'PSK Spectrometer (*.csv *.scandat)',
+            'PSK Spectrometer (*.conf *.scandat)',
             'Fast Sweep Spectrometer (*.fmd)',
         ]
         filename, _filter = self.open_file_dialog(_filter=';;'.join(_formats))
-        y: np.ndarray
-        x: np.ndarray
+        v: np.ndarray
+        f: np.ndarray
+        g: np.ndarray = np.empty(0)
+        jump: float
         if filename.casefold().endswith('.scandat'):
             fn: str = os.path.splitext(filename)[0]
-            x, y = load_data_scandat(filename)
-            if x.size and y.size:
-                self._data_mode = self.PSK_DATA_MODE
+            f, v, g, jump = load_data_scandat(filename)
+            if f.size and v.size:
+                self.settings.display_processing = True
+                if jump > 0.0:
+                    self._data_mode = self.PSK_WITH_JUMP_DATA_MODE
+                else:
+                    self._data_mode = self.PSK_DATA_MODE
         elif filename.casefold().endswith(('.csv', '.conf')):
             fn: str = os.path.splitext(filename)[0]
-            x, y = load_data_csv(filename)
-            if x.size and y.size:
-                self._data_mode = self.PSK_DATA_MODE
+            f, v, g, jump = load_data_csv(filename)
+            if f.size and v.size:
+                self.settings.display_processing = True
+                if jump > 0.0:
+                    self._data_mode = self.PSK_WITH_JUMP_DATA_MODE
+                else:
+                    self._data_mode = self.PSK_DATA_MODE
         elif filename.casefold().endswith(('.fmd', '.frd')):
             fn: str = os.path.splitext(filename)[0]
-            x, y = load_data_fs(filename)
-            if x.size and y.size:
+            f, v = load_data_fs(filename)
+            if f.size and v.size:
+                self.settings.display_processing = False
                 self._data_mode = self.FS_DATA_MODE
         else:
             return
 
-        if x.size and y.size:
-            new_label: str = os.path.split(fn)[-1]
+        if not (f.size and v.size):
+            return
 
-            self._plot_line.setData(x, y, name=new_label)
+        new_label: str = os.path.split(fn)[-1]
 
-            min_frequency: float = x[0]
-            max_frequency: float = x[-1]
-            min_voltage: float = np.min(y)
-            max_voltage: float = np.max(y)
+        if self._data_mode == self.FS_DATA_MODE:
+            self.plot_toolbar.switch_data_action.setChecked(False)
 
-            self._ignore_scale_change = True
-            self.figure.setXRange(min_frequency, max_frequency)
-            self.figure.setYRange(min_voltage, max_voltage)
-            self._ignore_scale_change = False
+        self._plot_line.setData(f,
+                                (g if self.plot_toolbar.switch_data_action.isChecked() else v),
+                                name=new_label)
+        self._plot_line.gamma_data = g
+        self._plot_line.voltage_data = v
 
-            self.update_legend()
+        min_frequency: float = f[0]
+        max_frequency: float = f[-1]
 
-            self.plot_toolbar.clear_action.setEnabled(True)
-            self.plot_toolbar.differentiate_action.setEnabled(True)
-            self.plot_toolbar.save_data_action.setEnabled(True)
-            self.plot_toolbar.copy_figure_action.setEnabled(True)
-            self.plot_toolbar.save_figure_action.setEnabled(True)
-            self.plot_toolbar.trace_action.setEnabled(True)
-            self.plot_toolbar.configure_action.setEnabled(True)
+        self.update_legend()
 
-            self.on_data_loaded((min_frequency, max_frequency,
-                                 min_voltage, max_voltage))
+        self.plot_toolbar.clear_action.setEnabled(True)
+        self.plot_toolbar.differentiate_action.setEnabled(self._data_mode == self.PSK_DATA_MODE)
+        self.plot_toolbar.switch_data_action.setEnabled(self._data_mode in (self.PSK_DATA_MODE,
+                                                                            self.PSK_WITH_JUMP_DATA_MODE))
+        self.plot_toolbar.save_data_action.setEnabled(True)
+        self.plot_toolbar.copy_figure_action.setEnabled(True)
+        self.plot_toolbar.save_figure_action.setEnabled(True)
+        self.plot_toolbar.trace_action.setEnabled(True)
+        self.plot_toolbar.configure_action.setEnabled(True)
+
+        self._loading = True
+        if not self.check_frequency_persists.isChecked():
+            self.spin_frequency_min.setValue(min_frequency)
+            self.spin_frequency_max.setValue(max_frequency)
+            self.spin_frequency_span.setValue(max_frequency - min_frequency)
+            self.spin_frequency_center.setValue(0.5 * (max_frequency + min_frequency))
+        self.spin_frequency_min.setMaximum(max(max_frequency, self.spin_frequency_min.value()))
+        self.spin_frequency_max.setMinimum(min(min_frequency, self.spin_frequency_max.value()))
+        self._loading = False
+
+        self.display_gamma_or_voltage(self.plot_toolbar.switch_data_action.isChecked())
+
+        self.set_frequency_range(lower_value=self.spin_frequency_min.value(),
+                                 upper_value=self.spin_frequency_max.value())
+        self.set_voltage_range(lower_value=self.spin_voltage_min.value(),
+                               upper_value=self.spin_voltage_max.value())
 
     @property
     def trace_mode(self):
@@ -879,12 +976,94 @@ class App(GUI):
         self.plot_toolbar.trace_action.setChecked(False)
 
     def calculate_second_derivative(self):
+        self.clear_found_lines()
         x: np.ndarray = self._plot_line.xData
-        y: np.ndarray = self._plot_line.yData
         step: int = round(self.settings.jump / ((x[-1] - x[0]) / (x.size - 1)))
-        y = y[step:-step] - (y[2 * step:] + y[:-2 * step]) / 2.
-        x = x[step:-step]
-        self._plot_line.setData(x, y)
+        self._plot_line.voltage_data = (self._plot_line.voltage_data[step:-step]
+                                        - (self._plot_line.voltage_data[2 * step:]
+                                           + self._plot_line.voltage_data[:-2 * step]) / 2.)
+        self._plot_line.gamma_data = (self._plot_line.gamma_data[step:-step]
+                                      - (self._plot_line.gamma_data[2 * step:]
+                                         + self._plot_line.gamma_data[:-2 * step]) / 2.)
+        self._plot_line.xData = x[step:-step]
+        self.plot_toolbar.differentiate_action.setEnabled(False)
+        self.display_gamma_or_voltage()
+
+    def on_switch_data_action_toggled(self, new_state: bool):
+        self._data_type = self._GAMMA_DATA if new_state else self._VOLTAGE_DATA
+        self.set_config_value('display', 'unit', self._data_type)
+        self.display_gamma_or_voltage(new_state)
+
+    def display_gamma_or_voltage(self, display_gamma: Optional[bool] = None):
+        if display_gamma is None:
+            display_gamma = self.plot_toolbar.switch_data_action.isChecked()
+
+        if display_gamma:
+            self._plot_line.setData(self._plot_line.xData, self._plot_line.gamma_data)
+        else:
+            self._plot_line.setData(self._plot_line.xData, self._plot_line.voltage_data)
+
+        _translate: Callable[[str, str, Optional[str], int], str] = QCoreApplication.translate
+        a: pg.AxisItem = self._canvas.getAxis('left')
+        if display_gamma:
+            self.check_voltage_persists.setText(_translate('main window', 'Keep absorption range'))
+
+            a.enableAutoSIPrefix(False)
+            a.setLabel(text=_translate("plot axes labels", 'Absorption'),
+                       units=_translate('unit', 'cm<sup>−1</sup>'))
+            a.scale = 1.0
+            a.autoSIPrefixScale = 1.0
+
+            self._loading = True
+            min_gamma: float = self._plot_line.gamma_data.min()
+            max_gamma: float = self._plot_line.gamma_data.max()
+            if not self.check_voltage_persists.isChecked():
+                self.on_ylim_changed((min_gamma, max_gamma))
+            self.spin_voltage_min.setMaximum(max(max_gamma, self.spin_voltage_min.value()))
+            self.spin_voltage_max.setMinimum(min(min_gamma, self.spin_voltage_max.value()))
+            self._loading = False
+
+            self._cursor_y.suffix = _translate('unit', 'cm<sup>−1</sup>')
+            self._cursor_y.siPrefix = False
+            self._cursor_y.setFormatStr('{mantissa:.{decimals}f}×10<sup>{exp}</sup>{suffixGap}{suffix}')
+            opts = {
+                'suffix': _translate('unit', 'cm⁻¹'),
+                'siPrefix': False,
+                'format': '{value:.{decimals}e}{suffixGap}{suffix}'
+            }
+
+        else:
+            self.check_voltage_persists.setText(_translate('main window', 'Keep voltage range'))
+
+            a.enableAutoSIPrefix(True)
+            a.setLabel(text=_translate("plot axes labels", 'Voltage'),
+                       units=_translate('unit', 'V'),
+                       # unitPrefix=_translate('unit prefix', 'm')
+                       )
+
+            self._loading = True
+            min_voltage: float = self._plot_line.voltage_data.min()
+            max_voltage: float = self._plot_line.voltage_data.max()
+            if not self.check_voltage_persists.isChecked():
+                self.on_ylim_changed((min_voltage, max_voltage))
+            self.spin_voltage_min.setMaximum(max(max_voltage, self.spin_voltage_min.value()))
+            self.spin_voltage_max.setMinimum(min(min_voltage, self.spin_voltage_max.value()))
+            self._loading = False
+
+            self._cursor_y.suffix = _translate('unit', 'V')
+            self._cursor_y.siPrefix = True
+            self._cursor_y.setFormatStr('{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}')
+            opts = {
+                'suffix': _translate('unit', 'V'),
+                'siPrefix': True,
+                'format': '{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}'
+            }
+        self.spin_voltage_min.setOpts(**opts)
+        self.spin_voltage_max.setOpts(**opts)
+
+        # self._canvas.replot()
+
+        # TODO: update cursors
 
     def save_data(self):
         if self._plot_line.yData is None:

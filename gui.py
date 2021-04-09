@@ -10,7 +10,6 @@ from PyQt5.QtWidgets import QAbstractItemView, QCheckBox, QDockWidget, QFileDial
 
 from data_model import DataModel
 from settings import Settings
-from toolbar import NavigationToolbar
 from utils import load_icon
 from valuelabel import ValueLabel
 
@@ -99,7 +98,6 @@ class GUI(QMainWindow):
         # plot
         self.figure: pg.PlotWidget = pg.PlotWidget(self.central_widget)
         self.figure.setFocusPolicy(Qt.ClickFocus)
-        self.plot_toolbar: NavigationToolbar = NavigationToolbar(self, parameters_icon='configure')
         self.legend: pg.GraphicsLayoutWidget = pg.GraphicsLayoutWidget()
         self.box_legend: QDockWidget = QDockWidget(self.central_widget)
         self.box_legend.setObjectName('box_legend')
@@ -236,7 +234,7 @@ class GUI(QMainWindow):
         self.button_next_line.setText(_translate('main window', 'Next Line'))
 
         self.box_found_lines.setWindowTitle(_translate('main window', 'Found Lines'))
-        self.model_found_lines.set_format([(3, 1e-6), (4, 1.)])
+        self.model_found_lines.set_format([(3, 1e-6), (4, 1e3), (4, 1e6)])
         self.table_found_lines.setModel(self.model_found_lines)
         self.table_found_lines.setMouseTracking(True)
         self.table_found_lines.setContextMenuPolicy(Qt.ActionsContextMenu)
@@ -331,7 +329,8 @@ class GUI(QMainWindow):
         filename, _filter = QFileDialog.getOpenFileName(filter=_filter,
                                                         directory=directory,
                                                         options=options)
-        self.set_config_value('open', 'location', os.path.split(filename)[0])
+        if filename:
+            self.set_config_value('open', 'location', os.path.split(filename)[0])
         return filename, _filter
 
     def save_file_dialog(self, _filter: str = '') -> Tuple[str, str]:

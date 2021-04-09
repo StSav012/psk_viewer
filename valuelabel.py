@@ -48,8 +48,9 @@ class ValueLabel(QLabel):
         self.siPrefix = siPrefix
         self.decimals = decimals
         if formatStr is None:
-            formatStr = '{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}'
-        self.formatStr = formatStr
+            self.formatStr = '{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}'
+        else:
+            self.formatStr = formatStr
 
     def setValue(self, value: Union[int, float]):
         now: float = time()
@@ -91,8 +92,10 @@ class ValueLabel(QLabel):
             parts.update({'siPrefix': p, 'scaledValue': s * val})
         else:
             # no SI prefix /suffix requested; scale is 1
-            parts.update({'siPrefix': '', 'scaledValue': val})
+            exp: int = int(math.floor(math.log10(abs(val)))) if val != 0.0 else 0
+            man: float = val * math.pow(0.1, exp)
+            parts.update({'siPrefix': '', 'scaledValue': val, 'exp': exp, 'mantissa': man})
 
         parts['suffixGap'] = ' ' if (parts['suffix'] or parts['siPrefix']) else ''
 
-        return self.formatStr.format(**parts)
+        return self.formatStr.format(**parts).replace('-', '−')

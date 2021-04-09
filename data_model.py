@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from typing import List, Optional, Union, Tuple
+from typing import Iterable, List, Optional, Union, Tuple
 
 import numpy as np
 
@@ -34,6 +34,10 @@ class DataModel(QAbstractTableModel):
     def header(self) -> List[str]:
         return self._header
 
+    @header.setter
+    def header(self, new_header: Iterable[str]):
+        self._header = list(map(str, new_header))
+
     @property
     def all_data(self) -> np.ndarray:
         return self._data
@@ -50,15 +54,19 @@ class DataModel(QAbstractTableModel):
     def columnCount(self, parent=None) -> int:
         return self._data.shape[1]
 
-    def formatted_item(self, row: int, column: int) -> str:
+    def formatted_item(self, row: int, column: int, replace_hyphen: bool = False) -> str:
         value: float = self.item(row, column)
         if np.isnan(value):
             return ''
         if column >= len(self._format):
+            if replace_hyphen:
+                return str(value).replace('-', '−')
             return str(value)
         precision: int
         scale: float
         precision, scale = self._format[column]
+        if replace_hyphen:
+            return f'{value * scale:.{precision}f}'.replace('-', '−')
         return f'{value * scale:.{precision}f}'
 
     def data(self, index: QModelIndex, role: Qt.ItemDataRole = Qt.DisplayRole) -> Optional[str]:
@@ -82,9 +90,6 @@ class DataModel(QAbstractTableModel):
             self._header[section] = value
             return True
         return False
-
-    def set_header(self, new_header: List[str]):
-        self._header = list(map(str, new_header))
 
     def set_format(self, new_format: List[Tuple[int, float]]):
         self.beginResetModel()

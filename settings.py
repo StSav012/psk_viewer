@@ -29,6 +29,7 @@ class Settings(QSettings):
 
     def __init__(self, *args):
         super().__init__(*args)
+        self.display_processing: bool = True
 
     @property
     def dialog(self):
@@ -44,7 +45,7 @@ class Settings(QSettings):
         return {
             'Processing': {
                 'Jump:': (opts, 'jump',)
-            },
+            } if self.display_processing else {},
             'Line': {
                 'Color:': ('line_color',)
             },

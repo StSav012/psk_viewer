@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from typing import Optional
+
 import pyqtgraph as pg
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QCheckBox, QComboBox, \
@@ -14,7 +16,7 @@ __all__ = ['Preferences']
 class Preferences(QDialog):
     """ GUI preferences dialog """
 
-    def __init__(self, settings: Settings, parent: QWidget = None, *args):
+    def __init__(self, settings: Settings, parent: Optional[QWidget] = None, *args):
         super().__init__(parent, *args)
 
         self.settings: Settings = settings
@@ -25,7 +27,7 @@ class Preferences(QDialog):
 
         layout: QVBoxLayout = QVBoxLayout(self)
         for key, value in self.settings.dialog.items():
-            if isinstance(value, dict):
+            if isinstance(value, dict) and value:
                 box: QGroupBox = QGroupBox(key, self)
                 box_layout: QFormLayout = QFormLayout(box)
                 for key2, value2 in value.items():
