@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import pyqtgraph as pg
 from PyQt5.QtCore import QCoreApplication, QPointF, Qt, QItemSelectionModel, QModelIndex
-from PyQt5.QtGui import QBrush, QPalette, QColor
+from PyQt5.QtGui import QBrush, QPalette, QColor, QKeyEvent, QKeySequence
 from PyQt5.QtWidgets import QAction, QHeaderView, QDesktopWidget
 from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent
 
@@ -15,7 +15,7 @@ import detection
 from gui import GUI
 from preferences import Preferences
 from toolbar import NavigationToolbar
-from utils import copy_to_clipboard, load_data_fs, load_data_scandat, load_data_csv, resource_path
+from utils import copy_to_clipboard, load_data_fs, load_data_scandat, load_data_csv, resource_path, mix_colors
 
 try:
     from typing import Final
@@ -99,7 +99,7 @@ class App(GUI):
 
         self._data_mode: int = 0
 
-        self._is_dark: bool = QPalette().color(QPalette.Window).lightness() < 128
+        self._is_dark: bool = self.palette().color(QPalette.Window).lightness() < 128
 
         self.legend_item: pg.LegendItem = pg.LegendItem(offset=(0, 0))
         self.plot_toolbar: NavigationToolbar = NavigationToolbar(self, parameters_icon='configure')
@@ -218,7 +218,7 @@ class App(GUI):
         self.plot_toolbar.copy_figure_action.setToolTip(_translate("plot toolbar action", "Copy the plot as an image"))
         self.plot_toolbar.save_figure_action.setIconText(_translate("plot toolbar action", "Save Figure"))
         self.plot_toolbar.save_figure_action.setToolTip(_translate("plot toolbar action",
-                                                                   "Save the plot into clipboard"))
+                                                                   "Save the plot into a file"))
         self.plot_toolbar.trace_action.setIconText(_translate("plot toolbar action", "Mark"))
         self.plot_toolbar.trace_action.setToolTip(_translate("plot toolbar action",
                                                              "Mark data points (use Shift to delete)"))
@@ -233,6 +233,17 @@ class App(GUI):
         self.plot_toolbar.configure_action.setToolTip(_translate("plot toolbar action", "Edit parameters"))
 
         self.plot_toolbar.parameters_title = _translate('plot config window title', 'Figure options')
+
+        # add keyboard shortcuts to tooltips
+        a: QAction
+        tooltip_text_color: QColor = self.palette().color(QPalette.ToolTipText)
+        tooltip_base_color: QColor = self.palette().color(QPalette.ToolTipBase)
+        shortcut_color: QColor = mix_colors(tooltip_text_color, tooltip_base_color)
+        for a in self.plot_toolbar.actions():
+            if a.shortcut():
+                a.setToolTip(f'<p style="white-space:pre">{a.toolTip()}&nbsp;&nbsp;'
+                             f'<code style="color:{shortcut_color.name()};font-size:small">'
+                             f'{a.shortcut().toString(QKeySequence.NativeText)}</code></p>')
 
         self._view_all_action.setText(_translate("plot context menu action", "View All"))
         self._canvas.ctrl.alphaGroup.parent().setTitle(_translate("plot context menu action", "Alpha"))
@@ -263,6 +274,7 @@ class App(GUI):
 
         self._data_type = self.get_config_value('display', 'unit', self._VOLTAGE_DATA, str)
         self.plot_toolbar.switch_data_action.setChecked(self._data_type == self._GAMMA_DATA)
+        self.display_gamma_or_voltage()
 
         self._loading = False
         return
@@ -314,12 +326,30 @@ class App(GUI):
             self.model_found_lines.header = (
                 [_translate('main window', 'Frequency [MHz]')] +
                 ([_translate('main window', 'Voltage [mV]'), _translate('main window', 'Absorption [cm⁻¹ × 10⁻⁶]')]
-                 * (self.table_found_lines.horizontalHeader().count() - 1))
+                 * (self.table_found_lines.horizontalHeader().count() // 2))
             )
             for i in range(self.table_found_lines.horizontalHeader().count()):
                 self.table_found_lines.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
 
+            # change visibility of the found lines table columns
+            if self.plot_toolbar.switch_data_action.isChecked():
+                self.table_found_lines.hideColumn(1)
+                self.table_found_lines.showColumn(2)
+            else:
+                self.table_found_lines.hideColumn(2)
+                self.table_found_lines.showColumn(1)
+
         self.model_found_lines.modelReset.connect(adjust_columns)
+
+        def table_key_press_event(event: QKeyEvent):
+            if event.matches(QKeySequence.Copy):
+                copy_to_clipboard(self.stringify_table_plain_text(False), self.stringify_table_html(False), Qt.RichText)
+                event.accept()
+            elif event.matches(QKeySequence.SelectAll):
+                self.table_found_lines.selectAll()
+                event.accept()
+
+        self.table_found_lines.keyPressEvent = table_key_press_event
 
         line: PlotDataItem
         for line in (self.automatically_found_lines, self.user_found_lines):
@@ -797,26 +827,48 @@ class App(GUI):
         if next_line_freq.size:
             self.spin_frequency_center.setValue(next_line_freq[np.argmin(next_line_freq - init_frequency)])
 
-    def stringify_table_plain_text(self) -> str:
+    def stringify_table_plain_text(self, whole_table: bool = True) -> str:
         """
-        Convert table cells to string for copying as plain text
-        :return: the plain text representation of the table
+        Convert selected cells to string for copying as plain text
+        :return: the plain text representation of the selected table lines
         """
-        text_matrix: List[List[str]] = [[self.model_found_lines.formatted_item(row, column)
-                                         for column in range(self.model_found_lines.columnCount())]
-                                        for row in range(self.model_found_lines.rowCount(available_count=True))]
+        if whole_table:
+            text_matrix: List[List[str]] = [[self.model_found_lines.formatted_item(row, column)
+                                             for column in range(self.model_found_lines.columnCount())
+                                             if not self.table_found_lines.isColumnHidden(column)]
+                                            for row in range(self.model_found_lines.rowCount(available_count=True))]
+        else:
+            si: QModelIndex
+            rows: List[int] = sorted(list(set(si.row() for si in self.table_found_lines.selectedIndexes())))
+            cols: List[int] = sorted(list(set(si.column() for si in self.table_found_lines.selectedIndexes())))
+            text_matrix: List[List[str]] = [['' for _ in range(len(cols))]
+                                            for _ in range(len(rows))]
+            for si in self.table_found_lines.selectedIndexes():
+                text_matrix[rows.index(si.row())][cols.index(si.column())] = \
+                    self.model_found_lines.formatted_item(si.row(), si.column())
         row_texts: List[str]
         text: List[str] = [self.settings.csv_separator.join(row_texts) for row_texts in text_matrix]
         return self.settings.line_end.join(text)
 
-    def stringify_table_html(self) -> str:
+    def stringify_table_html(self, whole_table: bool = True) -> str:
         """
-        Convert table cells to string for copying as rich text
-        :return: the rich text representation of the table
+        Convert selected cells to string for copying as rich text
+        :return: the rich text representation of the selected table lines
         """
-        text_matrix: List[List[str]] = [[('<td>' + self.model_found_lines.formatted_item(row, column) + '</td>')
-                                         for column in range(self.model_found_lines.columnCount())]
-                                        for row in range(self.model_found_lines.rowCount(available_count=True))]
+        if whole_table:
+            text_matrix: List[List[str]] = [[('<td>' + self.model_found_lines.formatted_item(row, column) + '</td>')
+                                             for column in range(self.model_found_lines.columnCount())
+                                             if not self.table_found_lines.isColumnHidden(column)]
+                                            for row in range(self.model_found_lines.rowCount(available_count=True))]
+        else:
+            si: QModelIndex
+            rows: List[int] = sorted(list(set(si.row() for si in self.table_found_lines.selectedIndexes())))
+            cols: List[int] = sorted(list(set(si.column() for si in self.table_found_lines.selectedIndexes())))
+            text_matrix: List[List[str]] = [['' for _ in range(len(cols))]
+                                            for _ in range(len(rows))]
+            for si in self.table_found_lines.selectedIndexes():
+                text_matrix[rows.index(si.row())][cols.index(si.column())] = \
+                    '<td>' + self.model_found_lines.formatted_item(si.row(), si.column()) + '</td>'
         row_texts: List[str]
         text: List[str] = [('<tr>' + self.settings.csv_separator.join(row_texts) + '</tr>')
                            for row_texts in text_matrix]
@@ -1007,9 +1059,41 @@ class App(GUI):
             display_gamma = self.plot_toolbar.switch_data_action.isChecked()
 
         if display_gamma:
-            self._plot_line.setData(self._plot_line.xData, self._plot_line.gamma_data)
+            if hasattr(self._plot_line, 'gamma_data'):  # something is loaded
+                self._plot_line.setData(self._plot_line.xData, self._plot_line.gamma_data)
+
+                self._loading = True
+                min_gamma: float = self._plot_line.gamma_data.min()
+                max_gamma: float = self._plot_line.gamma_data.max()
+                if not self.check_voltage_persists.isChecked():
+                    self.on_ylim_changed((min_gamma, max_gamma))
+                self.spin_voltage_min.setMaximum(max(max_gamma, self.spin_voltage_min.value()))
+                self.spin_voltage_max.setMinimum(min(min_gamma, self.spin_voltage_max.value()))
+                self._loading = False
+
+            if hasattr(self.automatically_found_lines, 'gamma_data'):  # something is marked
+                self.automatically_found_lines.setData(self.automatically_found_lines.xData,
+                                                       self.automatically_found_lines.gamma_data)
+            if hasattr(self.user_found_lines, 'gamma_data'):  # something is marked
+                self.user_found_lines.setData(self.user_found_lines.xData, self.user_found_lines.gamma_data)
         else:
-            self._plot_line.setData(self._plot_line.xData, self._plot_line.voltage_data)
+            if hasattr(self._plot_line, 'voltage_data'):  # something is loaded
+                self._plot_line.setData(self._plot_line.xData, self._plot_line.voltage_data)
+
+                self._loading = True
+                min_voltage: float = self._plot_line.voltage_data.min()
+                max_voltage: float = self._plot_line.voltage_data.max()
+                if not self.check_voltage_persists.isChecked():
+                    self.on_ylim_changed((min_voltage, max_voltage))
+                self.spin_voltage_min.setMaximum(max(max_voltage, self.spin_voltage_min.value()))
+                self.spin_voltage_max.setMinimum(min(min_voltage, self.spin_voltage_max.value()))
+                self._loading = False
+
+            if hasattr(self.automatically_found_lines, 'voltage_data'):  # something is marked
+                self.automatically_found_lines.setData(self.automatically_found_lines.xData,
+                                                       self.automatically_found_lines.voltage_data)
+            if hasattr(self.user_found_lines, 'voltage_data'):  # something is marked
+                self.user_found_lines.setData(self.user_found_lines.xData, self.user_found_lines.voltage_data)
 
         _translate: Callable[[str, str, Optional[str], int], str] = QCoreApplication.translate
         a: pg.AxisItem = self._canvas.getAxis('left')
@@ -1021,15 +1105,6 @@ class App(GUI):
                        units=_translate('unit', 'cm<sup>−1</sup>'))
             a.scale = 1.0
             a.autoSIPrefixScale = 1.0
-
-            self._loading = True
-            min_gamma: float = self._plot_line.gamma_data.min()
-            max_gamma: float = self._plot_line.gamma_data.max()
-            if not self.check_voltage_persists.isChecked():
-                self.on_ylim_changed((min_gamma, max_gamma))
-            self.spin_voltage_min.setMaximum(max(max_gamma, self.spin_voltage_min.value()))
-            self.spin_voltage_max.setMinimum(min(min_gamma, self.spin_voltage_max.value()))
-            self._loading = False
 
             self._cursor_y.suffix = _translate('unit', 'cm<sup>−1</sup>')
             self._cursor_y.siPrefix = False
@@ -1049,15 +1124,6 @@ class App(GUI):
                        # unitPrefix=_translate('unit prefix', 'm')
                        )
 
-            self._loading = True
-            min_voltage: float = self._plot_line.voltage_data.min()
-            max_voltage: float = self._plot_line.voltage_data.max()
-            if not self.check_voltage_persists.isChecked():
-                self.on_ylim_changed((min_voltage, max_voltage))
-            self.spin_voltage_min.setMaximum(max(max_voltage, self.spin_voltage_min.value()))
-            self.spin_voltage_max.setMinimum(min(min_voltage, self.spin_voltage_max.value()))
-            self._loading = False
-
             self._cursor_y.suffix = _translate('unit', 'V')
             self._cursor_y.siPrefix = True
             self._cursor_y.setFormatStr('{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}')
@@ -1069,10 +1135,19 @@ class App(GUI):
         self.spin_voltage_min.setOpts(**opts)
         self.spin_voltage_max.setOpts(**opts)
 
+        # hide cursors
         self._crosshair_h_line.setVisible(False)
         self._crosshair_v_line.setVisible(False)
         self._cursor_x.setVisible(False)
         self._cursor_y.setVisible(False)
+
+        # change visibility of the found lines table columns
+        if display_gamma:
+            self.table_found_lines.hideColumn(1)
+            self.table_found_lines.showColumn(2)
+        else:
+            self.table_found_lines.hideColumn(2)
+            self.table_found_lines.showColumn(1)
 
     def save_data(self):
         if self._plot_line.yData is None:
@@ -1112,8 +1187,10 @@ class App(GUI):
         # TODO: add legend to the figure to save
         import pyqtgraph.exporters
         exporter = pg.exporters.ImageExporter(self._canvas)
-        self._crosshair_h_line.setPos(np.nan)
-        self._crosshair_v_line.setPos(np.nan)
+        self._crosshair_h_line.setVisible(False)
+        self._crosshair_v_line.setVisible(False)
+        self._cursor_x.setVisible(False)
+        self._cursor_y.setVisible(False)
         exporter.export(copy=True)
 
     def save_figure(self):
@@ -1124,6 +1201,8 @@ class App(GUI):
         filename, _filter = self.save_file_dialog(_filter=_filter)
         if not filename:
             return
-        self._crosshair_h_line.setPos(np.nan)
-        self._crosshair_v_line.setPos(np.nan)
+        self._crosshair_h_line.setVisible(False)
+        self._crosshair_v_line.setVisible(False)
+        self._cursor_x.setVisible(False)
+        self._cursor_y.setVisible(False)
         exporter.export(filename)

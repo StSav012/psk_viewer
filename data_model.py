@@ -71,7 +71,7 @@ class DataModel(QAbstractTableModel):
 
     def data(self, index: QModelIndex, role: Qt.ItemDataRole = Qt.DisplayRole) -> Optional[str]:
         if index.isValid() and role == Qt.DisplayRole:
-            return self.formatted_item(index.row(), index.column())
+            return self.formatted_item(index.row(), index.column(), replace_hyphen=True)
         return None
 
     def item(self, row_index: int, column_index: int) -> float:

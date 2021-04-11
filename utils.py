@@ -6,7 +6,7 @@ from typing import Union, Tuple, List
 
 import numpy as np
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon, QPalette, QPixmap
+from PyQt5.QtGui import QIcon, QPalette, QPixmap, QColor
 
 try:
     from typing import Final
@@ -37,6 +37,14 @@ def load_icon(filename: str) -> QIcon:
     icon.addPixmap(QPixmap(resource_path(os.path.join('img', 'dark' if is_dark else 'light', filename + IMAGE_EXT))),
                    QIcon.Normal, QIcon.Off)
     return icon
+
+
+def mix_colors(color_1: QColor, color_2: QColor, ratio_1: float = 0.5) -> QColor:
+    return QColor(
+        int(round(color_2.red() * (1. - ratio_1) + color_1.red() * ratio_1)),
+        int(round(color_2.green() * (1. - ratio_1) + color_1.green() * ratio_1)),
+        int(round(color_2.blue() * (1. - ratio_1) + color_1.blue() * ratio_1)),
+        int(round(color_2.alpha() * (1. - ratio_1) + color_1.alpha() * ratio_1)))
 
 
 def copy_to_clipboard(plain_text: str, rich_text: str = '', text_type: Union[Qt.TextFormat, str] = Qt.PlainText):

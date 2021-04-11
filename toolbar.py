@@ -79,12 +79,11 @@ class NavigationToolbar(QToolBar):
             'Ctrl+O',
             'Ctrl+W',
             'Ctrl+/',
+            'Ctrl+`',
             '',
-            '',
-            '',
-            '',
-            '',
-            '', '', '',
+            '', '',
+            'Ctrl+*',
+            'Ctrl+Shift+C', 'Ctrl+Shift+S', 'Ctrl+Shift+W',
             'Ctrl+,'
         ]):
             if isinstance(i, str) and i:
