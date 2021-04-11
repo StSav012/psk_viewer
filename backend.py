@@ -1061,9 +1061,10 @@ class App(GUI):
         self.spin_voltage_min.setOpts(**opts)
         self.spin_voltage_max.setOpts(**opts)
 
-        # self._canvas.replot()
-
-        # TODO: update cursors
+        self._crosshair_h_line.setVisible(False)
+        self._crosshair_v_line.setVisible(False)
+        self._cursor_x.setVisible(False)
+        self._cursor_y.setVisible(False)
 
     def save_data(self):
         if self._plot_line.yData is None:
