@@ -43,15 +43,17 @@ class Settings(QSettings):
             'format': '{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}'
         }
         return {
-            'Processing': {
-                'Jump:': (opts, 'jump',)
+            _translate('preferences', 'Processing'): {
+                _translate('preferences', 'Jump:'): (opts, 'jump',)
             } if self.display_processing else {},
-            'Line': {
-                'Color:': ('line_color',)
+            _translate('preferences', 'Line'): {
+                _translate('preferences', 'Color:'): ('line_color',)
             },
-            'Export': {
-                'Line ending:': (self.LINE_ENDS, self._LINE_ENDS, 'line_end'),
-                'CSV separator:': (self.CSV_SEPARATORS, self._CSV_SEPARATORS, 'csv_separator'),
+            _translate('preferences', 'Export'): {
+                _translate('preferences', 'Line ending:'):
+                    (self.LINE_ENDS, self._LINE_ENDS, 'line_end'),
+                _translate('preferences', 'CSV separator:'):
+                    (self.CSV_SEPARATORS, self._CSV_SEPARATORS, 'csv_separator'),
             }
         }
 

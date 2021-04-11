@@ -1,7 +1,7 @@
 ﻿#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 import sys
-from typing import List, Type
+from typing import List, Type, Set
 
 try:
     from typing import Final
@@ -39,17 +39,25 @@ if __name__ == '__main__':
 
     app: QApplication = QApplication(sys.argv)
 
+    languages: Set[str] = set(QLocale().uiLanguages() + [QLocale().bcp47Name(), QLocale().name()])
+    language: str
     qt_translator: QTranslator = QTranslator()
-    qt_translator.load("qt_" + QLocale.system().bcp47Name(),
-                       QLibraryInfo.location(QLibraryInfo.TranslationsPath))
-    app.installTranslator(qt_translator)
+    for language in languages:
+        if qt_translator.load('qt_' + language,
+                              QLibraryInfo.location(QLibraryInfo.TranslationsPath)):
+            app.installTranslator(qt_translator)
+            break
     qtbase_translator: QTranslator = QTranslator()
-    qtbase_translator.load("qtbase_" + QLocale.system().bcp47Name(),
-                           QLibraryInfo.location(QLibraryInfo.TranslationsPath))
-    app.installTranslator(qtbase_translator)
+    for language in languages:
+        if qtbase_translator.load('qtbase_' + language,
+                                  QLibraryInfo.location(QLibraryInfo.TranslationsPath)):
+            app.installTranslator(qtbase_translator)
+            break
     my_translator: QTranslator = QTranslator()
-    my_translator.load(QLocale.system().bcp47Name(), resource_path('translations'))
-    app.installTranslator(my_translator)
+    for language in languages:
+        if my_translator.load(QLocale.system().bcp47Name(), resource_path('translations')):
+            app.installTranslator(my_translator)
+            break
 
     windows: List[App] = []
     for a in sys.argv[1:]:

@@ -194,11 +194,10 @@ class App(GUI):
         self.figure.setLabel('bottom',
                              text=_translate("plot axes labels", 'Frequency'),
                              units=_translate('unit', 'Hz'),
-                             unitPrefix=_translate('unit prefix', 'M'))
+                             unitPrefix=_translate('si prefixes', 'M'))
         self.figure.setLabel('left',
                              text=_translate("plot axes labels", 'Voltage'),
                              units=_translate('unit', 'V'),
-                             # unitPrefix=_translate('unit prefix', 'm')
                              )
 
         self.plot_toolbar.open_action.setIconText(_translate("plot toolbar action", "Open"))
@@ -217,11 +216,10 @@ class App(GUI):
         self.plot_toolbar.copy_figure_action.setIconText(_translate("plot toolbar action", "Copy Figure"))
         self.plot_toolbar.copy_figure_action.setToolTip(_translate("plot toolbar action", "Copy the plot as an image"))
         self.plot_toolbar.save_figure_action.setIconText(_translate("plot toolbar action", "Save Figure"))
-        self.plot_toolbar.save_figure_action.setToolTip(_translate("plot toolbar action",
-                                                                   "Save the plot into a file"))
+        self.plot_toolbar.save_figure_action.setToolTip(_translate("plot toolbar action", "Save the plot as an image"))
         self.plot_toolbar.trace_action.setIconText(_translate("plot toolbar action", "Mark"))
         self.plot_toolbar.trace_action.setToolTip(_translate("plot toolbar action",
-                                                             "Mark data points (use Shift to delete)"))
+                                                             "Mark data points (hold Shift to delete)"))
         self.plot_toolbar.copy_trace_action.setIconText(_translate("plot toolbar action", "Copy Marked"))
         self.plot_toolbar.copy_trace_action.setToolTip(_translate("plot toolbar action",
                                                                   "Copy marked points values into clipboard"))
@@ -1121,7 +1119,6 @@ class App(GUI):
             a.enableAutoSIPrefix(True)
             a.setLabel(text=_translate("plot axes labels", 'Voltage'),
                        units=_translate('unit', 'V'),
-                       # unitPrefix=_translate('unit prefix', 'm')
                        )
 
             self._cursor_y.suffix = _translate('unit', 'V')
