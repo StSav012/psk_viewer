@@ -209,8 +209,9 @@ class App(GUI):
                                                                       "Calculate second derivative"))
         self.plot_toolbar.differentiate_action.setToolTip(_translate("plot toolbar action",
                                                                      "Calculate finite-step second derivative"))
-        self.plot_toolbar.switch_data_action.setIconText(_translate("plot toolbar action", "Switch Y data"))
-        self.plot_toolbar.switch_data_action.setToolTip(_translate("plot toolbar action", "Switch Y data"))
+        self.plot_toolbar.switch_data_action.setIconText(_translate("plot toolbar action", "Show Absorption"))
+        self.plot_toolbar.switch_data_action.setToolTip(_translate("plot toolbar action",
+                                                                   "Switch Y data between absorption and voltage"))
         self.plot_toolbar.save_data_action.setIconText(_translate("plot toolbar action", "Save Data"))
         self.plot_toolbar.save_data_action.setToolTip(_translate("plot toolbar action", "Export the visible data"))
         self.plot_toolbar.copy_figure_action.setIconText(_translate("plot toolbar action", "Copy Figure"))
@@ -219,7 +220,8 @@ class App(GUI):
         self.plot_toolbar.save_figure_action.setToolTip(_translate("plot toolbar action",
                                                                    "Save the plot into clipboard"))
         self.plot_toolbar.trace_action.setIconText(_translate("plot toolbar action", "Mark"))
-        self.plot_toolbar.trace_action.setToolTip(_translate("plot toolbar action", "Mark data points"))
+        self.plot_toolbar.trace_action.setToolTip(_translate("plot toolbar action",
+                                                             "Mark data points (use Shift to delete)"))
         self.plot_toolbar.copy_trace_action.setIconText(_translate("plot toolbar action", "Copy Marked"))
         self.plot_toolbar.copy_trace_action.setToolTip(_translate("plot toolbar action",
                                                                   "Copy marked points values into clipboard"))
