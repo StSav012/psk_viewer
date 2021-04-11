@@ -51,6 +51,9 @@ if __name__ == '__main__':
     my_translator.load(QLocale.system().bcp47Name(), resource_path('translations'))
     app.installTranslator(my_translator)
 
-    window: App = App()
-    window.show()
+    windows: List[App] = []
+    for a in sys.argv[1:]:
+        window: App = App(a)
+        window.show()
+        windows.append(window)
     app.exec_()

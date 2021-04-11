@@ -94,7 +94,7 @@ class App(GUI):
     _GAMMA_DATA: Final[str] = 'gammaData'
     _VOLTAGE_DATA: Final[str] = 'voltageData'
 
-    def __init__(self, flags=Qt.WindowFlags()):
+    def __init__(self, filename: str = '', flags=Qt.WindowFlags()):
         super().__init__(flags=flags)
 
         self._data_mode: int = 0
@@ -138,6 +138,10 @@ class App(GUI):
         self.load_config()
 
         self.setup_ui_actions()
+
+        if filename and os.path.exists(filename):
+            if self.load_data(filename):
+                self.set_config_value('open', 'location', os.path.split(filename)[0])
 
     def setup_ui(self):
         if self._is_dark:
@@ -883,14 +887,14 @@ class App(GUI):
             self.legend_item.addItem(self._plot_line, self._plot_line.name())
         self.legend.setMinimumWidth(self.legend_item.boundingRect().width())
 
-    def load_data(self):
-        filename: str
-        _filter: str
-        _formats: List[str] = [
-            'PSK Spectrometer (*.conf *.scandat)',
-            'Fast Sweep Spectrometer (*.fmd)',
-        ]
-        filename, _filter = self.open_file_dialog(_filter=';;'.join(_formats))
+    def load_data(self, filename: str = '') -> bool:
+        if not filename:
+            _filter: str
+            _formats: List[str] = [
+                'PSK Spectrometer (*.conf *.scandat)',
+                'Fast Sweep Spectrometer (*.fmd)',
+            ]
+            filename, _filter = self.open_file_dialog(_filter=';;'.join(_formats))
         v: np.ndarray
         f: np.ndarray
         g: np.ndarray = np.empty(0)
@@ -920,10 +924,10 @@ class App(GUI):
                 self.settings.display_processing = False
                 self._data_mode = self.FS_DATA_MODE
         else:
-            return
+            return False
 
         if not (f.size and v.size):
-            return
+            return False
 
         new_label: str = os.path.split(fn)[-1]
 
@@ -967,6 +971,8 @@ class App(GUI):
                                  upper_value=self.spin_frequency_max.value())
         self.set_voltage_range(lower_value=self.spin_voltage_min.value(),
                                upper_value=self.spin_voltage_max.value())
+
+        return True
 
     @property
     def trace_mode(self):
