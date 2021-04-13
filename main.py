@@ -60,7 +60,7 @@ if __name__ == '__main__':
             break
 
     windows: List[App] = []
-    for a in sys.argv[1:]:
+    for a in sys.argv[1:] or ['']:
         window: App = App(a)
         window.show()
         windows.append(window)
