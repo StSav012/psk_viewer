@@ -315,6 +315,7 @@ class App(GUI):
         self.spin_threshold.valueChanged.connect(lambda new_value:
                                                  self.set_config_value('lineSearch', 'threshold', new_value))
         self.button_find_lines.clicked.connect(self.on_button_find_lines_clicked)
+        # FIXME: with self.button_clear_lines, clear only automatically found lines
         self.button_clear_lines.clicked.connect(self.clear_found_lines)
         self.button_prev_line.clicked.connect(self.prev_found_line)
         self.button_next_line.clicked.connect(self.next_found_line)
@@ -322,9 +323,9 @@ class App(GUI):
         def adjust_columns():
             _translate = QCoreApplication.translate
             self.model_found_lines.header = (
-                [_translate('main window', 'Frequency [MHz]')] +
-                ([_translate('main window', 'Voltage [mV]'), _translate('main window', 'Absorption [cm⁻¹ × 10⁻⁶]')]
-                 * (self.table_found_lines.horizontalHeader().count() // 2))
+                    [_translate('main window', 'Frequency [MHz]')] +
+                    ([_translate('main window', 'Voltage [mV]'), _translate('main window', 'Absorption [cm⁻¹ × 10⁻⁶]')]
+                     * (self.table_found_lines.horizontalHeader().count() // 2))
             )
             for i in range(self.table_found_lines.horizontalHeader().count()):
                 self.table_found_lines.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
@@ -393,6 +394,10 @@ class App(GUI):
             for point in points:
                 index &= (items != point)
             item.setData(item.xData[index], item.yData[index])
+            if hasattr(item, 'voltage_data'):
+                item.voltage_data = item.voltage_data[index]
+            if hasattr(item, 'gamma_data'):
+                item.gamma_data = item.gamma_data[index]
 
             # update the table
             if self.user_found_lines.xData is not None and self.user_found_lines.yData is not None:
@@ -414,12 +419,12 @@ class App(GUI):
                     self.model_found_lines.set_data(np.column_stack((
                         self.automatically_found_lines.xData,
                         self.automatically_found_lines.voltage_data,
+                        self.automatically_found_lines.gamma_data,
                     )))
                 else:
                     self.model_found_lines.set_data(np.column_stack((
                         self.automatically_found_lines.xData,
                         self.automatically_found_lines.voltage_data,
-                        self.automatically_found_lines.gamma_data,
                     )))
 
             self.plot_toolbar.copy_trace_action.setEnabled(not self.model_found_lines.is_empty)
@@ -476,29 +481,19 @@ class App(GUI):
                     self.user_found_lines.gamma_data = np.array([self._plot_line.gamma_data[closest_point_index]])
                 else:
                     # avoid the same point to be marked several times
-                    if self._data_type == self._VOLTAGE_DATA and np.any(
+                    if np.any(
                             (self.user_found_lines.xData == self._plot_line.xData[closest_point_index])
                             &
-                            (self.user_found_lines.voltage_data == self._plot_line.yData[closest_point_index])
+                            (self.user_found_lines.yData == self._plot_line.yData[closest_point_index])
                     ):
                         return
-                    if self._data_type == self._GAMMA_DATA and np.any(
-                            (self.user_found_lines.xData == self._plot_line.xData[closest_point_index])
-                            &
-                            (self.user_found_lines.gamma_data == self._plot_line.yData[closest_point_index])
-                    ):
-                        return
-                    if self._data_type == self._VOLTAGE_DATA and np.any(
-                            (self.automatically_found_lines.xData == self._plot_line.xData[closest_point_index])
-                            &
-                            (self.automatically_found_lines.voltage_data == self._plot_line.yData[closest_point_index])
-                    ):
-                        return
-                    if self._data_type == self._GAMMA_DATA and np.any(
-                            (self.automatically_found_lines.xData == self._plot_line.xData[closest_point_index])
-                            &
-                            (self.automatically_found_lines.gamma_data == self._plot_line.yData[closest_point_index])
-                    ):
+                    if (self.automatically_found_lines.xData is not None
+                            and self.automatically_found_lines.yData.size is not None
+                            and np.any(
+                                (self.automatically_found_lines.xData == self._plot_line.xData[closest_point_index])
+                                &
+                                (self.automatically_found_lines.yData == self._plot_line.yData[closest_point_index])
+                            )):
                         return
                     self.user_found_lines.voltage_data = np.append(self.user_found_lines.voltage_data,
                                                                    self._plot_line.voltage_data[closest_point_index])
@@ -1069,10 +1064,12 @@ class App(GUI):
                 self.spin_voltage_max.setMinimum(min(min_gamma, self.spin_voltage_max.value()))
                 self._loading = False
 
-            if hasattr(self.automatically_found_lines, 'gamma_data'):  # something is marked
+            if (self.automatically_found_lines.xData is not None
+                    and hasattr(self.automatically_found_lines, 'gamma_data')):  # something is marked
                 self.automatically_found_lines.setData(self.automatically_found_lines.xData,
                                                        self.automatically_found_lines.gamma_data)
-            if hasattr(self.user_found_lines, 'gamma_data'):  # something is marked
+            if (self.user_found_lines.xData is not None
+                    and hasattr(self.user_found_lines, 'gamma_data')):  # something is marked
                 self.user_found_lines.setData(self.user_found_lines.xData, self.user_found_lines.gamma_data)
         else:
             if hasattr(self._plot_line, 'voltage_data'):  # something is loaded
@@ -1087,10 +1084,12 @@ class App(GUI):
                 self.spin_voltage_max.setMinimum(min(min_voltage, self.spin_voltage_max.value()))
                 self._loading = False
 
-            if hasattr(self.automatically_found_lines, 'voltage_data'):  # something is marked
+            if (self.automatically_found_lines.xData is not None
+                    and hasattr(self.automatically_found_lines, 'voltage_data')):  # something is marked
                 self.automatically_found_lines.setData(self.automatically_found_lines.xData,
                                                        self.automatically_found_lines.voltage_data)
-            if hasattr(self.user_found_lines, 'voltage_data'):  # something is marked
+            if (self.user_found_lines.xData is not None
+                    and hasattr(self.user_found_lines, 'voltage_data')):  # something is marked
                 self.user_found_lines.setData(self.user_found_lines.xData, self.user_found_lines.voltage_data)
 
         _translate: Callable[[str, str, Optional[str], int], str] = QCoreApplication.translate
