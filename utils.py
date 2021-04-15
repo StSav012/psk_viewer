@@ -2,11 +2,12 @@
 
 import os
 import sys
-from typing import Union, Tuple, List
+from typing import Union, Tuple, List, Callable, Optional
 
 import numpy as np
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QCoreApplication
 from PyQt5.QtGui import QIcon, QPalette, QPixmap, QColor
+from PyQt5.QtWidgets import QInputDialog, QWidget
 
 try:
     from typing import Final
@@ -92,7 +93,8 @@ def load_data_fs(filename: str) -> Tuple[np.ndarray, np.ndarray]:
     return np.empty(0), np.empty(0)
 
 
-def load_data_scandat(filename: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
+def load_data_scandat(filename: str, parent: Optional[QWidget] = None) \
+        -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
     with open(filename, 'rt') as f_in:
         lines: List[str] = f_in.readlines()
 
@@ -151,6 +153,21 @@ def load_data_scandat(filename: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray
         y = np.array([float(line) for line in lines[::2]]) * 1e-3
         bias = np.array([bias_offset - float(line) for line in lines[1::2]])
     x = np.arange(y.size, dtype=float) * frequency_step + min_frequency
+    ok: bool = False
+    while cell_length <= 0.0 or not ok:
+        _translate: Callable[[str, str, Optional[str], int], str] = QCoreApplication.translate
+        cell_length, ok = QInputDialog.getDouble(parent,
+                                                 parent.windowTitle() if parent is not None else '',
+                                                 _translate('dialog prompt',
+                                                            'Encountered invalid value of the cell length: {} cm\n'
+                                                            'Enter a correct value [cm]:'.format(cell_length)),
+                                                 100.0,
+                                                 0.1,
+                                                 1000.0,
+                                                 1,
+                                                 Qt.WindowFlags(),
+                                                 0.1
+                                                 )
     return x, y, y / bias / cell_length / VOLTAGE_GAIN, frequency_jump
 
 

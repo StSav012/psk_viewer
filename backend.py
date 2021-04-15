@@ -1040,7 +1040,7 @@ class App(GUI):
         jump: float
         if filename.casefold().endswith('.scandat'):
             fn: str = os.path.splitext(filename)[0]
-            f, v, g, jump = load_data_scandat(filename)
+            f, v, g, jump = load_data_scandat(filename, self)
             if f.size and v.size:
                 self.settings.display_processing = True
                 if jump > 0.0:
