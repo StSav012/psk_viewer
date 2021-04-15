@@ -1029,13 +1029,13 @@ class App(GUI):
         self.box_find_lines.setEnabled(self.model_signal.size)
 
         self._loading = True
+        self.spin_frequency_min.setMaximum(max(max_frequency, self.spin_frequency_min.value()))
+        self.spin_frequency_max.setMinimum(min(min_frequency, self.spin_frequency_max.value()))
         if not self.check_frequency_persists.isChecked():
             self.spin_frequency_min.setValue(min_frequency)
             self.spin_frequency_max.setValue(max_frequency)
             self.spin_frequency_span.setValue(max_frequency - min_frequency)
             self.spin_frequency_center.setValue(0.5 * (max_frequency + min_frequency))
-        self.spin_frequency_min.setMaximum(max(max_frequency, self.spin_frequency_min.value()))
-        self.spin_frequency_max.setMinimum(min(min_frequency, self.spin_frequency_max.value()))
         self._loading = False
 
         self.display_gamma_or_voltage(self.plot_toolbar.switch_data_action.isChecked())
