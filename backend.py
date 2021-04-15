@@ -6,7 +6,7 @@ from typing import Callable, Iterable, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 import pyqtgraph as pg
-from PyQt5.QtCore import QCoreApplication, QItemSelectionModel, QModelIndex, QPointF, Qt
+from PyQt5.QtCore import QCoreApplication, QItemSelectionModel, QModelIndex, QPointF, QRectF, Qt
 from PyQt5.QtGui import QBrush, QColor, QKeyEvent, QKeySequence, QPalette
 from PyQt5.QtWidgets import QAction, QDesktopWidget, QHeaderView
 from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent
@@ -128,8 +128,12 @@ class App(GUI):
         self._data_type: str = self._VOLTAGE_DATA
 
         # cross hair
-        self._crosshair_v_line = pg.InfiniteLine(angle=90, movable=False)
-        self._crosshair_h_line = pg.InfiniteLine(angle=0, movable=False)
+        self._crosshair_v_line = pg.InfiniteLine(angle=90, movable=False, pen=self.settings.crosshair_lines_color)
+        self._crosshair_h_line = pg.InfiniteLine(angle=0, movable=False, pen=self.settings.crosshair_lines_color)
+
+        self._cursor_balloon: pg.TextItem = pg.TextItem(color='#ccc' if self._is_dark else '#333')
+        self._cursor_balloon.setVisible(False)
+        self.figure.addItem(self._cursor_balloon)
 
         self._mouse_moved_signal_proxy = pg.SignalProxy(self.figure.scene().sigMouseMoved,
                                                         rateLimit=10, slot=self.on_mouse_moved)
@@ -455,16 +459,32 @@ class App(GUI):
                 self._cursor_y.setVisible(True)
                 self._cursor_x.setValue(point.x())
                 self._cursor_y.setValue(point.y())
+
+                if self.settings.show_coordinates_at_crosshair:
+                    self._cursor_balloon.setPos(point)
+                    self._cursor_balloon.setText(self._cursor_x.text() + '\n' + self._cursor_y.text())
+                    balloon_border: QRectF = self._cursor_balloon.boundingRect()
+                    sx: float
+                    sy: float
+                    sx, sy = self._canvas.vb.viewPixelSize()
+                    balloon_width: float = balloon_border.width() * sx
+                    balloon_height: float = balloon_border.height() * sy
+                    anchor_x: float = 0.0 if point.x() - self.figure.visibleRange().left() < balloon_width else 1.0
+                    anchor_y: float = 0.0 if self.figure.visibleRange().bottom() - point.y() < balloon_height else 1.0
+                    self._cursor_balloon.setAnchor((anchor_x, anchor_y))
+                self._cursor_balloon.setVisible(self.settings.show_coordinates_at_crosshair)
             else:
                 self._crosshair_h_line.setVisible(False)
                 self._crosshair_v_line.setVisible(False)
                 self._cursor_x.setVisible(False)
                 self._cursor_y.setVisible(False)
+                self._cursor_balloon.setVisible(False)
         else:
             self._crosshair_h_line.setVisible(False)
             self._crosshair_v_line.setVisible(False)
             self._cursor_x.setVisible(False)
             self._cursor_y.setVisible(False)
+            self._cursor_balloon.setVisible(False)
 
     def on_plot_clicked(self, event: MouseClickEvent):
         pos: QPointF = event.scenePos()
@@ -678,6 +698,7 @@ class App(GUI):
         preferences_dialog.exec()
         self.set_line_color(self.settings.line_color)
         self.set_mark_color(self.settings.mark_color)
+        self.set_crosshair_lines_color(self.settings.crosshair_lines_color)
 
     @property
     def line(self):
@@ -703,6 +724,10 @@ class App(GUI):
         self.automatically_found_lines.setSymbolBrush(color)
         self.user_found_lines.setSymbolPen(color)
         self.user_found_lines.setSymbolBrush(color)
+        self._canvas.replot()
+
+    def set_crosshair_lines_color(self, color: QColor):
+        self._crosshair_v_line.setPen(color)
         self._canvas.replot()
 
     def find_lines(self, threshold: float) -> int:
