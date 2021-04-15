@@ -115,8 +115,8 @@ class App(GUI):
             self.model_signal: np.ndarray = pd.read_csv(resource_path('averaged fs signal filtered.csv')).values
         except (OSError, BlockingIOError):
             self.model_signal: np.ndarray = np.empty(0)
-            self.box_find_lines.setDisabled(True)
             self.box_find_lines.hide()
+        self.box_find_lines.setDisabled(True)
         self.user_found_lines: PlotDataItem = \
             self._canvas.scatterPlot(np.empty(0), pen=self.settings.line_color, brush=self.settings.line_color)
         self.automatically_found_lines: PlotDataItem = \
@@ -315,8 +315,7 @@ class App(GUI):
         self.spin_threshold.valueChanged.connect(lambda new_value:
                                                  self.set_config_value('lineSearch', 'threshold', new_value))
         self.button_find_lines.clicked.connect(self.on_button_find_lines_clicked)
-        # FIXME: with self.button_clear_lines, clear only automatically found lines
-        self.button_clear_lines.clicked.connect(self.clear_found_lines)
+        self.button_clear_lines.clicked.connect(self.clear_automatically_found_lines)
         self.button_prev_line.clicked.connect(self.prev_found_line)
         self.button_next_line.clicked.connect(self.next_found_line)
 
@@ -387,6 +386,8 @@ class App(GUI):
             return
         if not self.trace_mode:
             return
+        if ev.button() != Qt.LeftButton:
+            return
         if ev.modifiers() == Qt.ShiftModifier:
             point: pg.SpotItem
             items: np.ndarray = item.scatter.data['item']
@@ -431,7 +432,7 @@ class App(GUI):
             self.plot_toolbar.save_trace_action.setEnabled(not self.model_found_lines.is_empty)
             self.plot_toolbar.clear_trace_action.setEnabled(not self.model_found_lines.is_empty)
 
-        else:
+        elif ev.modifiers() == Qt.NoModifier:
             point: pg.SpotItem
             found_lines_frequencies: np.ndarray = self.model_found_lines.all_data[:, 0]
             selected_points: List[int] = [np.argmin(np.abs(point.pos().x() - found_lines_frequencies))
@@ -900,6 +901,25 @@ class App(GUI):
                             header=['Frequency [MHz]', 'Voltage [mV]', 'Absorption [cm⁻¹]'],
                             sheet_name=self._plot_line.name() or 'Sheet1')
 
+    def clear_automatically_found_lines(self):
+        self.automatically_found_lines.clear()
+        self._canvas.replot()
+
+        if self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE):
+            self.model_found_lines.set_data(np.column_stack((
+                self.user_found_lines.xData,
+                self.user_found_lines.voltage_data,
+                self.user_found_lines.gamma_data,
+            )))
+        else:
+            self.model_found_lines.set_data(np.column_stack((
+                self.user_found_lines.xData,
+                self.user_found_lines.voltage_data,
+            )))
+        self.plot_toolbar.copy_trace_action.setEnabled(True)
+        self.plot_toolbar.save_trace_action.setEnabled(True)
+        self.plot_toolbar.clear_trace_action.setEnabled(True)
+
     def clear_found_lines(self):
         self.automatically_found_lines.clear()
         self.user_found_lines.clear()
@@ -926,6 +946,7 @@ class App(GUI):
         self.plot_toolbar.save_trace_action.setEnabled(False)
         self.plot_toolbar.clear_trace_action.setEnabled(False)
         self.plot_toolbar.configure_action.setEnabled(False)
+        self.box_find_lines.setEnabled(False)
         self._canvas.replot()
 
     def update_legend(self):
@@ -1001,6 +1022,7 @@ class App(GUI):
         self.plot_toolbar.save_figure_action.setEnabled(True)
         self.plot_toolbar.trace_action.setEnabled(True)
         self.plot_toolbar.configure_action.setEnabled(True)
+        self.box_find_lines.setEnabled(self.model_signal.size)
 
         self._loading = True
         if not self.check_frequency_persists.isChecked():
