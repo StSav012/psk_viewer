@@ -408,30 +408,57 @@ class App(GUI):
             # update the table
             if self.user_found_lines.xData is not None and self.user_found_lines.yData is not None:
                 if self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE):
-                    self.model_found_lines.set_data(np.column_stack((
-                        np.concatenate((self.automatically_found_lines.xData, self.user_found_lines.xData)),
-                        np.concatenate((self.automatically_found_lines.voltage_data,
-                                        self.user_found_lines.voltage_data)),
-                        np.concatenate((self.automatically_found_lines.gamma_data, self.user_found_lines.gamma_data)),
-                    )))
+                    if (self.automatically_found_lines.xData is not None
+                            and hasattr(self.automatically_found_lines,'voltage_data')
+                            and hasattr(self.automatically_found_lines, 'gamma_data')):
+                        self.model_found_lines.set_data(np.column_stack((
+                            np.concatenate((self.automatically_found_lines.xData,
+                                            self.user_found_lines.xData)),
+                            np.concatenate((self.automatically_found_lines.voltage_data,
+                                            self.user_found_lines.voltage_data)),
+                            np.concatenate((self.automatically_found_lines.gamma_data,
+                                            self.user_found_lines.gamma_data)),
+                        )))
+                    else:
+                        self.model_found_lines.set_data(np.column_stack((
+                            self.user_found_lines.xData,
+                            self.user_found_lines.voltage_data,
+                            self.user_found_lines.gamma_data,
+                        )))
                 else:
-                    self.model_found_lines.set_data(np.column_stack((
-                        np.concatenate((self.automatically_found_lines.xData, self.user_found_lines.xData)),
-                        np.concatenate((self.automatically_found_lines.voltage_data,
-                                        self.user_found_lines.voltage_data)),
-                    )))
+                    if (self.automatically_found_lines.xData is not None
+                            and hasattr(self.automatically_found_lines,'voltage_data')):
+                        self.model_found_lines.set_data(np.column_stack((
+                            np.concatenate((self.automatically_found_lines.xData, self.user_found_lines.xData)),
+                            np.concatenate((self.automatically_found_lines.voltage_data,
+                                            self.user_found_lines.voltage_data)),
+                        )))
+                    else:
+                        self.model_found_lines.set_data(np.column_stack((
+                            self.user_found_lines.xData,
+                            self.user_found_lines.voltage_data,
+                        )))
             else:
                 if self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE):
-                    self.model_found_lines.set_data(np.column_stack((
-                        self.automatically_found_lines.xData,
-                        self.automatically_found_lines.voltage_data,
-                        self.automatically_found_lines.gamma_data,
-                    )))
+                    if (self.automatically_found_lines.xData is not None
+                            and hasattr(self.automatically_found_lines,'voltage_data')
+                            and hasattr(self.automatically_found_lines, 'gamma_data')):
+                        self.model_found_lines.set_data(np.column_stack((
+                            self.automatically_found_lines.xData,
+                            self.automatically_found_lines.voltage_data,
+                            self.automatically_found_lines.gamma_data,
+                        )))
+                    else:
+                        self.model_found_lines.clear()
                 else:
-                    self.model_found_lines.set_data(np.column_stack((
-                        self.automatically_found_lines.xData,
-                        self.automatically_found_lines.voltage_data,
-                    )))
+                    if (self.automatically_found_lines.xData is not None
+                            and hasattr(self.automatically_found_lines,'voltage_data')):
+                        self.model_found_lines.set_data(np.column_stack((
+                            self.automatically_found_lines.xData,
+                            self.automatically_found_lines.voltage_data,
+                        )))
+                    else:
+                        self.model_found_lines.clear()
 
             self.plot_toolbar.copy_trace_action.setEnabled(not self.model_found_lines.is_empty)
             self.plot_toolbar.save_trace_action.setEnabled(not self.model_found_lines.is_empty)
