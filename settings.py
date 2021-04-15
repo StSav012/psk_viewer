@@ -47,6 +47,7 @@ class Settings(QSettings):
                 _translate('preferences', 'Jump:'): (opts, 'jump',)
             } if self.display_processing else {},
             _translate('preferences', 'Crosshair'): {
+                _translate('preferences', 'Show crosshair lines'): ('show_crosshair',),
                 _translate('preferences', 'Show coordinates'): ('show_coordinates_at_crosshair',),
                 _translate('preferences', 'Color:'): ('crosshair_lines_color',)
             },
@@ -127,6 +128,19 @@ class Settings(QSettings):
     def jump(self, new_value: float):
         self.beginGroup('processing')
         self.setValue('jump', new_value)
+        self.endGroup()
+
+    @property
+    def show_crosshair(self) -> bool:
+        self.beginGroup('crosshair')
+        v: bool = self.value('show', True, bool)
+        self.endGroup()
+        return v
+
+    @show_crosshair.setter
+    def show_crosshair(self, new_value: bool):
+        self.beginGroup('crosshair')
+        self.setValue('show', new_value)
         self.endGroup()
 
     @property

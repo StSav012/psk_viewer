@@ -130,6 +130,8 @@ class App(GUI):
         # cross hair
         self._crosshair_v_line = pg.InfiniteLine(angle=90, movable=False, pen=self.settings.crosshair_lines_color)
         self._crosshair_h_line = pg.InfiniteLine(angle=0, movable=False, pen=self.settings.crosshair_lines_color)
+        self._crosshair_h_line.setVisible(self.settings.show_crosshair)
+        self._crosshair_v_line.setVisible(self.settings.show_crosshair)
 
         self._cursor_balloon: pg.TextItem = pg.TextItem(color='#ccc' if self._is_dark else '#333')
         self._cursor_balloon.setVisible(False)
@@ -453,8 +455,8 @@ class App(GUI):
                 self.status_bar.clearMessage()
                 self._crosshair_v_line.setPos(point.x())
                 self._crosshair_h_line.setPos(point.y())
-                self._crosshair_h_line.setVisible(True)
-                self._crosshair_v_line.setVisible(True)
+                self._crosshair_h_line.setVisible(self.settings.show_crosshair)
+                self._crosshair_v_line.setVisible(self.settings.show_crosshair)
                 self._cursor_x.setVisible(True)
                 self._cursor_y.setVisible(True)
                 self._cursor_x.setValue(point.x())
