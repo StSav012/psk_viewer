@@ -49,6 +49,9 @@ class Settings(QSettings):
             _translate('preferences', 'Line'): {
                 _translate('preferences', 'Color:'): ('line_color',)
             },
+            _translate('preferences', 'Marks'): {
+                _translate('preferences', 'Color:'): ('mark_color',)
+            },
             _translate('preferences', 'Export'): {
                 _translate('preferences', 'Line ending:'):
                     (self.LINE_ENDS, self._LINE_ENDS, 'line_end'),
@@ -93,6 +96,19 @@ class Settings(QSettings):
     @line_color.setter
     def line_color(self, new_value: QColor):
         self.beginGroup('plotLine')
+        self.setValue('color', new_value)
+        self.endGroup()
+
+    @property
+    def mark_color(self) -> QColor:
+        self.beginGroup('marks')
+        v: QColor = self.value('color', self.line_color, QColor)
+        self.endGroup()
+        return v
+
+    @mark_color.setter
+    def mark_color(self, new_value: QColor):
+        self.beginGroup('marks')
         self.setValue('color', new_value)
         self.endGroup()
 

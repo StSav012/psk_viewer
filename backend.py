@@ -672,6 +672,7 @@ class App(GUI):
         preferences_dialog: Preferences = Preferences(self.settings, self)
         preferences_dialog.exec()
         self.set_line_color(self.settings.line_color)
+        self.set_mark_color(self.settings.mark_color)
 
     @property
     def line(self):
@@ -690,6 +691,9 @@ class App(GUI):
     def set_line_color(self, color: QColor):
         self._plot_line.setPen(color)
         self._plot_line.setBrush(color)
+        self._canvas.replot()
+
+    def set_mark_color(self, color: QColor):
         self.automatically_found_lines.setSymbolPen(color)
         self.automatically_found_lines.setSymbolBrush(color)
         self.user_found_lines.setSymbolPen(color)
