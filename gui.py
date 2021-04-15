@@ -225,11 +225,11 @@ class GUI(QMainWindow):
         self.button_zoom_y_in_fine.setText(_translate('main window', '+10%'))
         self.button_zoom_y_in_coarse.setText(_translate('main window', '+50%'))
 
-        self.box_find_lines.setWindowTitle(_translate('main window', 'Find Lines'))
+        self.box_find_lines.setWindowTitle(_translate('main window', 'Find Lines Automatically'))
         self.group_find_lines.setToolTip(_translate('main window',
                                                     'Try to detect lines automatically'))
-        self.button_find_lines.setText(_translate('main window', 'Find Lines'))
-        self.button_clear_lines.setText(_translate('main window', 'Clear Lines'))
+        self.button_find_lines.setText(_translate('main window', 'Find Lines Automatically'))
+        self.button_clear_lines.setText(_translate('main window', 'Clear Automatically Found Lines'))
         self.button_prev_line.setText(_translate('main window', 'Previous Line'))
         self.button_next_line.setText(_translate('main window', 'Next Line'))
 
