@@ -101,6 +101,11 @@ class DataModel(QAbstractTableModel):
         self.beginResetModel()
         self._data = np.array(new_data)
         self._rows_loaded = self.ROW_BATCH_COUNT
+        if self._sort_column < self._data.shape[1]:
+            sort_indices: np.ndarray = np.argsort(self._data[:, self._sort_column], kind='heapsort')
+            if self._sort_order == Qt.DescendingOrder:
+                sort_indices = sort_indices[::-1]
+            self._data = self._data[sort_indices]
         self.endResetModel()
 
     def append_data(self, new_data_line: Union[List[float], np.ndarray]):
