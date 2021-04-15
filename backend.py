@@ -6,16 +6,16 @@ from typing import Callable, Iterable, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 import pyqtgraph as pg
-from PyQt5.QtCore import QCoreApplication, QPointF, Qt, QItemSelectionModel, QModelIndex
-from PyQt5.QtGui import QBrush, QPalette, QColor, QKeyEvent, QKeySequence
-from PyQt5.QtWidgets import QAction, QHeaderView, QDesktopWidget
+from PyQt5.QtCore import QCoreApplication, QItemSelectionModel, QModelIndex, QPointF, Qt
+from PyQt5.QtGui import QBrush, QColor, QKeyEvent, QKeySequence, QPalette
+from PyQt5.QtWidgets import QAction, QDesktopWidget, QHeaderView
 from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent
 
 import detection
 from gui import GUI
 from preferences import Preferences
 from toolbar import NavigationToolbar
-from utils import copy_to_clipboard, load_data_fs, load_data_scandat, load_data_csv, resource_path, mix_colors
+from utils import copy_to_clipboard, load_data_csv, load_data_fs, load_data_scandat, mix_colors, resource_path
 
 try:
     from typing import Final
@@ -277,6 +277,7 @@ class App(GUI):
         return
 
     def setup_ui_actions(self):
+        # noinspection PyTypeChecker
         self.plot_toolbar.open_action.triggered.connect(self.load_data)
         self.plot_toolbar.clear_action.triggered.connect(self.clear)
         self.plot_toolbar.differentiate_action.triggered.connect(self.calculate_second_derivative)
@@ -444,15 +445,21 @@ class App(GUI):
         pos: QPointF = event[0]
         if self.figure.sceneBoundingRect().contains(pos):
             point: QPointF = self._canvas.vb.mapSceneToView(pos)
-            self.status_bar.clearMessage()
-            self._crosshair_v_line.setPos(point.x())
-            self._crosshair_h_line.setPos(point.y())
-            self._crosshair_h_line.setVisible(True)
-            self._crosshair_v_line.setVisible(True)
-            self._cursor_x.setVisible(True)
-            self._cursor_y.setVisible(True)
-            self._cursor_x.setValue(point.x())
-            self._cursor_y.setValue(point.y())
+            if self.figure.visibleRange().contains(point):
+                self.status_bar.clearMessage()
+                self._crosshair_v_line.setPos(point.x())
+                self._crosshair_h_line.setPos(point.y())
+                self._crosshair_h_line.setVisible(True)
+                self._crosshair_v_line.setVisible(True)
+                self._cursor_x.setVisible(True)
+                self._cursor_y.setVisible(True)
+                self._cursor_x.setValue(point.x())
+                self._cursor_y.setValue(point.y())
+            else:
+                self._crosshair_h_line.setVisible(False)
+                self._crosshair_v_line.setVisible(False)
+                self._cursor_x.setVisible(False)
+                self._cursor_y.setVisible(False)
         else:
             self._crosshair_h_line.setVisible(False)
             self._crosshair_v_line.setVisible(False)
