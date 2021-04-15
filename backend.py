@@ -121,9 +121,9 @@ class App(GUI):
             self.box_find_lines.hide()
         self.box_find_lines.setDisabled(True)
         self.user_found_lines: PlotDataItem = \
-            self._canvas.scatterPlot(np.empty(0), pen=self.settings.line_color, brush=self.settings.line_color)
+            self._canvas.scatterPlot(np.empty(0), pen=self.settings.mark_color, brush=self.settings.mark_color)
         self.automatically_found_lines: PlotDataItem = \
-            self._canvas.scatterPlot(np.empty(0), pen=self.settings.line_color, brush=self.settings.line_color)
+            self._canvas.scatterPlot(np.empty(0), pen=self.settings.mark_color, brush=self.settings.mark_color)
 
         self._data_type: str = self._VOLTAGE_DATA
 
