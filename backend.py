@@ -86,6 +86,9 @@ class PlotDataItem(pg.PlotDataItem):
         self.gamma_data: np.ndarray = np.empty(0)
 
 
+_translate: Callable[[str, str, Optional[str], int], str] = QCoreApplication.translate
+
+
 class App(GUI):
     PSK_DATA_MODE: Final[int] = 1
     PSK_WITH_JUMP_DATA_MODE: Final[int] = 2
@@ -189,16 +192,12 @@ class App(GUI):
         self.translate_ui()
 
     def translate_ui(self):
-        _translate: Callable[[str, str, Optional[str], int], str] = QCoreApplication.translate
-
         self.figure.setLabel('bottom',
                              text=_translate("plot axes labels", 'Frequency'),
-                             units=_translate('unit', 'Hz'),
-                             unitPrefix=_translate('si prefixes', 'M'))
+                             units=_translate('unit', 'Hz'))
         self.figure.setLabel('left',
                              text=_translate("plot axes labels", 'Voltage'),
-                             units=_translate('unit', 'V'),
-                             )
+                             units=_translate('unit', 'V'))
 
         self.plot_toolbar.open_action.setIconText(_translate("plot toolbar action", "Open"))
         self.plot_toolbar.open_action.setToolTip(_translate("plot toolbar action", "Load spectrometer data"))
@@ -320,7 +319,6 @@ class App(GUI):
         self.button_next_line.clicked.connect(self.next_found_line)
 
         def adjust_columns():
-            _translate = QCoreApplication.translate
             self.model_found_lines.header = (
                     [_translate('main window', 'Frequency [MHz]')] +
                     ([_translate('main window', 'Voltage [mV]'), _translate('main window', 'Absorption [cm⁻¹ × 10⁻⁶]')]
@@ -881,6 +879,7 @@ class App(GUI):
         filename, _filter = self.save_file_dialog(_filter='CSV (*.csv);;XLSX (*.xlsx)')
         if not filename:
             return
+
         filename_parts: Tuple[str, str] = os.path.splitext(filename)
         f: np.ndarray = self.model_found_lines.all_data[:, 0] * 1e-6
         v: np.ndarray = self.model_found_lines.all_data[:, 1] * 1e3
@@ -893,17 +892,23 @@ class App(GUI):
             # noinspection PyTypeChecker
             np.savetxt(filename, data,
                        delimiter=sep,
-                       header=(sep.join(('frequency', 'voltage', 'absorption')) + '\n'
-                               + sep.join(('MHz', 'mV', 'cm⁻¹'))),
-                       fmt='%s')
+                       header=(sep.join((_translate("plot axes labels", 'Frequency'),
+                                         _translate("plot axes labels", 'Voltage'),
+                                         _translate("plot axes labels", 'Absorption'))) + '\n'
+                               + sep.join((pg.siScale(1e6)[1] + _translate('unit', 'Hz'),
+                                           pg.siScale(1e-3)[1] + _translate('unit', 'V'),
+                                           _translate('unit', 'cm⁻¹')))),
+                       fmt=('%.3f', '%.6f', '%.6e'))
         elif 'XLSX' in _filter:
             if filename_parts[1] != '.xlsx':
                 filename += '.xlsx'
             with pd.ExcelWriter(filename) as writer:
                 df: pd.DataFrame = pd.DataFrame(data)
                 df.to_excel(writer, index=False,
-                            header=['Frequency [MHz]', 'Voltage [mV]', 'Absorption [cm⁻¹]'],
-                            sheet_name=self._plot_line.name() or 'Sheet1')
+                            header=[_translate('main window', 'Frequency [MHz]'),
+                                    _translate('main window', 'Voltage [mV]'),
+                                    _translate('main window', 'Absorption [cm⁻¹]')],
+                            sheet_name=self._plot_line.name() or _translate('workbook', 'Sheet1'))
 
     def clear_automatically_found_lines(self):
         self.automatically_found_lines.clear()
@@ -1118,7 +1123,6 @@ class App(GUI):
                     and hasattr(self.user_found_lines, 'voltage_data')):  # something is marked
                 self.user_found_lines.setData(self.user_found_lines.xData, self.user_found_lines.voltage_data)
 
-        _translate: Callable[[str, str, Optional[str], int], str] = QCoreApplication.translate
         a: pg.AxisItem = self._canvas.getAxis('left')
         if display_gamma:
             self.check_voltage_persists.setText(_translate('main window', 'Keep absorption range'))
@@ -1174,6 +1178,7 @@ class App(GUI):
     def save_data(self):
         if self._plot_line.yData is None:
             return
+
         filename, _filter = self.save_file_dialog(_filter='CSV (*.csv);;XLSX (*.xlsx)')
         if not filename:
             return
@@ -1183,27 +1188,52 @@ class App(GUI):
         max_mark: float
         min_mark: float
         min_mark, max_mark = self._canvas.axes['bottom']['item'].range
-        good: np.ndarray = (min_mark <= x & x <= max_mark)
+        good: np.ndarray = (min_mark <= x) & (x <= max_mark)
         x = x[good]
         y = y[good]
         del good
-        data: np.ndarray = np.vstack((x * 1e-6, y)).transpose()
         if 'CSV' in _filter:
             if filename_parts[1] != '.csv':
                 filename += '.csv'
             sep: str = self.settings.csv_separator
-            # noinspection PyTypeChecker
-            np.savetxt(filename, data,
-                       delimiter=sep,
-                       header=sep.join(('frequency', 'voltage')) + '\n' + sep.join(('MHz', 'mV')),
-                       fmt='%s')
+            if self.plot_toolbar.switch_data_action.isChecked():
+                data: np.ndarray = np.vstack((x * 1e-6, y)).transpose()
+                # noinspection PyTypeChecker
+                np.savetxt(filename, data,
+                           delimiter=sep,
+                           header=(sep.join((_translate("plot axes labels", 'Frequency'),
+                                             _translate("plot axes labels", 'Absorption')))
+                                   + '\n'
+                                   + sep.join((pg.siScale(1e6)[1] + _translate('unit', 'Hz'),
+                                               _translate('unit', 'cm⁻¹')))),
+                           fmt=('%.3f', '%.6e'))
+            else:
+                data: np.ndarray = np.vstack((x * 1e-6, y * 1e3)).transpose()
+                # noinspection PyTypeChecker
+                np.savetxt(filename, data,
+                           delimiter=sep,
+                           header=(sep.join((_translate("plot axes labels", 'Frequency'),
+                                             _translate("plot axes labels", 'Voltage')))
+                                   + '\n'
+                                   + sep.join((pg.siScale(1e6)[1] + _translate('unit', 'Hz'),
+                                               pg.siScale(1e-3)[1] + _translate('unit', 'V')))),
+                           fmt=('%.3f', '%.6f'))
         elif 'XLSX' in _filter:
             if filename_parts[1] != '.xlsx':
                 filename += '.xlsx'
             with pd.ExcelWriter(filename) as writer:
-                df: pd.DataFrame = pd.DataFrame(data)
-                df.to_excel(writer, index=False, header=['Frequency [MHz]', 'Voltage [mV]'],
-                            sheet_name=self._plot_line.name() or 'Sheet1')
+                if self.plot_toolbar.switch_data_action.isChecked():
+                    data: np.ndarray = np.vstack((x * 1e-6, y)).transpose()
+                    df: pd.DataFrame = pd.DataFrame(data)
+                    df.to_excel(writer, index=False, header=[_translate('main window', 'Frequency [MHz]'),
+                                                             _translate('main window', 'Absorption [cm⁻¹]')],
+                                sheet_name=self._plot_line.name() or _translate('workbook', 'Sheet1'))
+                else:
+                    data: np.ndarray = np.vstack((x * 1e-6, y * 1e3)).transpose()
+                    df: pd.DataFrame = pd.DataFrame(data)
+                    df.to_excel(writer, index=False, header=[_translate('main window', 'Frequency [MHz]'),
+                                                             _translate('main window', 'Voltage [mV]')],
+                                sheet_name=self._plot_line.name() or _translate('workbook', 'Sheet1'))
 
     def copy_figure(self):
         # TODO: add legend to the figure to save
@@ -1219,7 +1249,8 @@ class App(GUI):
         # TODO: add legend to the figure to save
         import pyqtgraph.exporters
         exporter = pg.exporters.ImageExporter(self._canvas)
-        _filter: str = 'Image files (' + ' '.join(exporter.getSupportedImageFormats()) + ')'
+        _filter: str = \
+            _translate('file dialog', 'Image files') + ' (' + ' '.join(exporter.getSupportedImageFormats()) + ')'
         filename, _filter = self.save_file_dialog(_filter=_filter)
         if not filename:
             return
