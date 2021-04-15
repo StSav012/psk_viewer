@@ -728,6 +728,7 @@ class App(GUI):
 
     def set_crosshair_lines_color(self, color: QColor):
         self._crosshair_v_line.setPen(color)
+        self._crosshair_h_line.setPen(color)
         self._canvas.replot()
 
     def find_lines(self, threshold: float) -> int:
