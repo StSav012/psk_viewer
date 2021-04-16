@@ -15,7 +15,8 @@ import detection
 from gui import GUI
 from preferences import Preferences
 from toolbar import NavigationToolbar
-from utils import copy_to_clipboard, load_data_csv, load_data_fs, load_data_scandat, resource_path
+from utils import copy_to_clipboard, load_data_csv, load_data_fs, load_data_scandat, resource_path, superscript_number, \
+    superscript_tag
 
 try:
     from typing import Final
@@ -36,24 +37,6 @@ def tick_strings(self, values, scale, spacing):
     if self.logMode:
         return self.logTickStrings(values, scale, spacing)
 
-    def superscript(number: str) -> str:
-        ss_dict = {
-            '0': '⁰',
-            '1': '¹',
-            '2': '²',
-            '3': '³',
-            '4': '⁴',
-            '5': '⁵',
-            '6': '⁶',
-            '7': '⁷',
-            '8': '⁸',
-            '9': '⁹',
-            '-': '⁻'
-        }
-        for d in ss_dict:
-            number = number.replace(d, ss_dict[d])
-        return number
-
     places: int = max(0, int(np.ceil(-np.log10(spacing * scale))))
     strings: List[str] = []
     for v in values:
@@ -66,7 +49,7 @@ def tick_strings(self, values, scale, spacing):
             if 'e' in v_str:
                 e_pos: int = v_str.find('e')
                 man: str = v_str[:e_pos]
-                exp: str = superscript(v_str[e_pos + 1:])
+                exp: str = superscript_number(v_str[e_pos + 1:])
                 v_str = man + '×10' + exp
             v_str = v_str.replace('-', '−')
         else:
@@ -484,7 +467,7 @@ class App(GUI):
 
                 if self.settings.show_coordinates_at_crosshair:
                     self._cursor_balloon.setPos(point)
-                    self._cursor_balloon.setText(self._cursor_x.text() + '\n' + self._cursor_y.text())
+                    self._cursor_balloon.setText(self._cursor_x.text() + '\n' + superscript_tag(self._cursor_y.text()))
                     balloon_border: QRectF = self._cursor_balloon.boundingRect()
                     sx: float
                     sy: float

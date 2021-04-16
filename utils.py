@@ -48,6 +48,42 @@ def mix_colors(color_1: QColor, color_2: QColor, ratio_1: float = 0.5) -> QColor
         int(round(color_2.alpha() * (1. - ratio_1) + color_1.alpha() * ratio_1)))
 
 
+def superscript_number(number: str) -> str:
+    ss_dict = {
+        '0': '⁰',
+        '1': '¹',
+        '2': '²',
+        '3': '³',
+        '4': '⁴',
+        '5': '⁵',
+        '6': '⁶',
+        '7': '⁷',
+        '8': '⁸',
+        '9': '⁹',
+        '-': '⁻',
+        '−': '⁻'
+    }
+    for d in ss_dict:
+        number = number.replace(d, ss_dict[d])
+    return number
+
+
+def superscript_tag(html: str) -> str:
+    """ replace numbers within <sup></sup> with their Unicode superscript analogs """
+    text: str = html
+    j: int = 0
+    while j >= 0:
+        i: int = text.casefold().find('<sup>', j)
+        if i == -1:
+            return text
+        j: int = text.casefold().find('</sup>', i)
+        if j == -1:
+            return text
+        text = text[:i] + superscript_number(text[i + 5:j]) + text[j + 6:]
+        j -= 5
+    return text
+
+
 def copy_to_clipboard(plain_text: str, rich_text: str = '', text_type: Union[Qt.TextFormat, str] = Qt.PlainText):
     from PyQt5.QtGui import QClipboard
     from PyQt5.QtCore import QMimeData
