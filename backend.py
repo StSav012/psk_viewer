@@ -278,7 +278,7 @@ class App(GUI):
         self.toolbar.open_action.triggered.connect(self.load_data)
         self.toolbar.clear_action.triggered.connect(self.clear)
         self.toolbar.differentiate_action.triggered.connect(self.calculate_second_derivative)
-        self.toolbar.switch_data_action.toggled.connect(self.display_gamma_or_voltage)
+        self.toolbar.switch_data_action.toggled.connect(self.on_switch_data_action_toggled)
         self.toolbar.save_data_action.triggered.connect(self.save_data)
         self.toolbar.copy_figure_action.triggered.connect(self.copy_figure)
         self.toolbar.save_figure_action.triggered.connect(self.save_figure)
