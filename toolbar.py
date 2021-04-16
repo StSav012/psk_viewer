@@ -138,4 +138,3 @@ class NavigationToolbar(QToolBar):
                 a.setToolTip(f'<p style="white-space:pre">{a.toolTip()}&nbsp;&nbsp;'
                              f'<code style="color:{shortcut_color.name()};font-size:small">'
                              f'{a.shortcut().toString(QKeySequence.NativeText)}</code></p>')
-
