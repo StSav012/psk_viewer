@@ -15,7 +15,7 @@ import detection
 from gui import GUI
 from preferences import Preferences
 from toolbar import NavigationToolbar
-from utils import copy_to_clipboard, load_data_csv, load_data_fs, load_data_scandat, mix_colors, resource_path
+from utils import copy_to_clipboard, load_data_csv, load_data_fs, load_data_scandat, resource_path
 
 try:
     from typing import Final
@@ -105,7 +105,7 @@ class App(GUI):
         self._is_dark: bool = self.palette().color(QPalette.Window).lightness() < 128
 
         self.legend_item: pg.LegendItem = pg.LegendItem(offset=(0, 0))
-        self.plot_toolbar: NavigationToolbar = NavigationToolbar(self, parameters_icon='configure')
+        self.toolbar: NavigationToolbar = NavigationToolbar(self, parameters_icon='configure')
 
         self._canvas: pg.PlotItem = self.figure.getPlotItem()
         self._view_all_action: QAction = QAction()
@@ -205,48 +205,39 @@ class App(GUI):
                              text=_translate("plot axes labels", 'Voltage'),
                              units=_translate('unit', 'V'))
 
-        self.plot_toolbar.open_action.setIconText(_translate("plot toolbar action", "Open"))
-        self.plot_toolbar.open_action.setToolTip(_translate("plot toolbar action", "Load spectrometer data"))
-        self.plot_toolbar.clear_action.setIconText(_translate("plot toolbar action", "Clear"))
-        self.plot_toolbar.clear_action.setToolTip(_translate("plot toolbar action", "Clear lines and markers"))
-        self.plot_toolbar.differentiate_action.setIconText(_translate("plot toolbar action",
-                                                                      "Calculate second derivative"))
-        self.plot_toolbar.differentiate_action.setToolTip(_translate("plot toolbar action",
-                                                                     "Calculate finite-step second derivative"))
-        self.plot_toolbar.switch_data_action.setIconText(_translate("plot toolbar action", "Show Absorption"))
-        self.plot_toolbar.switch_data_action.setToolTip(_translate("plot toolbar action",
-                                                                   "Switch Y data between absorption and voltage"))
-        self.plot_toolbar.save_data_action.setIconText(_translate("plot toolbar action", "Save Data"))
-        self.plot_toolbar.save_data_action.setToolTip(_translate("plot toolbar action", "Export the visible data"))
-        self.plot_toolbar.copy_figure_action.setIconText(_translate("plot toolbar action", "Copy Figure"))
-        self.plot_toolbar.copy_figure_action.setToolTip(_translate("plot toolbar action", "Copy the plot as an image"))
-        self.plot_toolbar.save_figure_action.setIconText(_translate("plot toolbar action", "Save Figure"))
-        self.plot_toolbar.save_figure_action.setToolTip(_translate("plot toolbar action", "Save the plot as an image"))
-        self.plot_toolbar.trace_action.setIconText(_translate("plot toolbar action", "Mark"))
-        self.plot_toolbar.trace_action.setToolTip(_translate("plot toolbar action",
-                                                             "Mark data points (hold Shift to delete)"))
-        self.plot_toolbar.copy_trace_action.setIconText(_translate("plot toolbar action", "Copy Marked"))
-        self.plot_toolbar.copy_trace_action.setToolTip(_translate("plot toolbar action",
-                                                                  "Copy marked points values into clipboard"))
-        self.plot_toolbar.save_trace_action.setIconText(_translate("plot toolbar action", "Save Marked"))
-        self.plot_toolbar.save_trace_action.setToolTip(_translate("plot toolbar action", "Save marked points values"))
-        self.plot_toolbar.clear_trace_action.setIconText(_translate("plot toolbar action", "Clear Marked"))
-        self.plot_toolbar.clear_trace_action.setToolTip(_translate("plot toolbar action", "Clear marked points"))
-        self.plot_toolbar.configure_action.setIconText(_translate("plot toolbar action", "Configure"))
-        self.plot_toolbar.configure_action.setToolTip(_translate("plot toolbar action", "Edit parameters"))
+        self.toolbar.open_action.setIconText(_translate("plot toolbar action", "Open"))
+        self.toolbar.open_action.setToolTip(_translate("plot toolbar action", "Load spectrometer data"))
+        self.toolbar.clear_action.setIconText(_translate("plot toolbar action", "Clear"))
+        self.toolbar.clear_action.setToolTip(_translate("plot toolbar action", "Clear lines and markers"))
+        self.toolbar.differentiate_action.setIconText(_translate("plot toolbar action",
+                                                                 "Calculate second derivative"))
+        self.toolbar.differentiate_action.setToolTip(_translate("plot toolbar action",
+                                                                "Calculate finite-step second derivative"))
+        self.toolbar.switch_data_action.setIconText(_translate("plot toolbar action", "Show Absorption"))
+        self.toolbar.switch_data_action.setToolTip(_translate("plot toolbar action",
+                                                              "Switch Y data between absorption and voltage"))
+        self.toolbar.save_data_action.setIconText(_translate("plot toolbar action", "Save Data"))
+        self.toolbar.save_data_action.setToolTip(_translate("plot toolbar action", "Export the visible data"))
+        self.toolbar.copy_figure_action.setIconText(_translate("plot toolbar action", "Copy Figure"))
+        self.toolbar.copy_figure_action.setToolTip(_translate("plot toolbar action", "Copy the plot as an image"))
+        self.toolbar.save_figure_action.setIconText(_translate("plot toolbar action", "Save Figure"))
+        self.toolbar.save_figure_action.setToolTip(_translate("plot toolbar action", "Save the plot as an image"))
+        self.toolbar.trace_action.setIconText(_translate("plot toolbar action", "Mark"))
+        self.toolbar.trace_action.setToolTip(_translate("plot toolbar action",
+                                                        "Mark data points (hold Shift to delete)"))
+        self.toolbar.copy_trace_action.setIconText(_translate("plot toolbar action", "Copy Marked"))
+        self.toolbar.copy_trace_action.setToolTip(_translate("plot toolbar action",
+                                                             "Copy marked points values into clipboard"))
+        self.toolbar.save_trace_action.setIconText(_translate("plot toolbar action", "Save Marked"))
+        self.toolbar.save_trace_action.setToolTip(_translate("plot toolbar action", "Save marked points values"))
+        self.toolbar.clear_trace_action.setIconText(_translate("plot toolbar action", "Clear Marked"))
+        self.toolbar.clear_trace_action.setToolTip(_translate("plot toolbar action", "Clear marked points"))
+        self.toolbar.configure_action.setIconText(_translate("plot toolbar action", "Configure"))
+        self.toolbar.configure_action.setToolTip(_translate("plot toolbar action", "Edit parameters"))
 
-        self.plot_toolbar.parameters_title = _translate('plot config window title', 'Figure options')
+        self.toolbar.parameters_title = _translate('plot config window title', 'Figure options')
 
-        # add keyboard shortcuts to tooltips
-        a: QAction
-        tooltip_text_color: QColor = self.palette().color(QPalette.ToolTipText)
-        tooltip_base_color: QColor = self.palette().color(QPalette.ToolTipBase)
-        shortcut_color: QColor = mix_colors(tooltip_text_color, tooltip_base_color)
-        for a in self.plot_toolbar.actions():
-            if a.shortcut():
-                a.setToolTip(f'<p style="white-space:pre">{a.toolTip()}&nbsp;&nbsp;'
-                             f'<code style="color:{shortcut_color.name()};font-size:small">'
-                             f'{a.shortcut().toString(QKeySequence.NativeText)}</code></p>')
+        self.toolbar.add_shortcuts_to_tooltips()
 
         self._view_all_action.setText(_translate("plot context menu action", "View All"))
         self._canvas.ctrl.alphaGroup.parent().setTitle(_translate("plot context menu action", "Alpha"))
@@ -276,7 +267,7 @@ class App(GUI):
         self.spin_threshold.setValue(self.get_config_value('lineSearch', 'threshold', 12.0, float))
 
         self._data_type = self.get_config_value('display', 'unit', self._VOLTAGE_DATA, str)
-        self.plot_toolbar.switch_data_action.setChecked(self._data_type == self._GAMMA_DATA)
+        self.toolbar.switch_data_action.setChecked(self._data_type == self._GAMMA_DATA)
         self.display_gamma_or_voltage()
 
         self._loading = False
@@ -284,17 +275,17 @@ class App(GUI):
 
     def setup_ui_actions(self):
         # noinspection PyTypeChecker
-        self.plot_toolbar.open_action.triggered.connect(self.load_data)
-        self.plot_toolbar.clear_action.triggered.connect(self.clear)
-        self.plot_toolbar.differentiate_action.triggered.connect(self.calculate_second_derivative)
-        self.plot_toolbar.switch_data_action.toggled.connect(self.display_gamma_or_voltage)
-        self.plot_toolbar.save_data_action.triggered.connect(self.save_data)
-        self.plot_toolbar.copy_figure_action.triggered.connect(self.copy_figure)
-        self.plot_toolbar.save_figure_action.triggered.connect(self.save_figure)
-        self.plot_toolbar.copy_trace_action.triggered.connect(self.copy_found_lines)
-        self.plot_toolbar.save_trace_action.triggered.connect(self.save_found_lines)
-        self.plot_toolbar.clear_trace_action.triggered.connect(self.clear_found_lines)
-        self.plot_toolbar.configure_action.triggered.connect(self.edit_parameters)
+        self.toolbar.open_action.triggered.connect(self.load_data)
+        self.toolbar.clear_action.triggered.connect(self.clear)
+        self.toolbar.differentiate_action.triggered.connect(self.calculate_second_derivative)
+        self.toolbar.switch_data_action.toggled.connect(self.display_gamma_or_voltage)
+        self.toolbar.save_data_action.triggered.connect(self.save_data)
+        self.toolbar.copy_figure_action.triggered.connect(self.copy_figure)
+        self.toolbar.save_figure_action.triggered.connect(self.save_figure)
+        self.toolbar.copy_trace_action.triggered.connect(self.copy_found_lines)
+        self.toolbar.save_trace_action.triggered.connect(self.save_found_lines)
+        self.toolbar.clear_trace_action.triggered.connect(self.clear_found_lines)
+        self.toolbar.configure_action.triggered.connect(self.edit_parameters)
 
         self.spin_frequency_min.valueChanged.connect(self.spin_frequency_min_changed)
         self.spin_frequency_max.valueChanged.connect(self.spin_frequency_max_changed)
@@ -335,7 +326,7 @@ class App(GUI):
                 self.table_found_lines.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
 
             # change visibility of the found lines table columns
-            if self.plot_toolbar.switch_data_action.isChecked():
+            if self.toolbar.switch_data_action.isChecked():
                 self.table_found_lines.hideColumn(1)
                 self.table_found_lines.showColumn(2)
             else:
@@ -409,7 +400,7 @@ class App(GUI):
             if self.user_found_lines.xData is not None and self.user_found_lines.yData is not None:
                 if self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE):
                     if (self.automatically_found_lines.xData is not None
-                            and hasattr(self.automatically_found_lines,'voltage_data')
+                            and hasattr(self.automatically_found_lines, 'voltage_data')
                             and hasattr(self.automatically_found_lines, 'gamma_data')):
                         self.model_found_lines.set_data(np.column_stack((
                             np.concatenate((self.automatically_found_lines.xData,
@@ -427,7 +418,7 @@ class App(GUI):
                         )))
                 else:
                     if (self.automatically_found_lines.xData is not None
-                            and hasattr(self.automatically_found_lines,'voltage_data')):
+                            and hasattr(self.automatically_found_lines, 'voltage_data')):
                         self.model_found_lines.set_data(np.column_stack((
                             np.concatenate((self.automatically_found_lines.xData, self.user_found_lines.xData)),
                             np.concatenate((self.automatically_found_lines.voltage_data,
@@ -441,7 +432,7 @@ class App(GUI):
             else:
                 if self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE):
                     if (self.automatically_found_lines.xData is not None
-                            and hasattr(self.automatically_found_lines,'voltage_data')
+                            and hasattr(self.automatically_found_lines, 'voltage_data')
                             and hasattr(self.automatically_found_lines, 'gamma_data')):
                         self.model_found_lines.set_data(np.column_stack((
                             self.automatically_found_lines.xData,
@@ -452,7 +443,7 @@ class App(GUI):
                         self.model_found_lines.clear()
                 else:
                     if (self.automatically_found_lines.xData is not None
-                            and hasattr(self.automatically_found_lines,'voltage_data')):
+                            and hasattr(self.automatically_found_lines, 'voltage_data')):
                         self.model_found_lines.set_data(np.column_stack((
                             self.automatically_found_lines.xData,
                             self.automatically_found_lines.voltage_data,
@@ -460,9 +451,9 @@ class App(GUI):
                     else:
                         self.model_found_lines.clear()
 
-            self.plot_toolbar.copy_trace_action.setEnabled(not self.model_found_lines.is_empty)
-            self.plot_toolbar.save_trace_action.setEnabled(not self.model_found_lines.is_empty)
-            self.plot_toolbar.clear_trace_action.setEnabled(not self.model_found_lines.is_empty)
+            self.toolbar.copy_trace_action.setEnabled(not self.model_found_lines.is_empty)
+            self.toolbar.save_trace_action.setEnabled(not self.model_found_lines.is_empty)
+            self.toolbar.clear_trace_action.setEnabled(not self.model_found_lines.is_empty)
 
         elif ev.modifiers() == Qt.NoModifier:
             point: pg.SpotItem
@@ -475,6 +466,8 @@ class App(GUI):
         self.status_bar.showMessage(f'Found {self.find_lines(self.spin_threshold.value())} lines')
 
     def on_mouse_moved(self, event: Tuple[QPointF]):
+        if self._plot_line.xData is None and self._plot_line.yData is None:
+            return
         pos: QPointF = event[0]
         if self.figure.sceneBoundingRect().contains(pos):
             point: QPointF = self._canvas.vb.mapSceneToView(pos)
@@ -517,66 +510,66 @@ class App(GUI):
 
     def on_plot_clicked(self, event: MouseClickEvent):
         pos: QPointF = event.scenePos()
-        if self.trace_mode and event.modifiers() == Qt.NoModifier and self.figure.sceneBoundingRect().contains(pos):
-            x_span: float = np.ptp(self._canvas.axes['bottom']['item'].range)
-            y_span: float = np.ptp(self._canvas.axes['left']['item'].range)
-            point: QPointF = self._canvas.vb.mapSceneToView(pos)
-            if self._plot_line.xData is None or not self._plot_line.xData.size:
+        if not self.trace_mode:
+            return
+        if event.modifiers() != Qt.NoModifier or event.button() != Qt.LeftButton:
+            return
+        if not self.figure.sceneBoundingRect().contains(pos):
+            return
+        x_span: float = np.ptp(self._canvas.axes['bottom']['item'].range)
+        y_span: float = np.ptp(self._canvas.axes['left']['item'].range)
+        point: QPointF = self._canvas.vb.mapSceneToView(pos)
+        if self._plot_line.xData is None or not self._plot_line.xData.size:
+            return
+        distance: np.ndarray = np.min(np.hypot((self._plot_line.xData - point.x()) / x_span,
+                                               (self._plot_line.yData - point.y()) / y_span))
+        if distance > 0.01:
+            return
+        closest_point_index: int = np.argmin(np.hypot((self._plot_line.xData - point.x()) / x_span,
+                                                      (self._plot_line.yData - point.y()) / y_span))
+        if self.user_found_lines.xData is None or self.user_found_lines.yData.size is None:
+            self.user_found_lines.setData(
+                [self._plot_line.xData[closest_point_index]], [self._plot_line.yData[closest_point_index]]
+            )
+            self.user_found_lines.voltage_data = np.array([self._plot_line.voltage_data[closest_point_index]])
+            self.user_found_lines.gamma_data = np.array([self._plot_line.gamma_data[closest_point_index]])
+        else:
+            # avoid the same point to be marked several times
+            if np.any((self.user_found_lines.xData == self._plot_line.xData[closest_point_index])
+                      & (self.user_found_lines.yData == self._plot_line.yData[closest_point_index])):
                 return
-            distance: np.ndarray = np.min(np.hypot((self._plot_line.xData - point.x()) / x_span,
-                                                   (self._plot_line.yData - point.y()) / y_span))
-            if distance < 0.01:
-                closest_point_index: int = np.argmin(np.hypot((self._plot_line.xData - point.x()) / x_span,
-                                                              (self._plot_line.yData - point.y()) / y_span))
-                if self.user_found_lines.xData is None or self.user_found_lines.yData.size is None:
-                    self.user_found_lines.setData(
-                        [self._plot_line.xData[closest_point_index]], [self._plot_line.yData[closest_point_index]]
-                    )
-                    self.user_found_lines.voltage_data = np.array([self._plot_line.voltage_data[closest_point_index]])
-                    self.user_found_lines.gamma_data = np.array([self._plot_line.gamma_data[closest_point_index]])
-                else:
-                    # avoid the same point to be marked several times
-                    if np.any(
-                            (self.user_found_lines.xData == self._plot_line.xData[closest_point_index])
-                            &
-                            (self.user_found_lines.yData == self._plot_line.yData[closest_point_index])
-                    ):
-                        return
-                    if (self.automatically_found_lines.xData is not None
-                            and self.automatically_found_lines.yData.size is not None
-                            and np.any(
-                                (self.automatically_found_lines.xData == self._plot_line.xData[closest_point_index])
-                                &
-                                (self.automatically_found_lines.yData == self._plot_line.yData[closest_point_index])
-                            )):
-                        return
-                    self.user_found_lines.voltage_data = np.append(self.user_found_lines.voltage_data,
-                                                                   self._plot_line.voltage_data[closest_point_index])
-                    self.user_found_lines.gamma_data = np.append(self.user_found_lines.gamma_data,
-                                                                 self._plot_line.gamma_data[closest_point_index])
+            if (self.automatically_found_lines.xData is not None
+                    and self.automatically_found_lines.yData.size is not None
+                    and np.any((self.automatically_found_lines.xData == self._plot_line.xData[closest_point_index])
+                               & (self.automatically_found_lines.yData == self._plot_line.yData[closest_point_index]))):
+                return
+            self.user_found_lines.voltage_data = np.append(self.user_found_lines.voltage_data,
+                                                           self._plot_line.voltage_data[closest_point_index])
+            self.user_found_lines.gamma_data = np.append(self.user_found_lines.gamma_data,
+                                                         self._plot_line.gamma_data[closest_point_index])
 
-                    if self._data_type == self._VOLTAGE_DATA:
-                        self.user_found_lines.setData(
-                            np.append(self.user_found_lines.xData, self._plot_line.xData[closest_point_index]),
-                            self.user_found_lines.voltage_data
-                        )
-                    elif self._data_type == self._GAMMA_DATA:
-                        self.user_found_lines.setData(
-                            np.append(self.user_found_lines.xData, self._plot_line.xData[closest_point_index]),
-                            self.user_found_lines.gamma_data
-                        )
-                if self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE):
-                    self.model_found_lines.append_data([self._plot_line.xData[closest_point_index],
-                                                        self._plot_line.voltage_data[closest_point_index],
-                                                        self._plot_line.gamma_data[closest_point_index],
-                                                        ])
-                else:
-                    self.model_found_lines.append_data([self._plot_line.xData[closest_point_index],
-                                                        self._plot_line.voltage_data[closest_point_index],
-                                                        ])
-                self.plot_toolbar.copy_trace_action.setEnabled(True)
-                self.plot_toolbar.save_trace_action.setEnabled(True)
-                self.plot_toolbar.clear_trace_action.setEnabled(True)
+            if self._data_type == self._VOLTAGE_DATA:
+                self.user_found_lines.setData(
+                    np.append(self.user_found_lines.xData, self._plot_line.xData[closest_point_index]),
+                    self.user_found_lines.voltage_data
+                )
+            elif self._data_type == self._GAMMA_DATA:
+                self.user_found_lines.setData(
+                    np.append(self.user_found_lines.xData, self._plot_line.xData[closest_point_index]),
+                    self.user_found_lines.gamma_data
+                )
+        if self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE):
+            self.model_found_lines.append_data([self._plot_line.xData[closest_point_index],
+                                                self._plot_line.voltage_data[closest_point_index],
+                                                self._plot_line.gamma_data[closest_point_index],
+                                                ])
+        else:
+            self.model_found_lines.append_data([self._plot_line.xData[closest_point_index],
+                                                self._plot_line.voltage_data[closest_point_index],
+                                                ])
+        self.toolbar.copy_trace_action.setEnabled(True)
+        self.toolbar.save_trace_action.setEnabled(True)
+        self.toolbar.clear_trace_action.setEnabled(True)
 
     def on_lim_changed(self, *args):
         if self._ignore_scale_change:
@@ -728,6 +721,11 @@ class App(GUI):
         self.set_line_color(self.settings.line_color)
         self.set_mark_color(self.settings.mark_color)
         self.set_crosshair_lines_color(self.settings.crosshair_lines_color)
+        if (self._data_mode == self.PSK_DATA_MODE
+                and self._plot_line.xData is not None and self._plot_line.xData.size > 1):
+            step: int = round(self.settings.jump / ((self._plot_line.xData[-1] - self._plot_line.xData[0])
+                                                    / (self._plot_line.xData.size - 1)))
+            self.toolbar.differentiate_action.setEnabled(step != 0.0)
 
     @property
     def line(self):
@@ -833,9 +831,9 @@ class App(GUI):
                     self.automatically_found_lines.voltage_data,
                 )))
 
-        self.plot_toolbar.copy_trace_action.setEnabled(not self.model_found_lines.is_empty)
-        self.plot_toolbar.save_trace_action.setEnabled(not self.model_found_lines.is_empty)
-        self.plot_toolbar.clear_trace_action.setEnabled(not self.model_found_lines.is_empty)
+        self.toolbar.copy_trace_action.setEnabled(not self.model_found_lines.is_empty)
+        self.toolbar.save_trace_action.setEnabled(not self.model_found_lines.is_empty)
+        self.toolbar.clear_trace_action.setEnabled(not self.model_found_lines.is_empty)
 
         self._ignore_scale_change = False
 
@@ -987,17 +985,17 @@ class App(GUI):
                 self.user_found_lines.xData,
                 self.user_found_lines.voltage_data,
             )))
-        self.plot_toolbar.copy_trace_action.setEnabled(True)
-        self.plot_toolbar.save_trace_action.setEnabled(True)
-        self.plot_toolbar.clear_trace_action.setEnabled(True)
+        self.toolbar.copy_trace_action.setEnabled(True)
+        self.toolbar.save_trace_action.setEnabled(True)
+        self.toolbar.clear_trace_action.setEnabled(True)
 
     def clear_found_lines(self):
         self.automatically_found_lines.clear()
         self.user_found_lines.clear()
         self.model_found_lines.clear()
-        self.plot_toolbar.copy_trace_action.setEnabled(False)
-        self.plot_toolbar.save_trace_action.setEnabled(False)
-        self.plot_toolbar.clear_trace_action.setEnabled(False)
+        self.toolbar.copy_trace_action.setEnabled(False)
+        self.toolbar.save_trace_action.setEnabled(False)
+        self.toolbar.clear_trace_action.setEnabled(False)
         self._canvas.replot()
 
     def clear(self):
@@ -1006,17 +1004,16 @@ class App(GUI):
         if self.legend_item is not None:
             self.legend_item.clear()
             # self._legend.setVisible(False)
-        self.plot_toolbar.trace_action.setChecked(False)
-        self.plot_toolbar.clear_action.setEnabled(False)
-        self.plot_toolbar.differentiate_action.setEnabled(False)
-        self.plot_toolbar.save_data_action.setEnabled(False)
-        self.plot_toolbar.copy_figure_action.setEnabled(False)
-        self.plot_toolbar.save_figure_action.setEnabled(False)
-        self.plot_toolbar.trace_action.setEnabled(False)
-        self.plot_toolbar.copy_trace_action.setEnabled(False)
-        self.plot_toolbar.save_trace_action.setEnabled(False)
-        self.plot_toolbar.clear_trace_action.setEnabled(False)
-        self.plot_toolbar.configure_action.setEnabled(False)
+        self.toolbar.trace_action.setChecked(False)
+        self.toolbar.clear_action.setEnabled(False)
+        self.toolbar.differentiate_action.setEnabled(False)
+        self.toolbar.save_data_action.setEnabled(False)
+        self.toolbar.copy_figure_action.setEnabled(False)
+        self.toolbar.save_figure_action.setEnabled(False)
+        self.toolbar.trace_action.setEnabled(False)
+        self.toolbar.copy_trace_action.setEnabled(False)
+        self.toolbar.save_trace_action.setEnabled(False)
+        self.toolbar.clear_trace_action.setEnabled(False)
         self.box_find_lines.setEnabled(False)
         self._canvas.replot()
 
@@ -1071,10 +1068,10 @@ class App(GUI):
         new_label: str = os.path.split(fn)[-1]
 
         if self._data_mode == self.FS_DATA_MODE:
-            self.plot_toolbar.switch_data_action.setChecked(False)
+            self.toolbar.switch_data_action.setChecked(False)
 
         self._plot_line.setData(f,
-                                (g if self.plot_toolbar.switch_data_action.isChecked() else v),
+                                (g if self.toolbar.switch_data_action.isChecked() else v),
                                 name=new_label)
         self._plot_line.gamma_data = g
         self._plot_line.voltage_data = v
@@ -1084,15 +1081,14 @@ class App(GUI):
 
         self.update_legend()
 
-        self.plot_toolbar.clear_action.setEnabled(True)
-        self.plot_toolbar.differentiate_action.setEnabled(self._data_mode == self.PSK_DATA_MODE)
-        self.plot_toolbar.switch_data_action.setEnabled(self._data_mode in (self.PSK_DATA_MODE,
-                                                                            self.PSK_WITH_JUMP_DATA_MODE))
-        self.plot_toolbar.save_data_action.setEnabled(True)
-        self.plot_toolbar.copy_figure_action.setEnabled(True)
-        self.plot_toolbar.save_figure_action.setEnabled(True)
-        self.plot_toolbar.trace_action.setEnabled(True)
-        self.plot_toolbar.configure_action.setEnabled(True)
+        self.toolbar.clear_action.setEnabled(True)
+        self.toolbar.differentiate_action.setEnabled(self._data_mode == self.PSK_DATA_MODE)
+        self.toolbar.switch_data_action.setEnabled(self._data_mode in (self.PSK_DATA_MODE,
+                                                                       self.PSK_WITH_JUMP_DATA_MODE))
+        self.toolbar.save_data_action.setEnabled(True)
+        self.toolbar.copy_figure_action.setEnabled(True)
+        self.toolbar.save_figure_action.setEnabled(True)
+        self.toolbar.trace_action.setEnabled(True)
         self.box_find_lines.setEnabled(self.model_signal.size)
 
         self._loading = True
@@ -1105,7 +1101,7 @@ class App(GUI):
             self.spin_frequency_center.setValue(0.5 * (max_frequency + min_frequency))
         self._loading = False
 
-        self.display_gamma_or_voltage(self.plot_toolbar.switch_data_action.isChecked())
+        self.display_gamma_or_voltage()
 
         self.set_frequency_range(lower_value=self.spin_frequency_min.value(),
                                  upper_value=self.spin_frequency_max.value())
@@ -1116,10 +1112,10 @@ class App(GUI):
 
     @property
     def trace_mode(self):
-        return self.plot_toolbar.trace_action.isChecked()
+        return self.toolbar.trace_action.isChecked()
 
     def actions_off(self):
-        self.plot_toolbar.trace_action.setChecked(False)
+        self.toolbar.trace_action.setChecked(False)
 
     def calculate_second_derivative(self):
         self.clear_found_lines()
@@ -1132,7 +1128,8 @@ class App(GUI):
                                       - (self._plot_line.gamma_data[2 * step:]
                                          + self._plot_line.gamma_data[:-2 * step]) / 2.)
         self._plot_line.xData = x[step:-step]
-        self.plot_toolbar.differentiate_action.setEnabled(False)
+        self.toolbar.differentiate_action.setEnabled(False)
+        self._data_mode = self.PSK_WITH_JUMP_DATA_MODE
         self.display_gamma_or_voltage()
 
     def on_switch_data_action_toggled(self, new_state: bool):
@@ -1142,7 +1139,7 @@ class App(GUI):
 
     def display_gamma_or_voltage(self, display_gamma: Optional[bool] = None):
         if display_gamma is None:
-            display_gamma = self.plot_toolbar.switch_data_action.isChecked()
+            display_gamma = self.toolbar.switch_data_action.isChecked()
 
         if display_gamma:
             if hasattr(self._plot_line, 'gamma_data'):  # something is loaded
@@ -1258,7 +1255,7 @@ class App(GUI):
             if filename_parts[1] != '.csv':
                 filename += '.csv'
             sep: str = self.settings.csv_separator
-            if self.plot_toolbar.switch_data_action.isChecked():
+            if self.toolbar.switch_data_action.isChecked():
                 data: np.ndarray = np.vstack((x * 1e-6, y)).transpose()
                 # noinspection PyTypeChecker
                 np.savetxt(filename, data,
@@ -1284,7 +1281,7 @@ class App(GUI):
             if filename_parts[1] != '.xlsx':
                 filename += '.xlsx'
             with pd.ExcelWriter(filename) as writer:
-                if self.plot_toolbar.switch_data_action.isChecked():
+                if self.toolbar.switch_data_action.isChecked():
                     data: np.ndarray = np.vstack((x * 1e-6, y)).transpose()
                     df: pd.DataFrame = pd.DataFrame(data)
                     df.to_excel(writer, index=False, header=[_translate('main window', 'Frequency [MHz]'),

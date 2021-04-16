@@ -2,10 +2,10 @@
 from typing import Iterable, Optional, Union
 
 from PyQt5.QtCore import QSize
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QColor, QIcon, QKeySequence, QPalette
 from PyQt5.QtWidgets import QAction, QToolBar
 
-from utils import load_icon
+from utils import load_icon, mix_colors
 
 
 class NavigationToolbar(QToolBar):
@@ -118,7 +118,6 @@ class NavigationToolbar(QToolBar):
         self.copy_trace_action.setEnabled(False)
         self.save_trace_action.setEnabled(False)
         self.clear_trace_action.setEnabled(False)
-        self.configure_action.setEnabled(False)
 
         self.switch_data_action.setCheckable(True)
         self.trace_action.setCheckable(True)
@@ -128,3 +127,15 @@ class NavigationToolbar(QToolBar):
         # not using HiDPI icons otherwise they look worse than before.
         self.setIconSize(QSize(24, 24))
         self.layout().setSpacing(12)
+
+    def add_shortcuts_to_tooltips(self):
+        a: QAction
+        tooltip_text_color: QColor = self.palette().color(QPalette.ToolTipText)
+        tooltip_base_color: QColor = self.palette().color(QPalette.ToolTipBase)
+        shortcut_color: QColor = mix_colors(tooltip_text_color, tooltip_base_color)
+        for a in self.actions():
+            if a.shortcut():
+                a.setToolTip(f'<p style="white-space:pre">{a.toolTip()}&nbsp;&nbsp;'
+                             f'<code style="color:{shortcut_color.name()};font-size:small">'
+                             f'{a.shortcut().toString(QKeySequence.NativeText)}</code></p>')
+
