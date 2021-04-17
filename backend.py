@@ -15,8 +15,8 @@ import detection
 from gui import GUI
 from preferences import Preferences
 from toolbar import NavigationToolbar
-from utils import copy_to_clipboard, load_data_csv, load_data_fs, load_data_scandat, resource_path, superscript_number, \
-    superscript_tag
+from utils import copy_to_clipboard, load_data_csv, load_data_fs, load_data_scandat, resource_path, \
+    superscript_number, superscript_tag
 
 try:
     from typing import Final
@@ -941,7 +941,7 @@ class App(GUI):
                                + sep.join((pg.siScale(1e6)[1] + _translate('unit', 'Hz'),
                                            pg.siScale(1e-3)[1] + _translate('unit', 'V'),
                                            _translate('unit', 'cm⁻¹')))),
-                       fmt=('%.3f', '%.6f', '%.6e'))
+                       fmt=('%.3f', '%.6f', '%.6e'), encoding='utf-8')
         elif 'XLSX' in _filter:
             if filename_parts[1] != '.xlsx':
                 filename += '.xlsx'
@@ -1248,7 +1248,7 @@ class App(GUI):
                                    + '\n'
                                    + sep.join((pg.siScale(1e6)[1] + _translate('unit', 'Hz'),
                                                _translate('unit', 'cm⁻¹')))),
-                           fmt=('%.3f', '%.6e'))
+                           fmt=('%.3f', '%.6e'), encoding='utf-8')
             else:
                 data: np.ndarray = np.vstack((x * 1e-6, y * 1e3)).transpose()
                 # noinspection PyTypeChecker
@@ -1259,7 +1259,7 @@ class App(GUI):
                                    + '\n'
                                    + sep.join((pg.siScale(1e6)[1] + _translate('unit', 'Hz'),
                                                pg.siScale(1e-3)[1] + _translate('unit', 'V')))),
-                           fmt=('%.3f', '%.6f'))
+                           fmt=('%.3f', '%.6f'), encoding='utf-8')
         elif 'XLSX' in _filter:
             if filename_parts[1] != '.xlsx':
                 filename += '.xlsx'
