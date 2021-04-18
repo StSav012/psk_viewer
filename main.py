@@ -15,7 +15,7 @@ except ImportError:
     Final = _Final()
 
 
-REQUIREMENTS: Final[List[str]] = ['PyQt5', 'pyqtgraph', 'scipy', 'pandas']
+REQUIREMENTS: Final[List[str]] = ['PyQt5', 'pyqtgraph', 'scipy', 'pandas', 'openpyxl']
 
 if __name__ == '__main__':
 
