@@ -6,6 +6,7 @@ Required packages:
 - pandas
 - scipy
 - numpy
+- openpxl
 
 Required Python: >= 3.6
 Never tested with Python < 3.7, though.
