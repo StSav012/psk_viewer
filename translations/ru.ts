@@ -10,19 +10,27 @@
     </message>
 </context>
 <context>
+    <name>file dialog</name>
+    <message>
+        <location filename="../backend.py" line="1302"/>
+        <source>Image files</source>
+        <translation>Изображения</translation>
+    </message>
+</context>
+<context>
     <name>main window</name>
     <message>
-        <location filename="../backend.py" line="324"/>
+        <location filename="../backend.py" line="1283"/>
         <source>Frequency [MHz]</source>
         <translation>Частота, МГц</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="324"/>
+        <location filename="../backend.py" line="1283"/>
         <source>Voltage [mV]</source>
         <translation>Напряжение, мВ</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="1099"/>
+        <location filename="../backend.py" line="1177"/>
         <source>Keep absorption range</source>
         <translation>Не менять пределы по поглощению</translation>
     </message>
@@ -92,19 +100,9 @@
         <translation>Напряжение</translation>
     </message>
     <message>
-        <location filename="../gui.py" line="231"/>
-        <source>Find Lines</source>
-        <translation>Найти линии</translation>
-    </message>
-    <message>
         <location filename="../gui.py" line="229"/>
         <source>Try to detect lines automatically</source>
         <translation>Попробовать обнаружить линии поглощения автоматически</translation>
-    </message>
-    <message>
-        <location filename="../gui.py" line="232"/>
-        <source>Clear Lines</source>
-        <translation>Убрать линии</translation>
     </message>
     <message>
         <location filename="../gui.py" line="233"/>
@@ -127,7 +125,7 @@
         <translation>Вы уверены?</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="324"/>
+        <location filename="../backend.py" line="310"/>
         <source>Absorption [cm⁻¹ × 10⁻⁶]</source>
         <translation>Поглощение, 10⁻⁶ см⁻¹</translation>
     </message>
@@ -141,11 +139,26 @@
         <source>−10%</source>
         <translation>−10%</translation>
     </message>
+    <message>
+        <location filename="../backend.py" line="1277"/>
+        <source>Absorption [cm⁻¹]</source>
+        <translation>Поглощение, см⁻¹</translation>
+    </message>
+    <message>
+        <location filename="../gui.py" line="231"/>
+        <source>Find Lines Automatically</source>
+        <translation>Найти линии автоматически</translation>
+    </message>
+    <message>
+        <location filename="../gui.py" line="232"/>
+        <source>Clear Automatically Found Lines</source>
+        <translation>Стереть автоматически найденные линии</translation>
+    </message>
 </context>
 <context>
     <name>menu</name>
     <message>
-        <location filename="../backend.py" line="250"/>
+        <location filename="../backend.py" line="236"/>
         <source>Plot Options</source>
         <translation>Параметры графика</translation>
     </message>
@@ -153,17 +166,17 @@
 <context>
     <name>plot axes labels</name>
     <message>
-        <location filename="../backend.py" line="194"/>
+        <location filename="../backend.py" line="1262"/>
         <source>Frequency</source>
         <translation>Частота</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="1120"/>
+        <location filename="../backend.py" line="1262"/>
         <source>Voltage</source>
         <translation>Напряжение</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="1102"/>
+        <location filename="../backend.py" line="1251"/>
         <source>Absorption</source>
         <translation>Поглощение</translation>
     </message>
@@ -171,7 +184,7 @@
 <context>
     <name>plot config window title</name>
     <message>
-        <location filename="../backend.py" line="233"/>
+        <location filename="../backend.py" line="223"/>
         <source>Figure options</source>
         <translation>Настройки графика</translation>
     </message>
@@ -179,140 +192,160 @@
 <context>
     <name>plot context menu action</name>
     <message>
-        <location filename="../backend.py" line="246"/>
+        <location filename="../backend.py" line="227"/>
         <source>View All</source>
         <translation>Автоматический масштаб</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="247"/>
+        <location filename="../backend.py" line="233"/>
         <source>Alpha</source>
         <translation>Непрозрачность</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="248"/>
+        <location filename="../backend.py" line="229"/>
         <source>Grid</source>
         <translation>Сетка</translation>
+    </message>
+    <message>
+        <location filename="../backend.py" line="230"/>
+        <source>Show X Grid</source>
+        <translation>Показать вертикальные линии сетки</translation>
+    </message>
+    <message>
+        <location filename="../backend.py" line="231"/>
+        <source>Show Y Grid</source>
+        <translation>Показать горизонтальные линии сетки</translation>
+    </message>
+    <message>
+        <location filename="../backend.py" line="232"/>
+        <source>Opacity</source>
+        <translation>Непрозрачность</translation>
+    </message>
+    <message>
+        <location filename="../backend.py" line="234"/>
+        <source>Auto</source>
+        <translation>Авто</translation>
     </message>
 </context>
 <context>
     <name>plot toolbar action</name>
     <message>
-        <location filename="../backend.py" line="203"/>
+        <location filename="../backend.py" line="193"/>
         <source>Open</source>
         <translation>Открыть</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="204"/>
+        <location filename="../backend.py" line="194"/>
         <source>Load spectrometer data</source>
         <translation>Загрузить файл данных спектрометра</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="205"/>
+        <location filename="../backend.py" line="195"/>
         <source>Clear</source>
         <translation>Очистить</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="220"/>
+        <location filename="../backend.py" line="210"/>
         <source>Mark</source>
         <translation>Выделить</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="214"/>
+        <location filename="../backend.py" line="204"/>
         <source>Save Data</source>
         <translation>Сохранить данные</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="218"/>
+        <location filename="../backend.py" line="208"/>
         <source>Save Figure</source>
         <translation>Сохранить рисунок</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="230"/>
+        <location filename="../backend.py" line="220"/>
         <source>Configure</source>
         <translation>Настроить</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="227"/>
+        <location filename="../backend.py" line="217"/>
         <source>Save marked points values</source>
         <translation>Сохранить значения отмеченных точек</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="206"/>
+        <location filename="../backend.py" line="196"/>
         <source>Clear lines and markers</source>
         <translation>Стереть линии и отметки на точках</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="223"/>
+        <location filename="../backend.py" line="213"/>
         <source>Copy Marked</source>
         <translation>Копировать отмеченное</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="224"/>
+        <location filename="../backend.py" line="214"/>
         <source>Copy marked points values into clipboard</source>
         <translation>Копировать отмеченные точки в буфер обмена</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="226"/>
+        <location filename="../backend.py" line="216"/>
         <source>Save Marked</source>
         <translation>Сохранить отмеченное</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="207"/>
+        <location filename="../backend.py" line="197"/>
         <source>Calculate second derivative</source>
         <translation>Вычислить вторую производную</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="209"/>
+        <location filename="../backend.py" line="199"/>
         <source>Calculate finite-step second derivative</source>
         <translation>Вычислить вторую квазипроизводную с конечным шагом</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="211"/>
+        <location filename="../backend.py" line="201"/>
         <source>Show Absorption</source>
         <translation>Показать поглощение</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="212"/>
+        <location filename="../backend.py" line="202"/>
         <source>Switch Y data between absorption and voltage</source>
         <translation>Переключить значения по оси Y между поглощением и напряжением</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="215"/>
+        <location filename="../backend.py" line="205"/>
         <source>Export the visible data</source>
         <translation>Экспортировать отображаемые данные</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="216"/>
+        <location filename="../backend.py" line="206"/>
         <source>Copy Figure</source>
         <translation>Копировать изображение</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="217"/>
+        <location filename="../backend.py" line="207"/>
         <source>Copy the plot as an image</source>
         <translation>Копировать изображение графика</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="228"/>
+        <location filename="../backend.py" line="218"/>
         <source>Clear Marked</source>
         <translation>Очистить отмеченное</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="229"/>
+        <location filename="../backend.py" line="219"/>
         <source>Clear marked points</source>
         <translation>Очистить отмеченные точки</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="231"/>
+        <location filename="../backend.py" line="221"/>
         <source>Edit parameters</source>
         <translation>Изменить параметры</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="219"/>
+        <location filename="../backend.py" line="209"/>
         <source>Save the plot as an image</source>
         <translation>Сохранить график в виде изображения</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="221"/>
+        <location filename="../backend.py" line="211"/>
         <source>Mark data points (hold Shift to delete)</source>
         <translation>Отметить точки данных (удерживайте Shift для удаления)</translation>
     </message>
@@ -330,29 +363,49 @@
         <translation>Ԫамп:</translation>
     </message>
     <message>
-        <location filename="../settings.py" line="49"/>
+        <location filename="../settings.py" line="54"/>
         <source>Line</source>
         <translation>Линия</translation>
     </message>
     <message>
-        <location filename="../settings.py" line="50"/>
+        <location filename="../settings.py" line="58"/>
         <source>Color:</source>
         <translation>Цвет:</translation>
     </message>
     <message>
-        <location filename="../settings.py" line="52"/>
+        <location filename="../settings.py" line="60"/>
         <source>Export</source>
         <translation>Экспорт</translation>
     </message>
     <message>
-        <location filename="../settings.py" line="54"/>
+        <location filename="../settings.py" line="62"/>
         <source>Line ending:</source>
         <translation>Перевод строки:</translation>
     </message>
     <message>
-        <location filename="../settings.py" line="56"/>
+        <location filename="../settings.py" line="64"/>
         <source>CSV separator:</source>
         <translation>Разделитель значений с файле CSV:</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="49"/>
+        <source>Crosshair</source>
+        <translation>Перекрестье</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="50"/>
+        <source>Show crosshair lines</source>
+        <translation>Показывать линии перекрестья</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="51"/>
+        <source>Show coordinates</source>
+        <translation>Показывать координаты</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="57"/>
+        <source>Marks</source>
+        <translation>Отметки</translation>
     </message>
 </context>
 <context>
@@ -365,11 +418,6 @@
 </context>
 <context>
     <name>si prefixes</name>
-    <message>
-        <location filename="../backend.py" line="194"/>
-        <source>M</source>
-        <translation>М</translation>
-    </message>
     <message>
         <location filename="../gui.py" line="112"/>
         <source>y,z,a,f,p,n,µ,m, ,k,M,G,T,P,E,Z,Y</source>
@@ -389,14 +437,22 @@
         <translation>В</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="1107"/>
+        <location filename="../backend.py" line="1185"/>
         <source>cm&lt;sup&gt;−1&lt;/sup&gt;</source>
         <translation>см&lt;sup&gt;−1&lt;/sup&gt;</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="1111"/>
+        <location filename="../backend.py" line="1251"/>
         <source>cm⁻¹</source>
         <translation>см⁻¹</translation>
+    </message>
+</context>
+<context>
+    <name>workbook</name>
+    <message>
+        <location filename="../backend.py" line="1283"/>
+        <source>Sheet1</source>
+        <translation>Лист1</translation>
     </message>
 </context>
 </TS>

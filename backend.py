@@ -176,6 +176,8 @@ class App(GUI):
         self._canvas.vb.menu = self._canvas.ctrlMenu
         self._canvas.ctrlMenu = None
         self._canvas.vb.menu.addAction(self._view_all_action)
+        self._canvas.ctrl.autoAlphaCheck.setChecked(False)
+        self._canvas.ctrl.autoAlphaCheck.hide()
         self.figure.sceneObj.contextMenu = None
 
         self.translate_ui()
@@ -225,6 +227,11 @@ class App(GUI):
         self._view_all_action.setText(_translate("plot context menu action", "View All"))
         self._canvas.ctrl.alphaGroup.parent().setTitle(_translate("plot context menu action", "Alpha"))
         self._canvas.ctrl.gridGroup.parent().setTitle(_translate("plot context menu action", "Grid"))
+        self._canvas.ctrl.xGridCheck.setText(_translate("plot context menu action", "Show X Grid"))
+        self._canvas.ctrl.yGridCheck.setText(_translate("plot context menu action", "Show Y Grid"))
+        self._canvas.ctrl.label.setText(_translate("plot context menu action", "Opacity"))
+        self._canvas.ctrl.alphaGroup.setTitle(_translate("plot context menu action", "Alpha"))
+        self._canvas.ctrl.autoAlphaCheck.setText(_translate("plot context menu action", "Auto"))
 
         self._canvas.vb.menu.setTitle(_translate('menu', 'Plot Options'))
 
