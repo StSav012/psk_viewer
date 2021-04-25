@@ -41,7 +41,7 @@ class Settings(QSettings):
 
     @property
     def dialog(self):
-        opts = {
+        jump_opts = {
             'suffix': _translate('unit', 'Hz'),
             'siPrefix': True,
             'decimals': 0,
@@ -49,9 +49,17 @@ class Settings(QSettings):
             'compactHeight': False,
             'format': '{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}'
         }
+        line_opts = {
+            'suffix': _translate('unit', 'px'),
+            'siPrefix': False,
+            'decimals': 1,
+            'dec': False,
+            'compactHeight': False,
+            'format': '{value:.{decimals}f}{suffixGap}{suffix}'
+        }
         return {
             _translate('preferences', 'Processing'): {
-                _translate('preferences', 'Jump:'): (opts, 'jump',)
+                _translate('preferences', 'Jump:'): (jump_opts, 'jump',)
             } if self.display_processing else {},
             _translate('preferences', 'Crosshair'): {
                 _translate('preferences', 'Show crosshair lines'): ('show_crosshair',),
@@ -59,7 +67,8 @@ class Settings(QSettings):
                 _translate('preferences', 'Color:'): ('crosshair_lines_color',)
             },
             _translate('preferences', 'Line'): {
-                _translate('preferences', 'Color:'): ('line_color',)
+                _translate('preferences', 'Color:'): ('line_color',),
+                _translate('preferences', 'Thickness:'): (line_opts, 'line_thickness',)
             },
             _translate('preferences', 'Marks'): {
                 _translate('preferences', 'Copy frequency to clipboard'): ('copy_frequency',),
@@ -110,6 +119,19 @@ class Settings(QSettings):
     def line_color(self, new_value: QColor):
         self.beginGroup('plotLine')
         self.setValue('color', new_value)
+        self.endGroup()
+
+    @property
+    def line_thickness(self) -> float:
+        self.beginGroup('plotLine')
+        v: float = self.value('thickness', 2.0, float)
+        self.endGroup()
+        return v
+
+    @line_thickness.setter
+    def line_thickness(self, new_value: float):
+        self.beginGroup('plotLine')
+        self.setValue('thickness', new_value)
         self.endGroup()
 
     @property

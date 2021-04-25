@@ -93,7 +93,9 @@ class App(GUI):
         self._canvas: pg.PlotItem = self.figure.getPlotItem()
         self._view_all_action: QAction = QAction()
 
-        self._plot_line: PlotDataItem = self.figure.plot(np.empty(0), name='', pen=self.settings.line_color)
+        self._plot_line: PlotDataItem = \
+            self.figure.plot(np.empty(0), name='',
+                             pen=pg.mkPen(self.settings.line_color, width=0.5 * self.settings.line_thickness))
 
         self._ignore_scale_change: bool = False
 
@@ -701,7 +703,7 @@ class App(GUI):
     def edit_parameters(self):
         preferences_dialog: Preferences = Preferences(self.settings, self)
         preferences_dialog.exec()
-        self.set_line_color(self.settings.line_color)
+        self.set_plot_line_appearance()
         self.set_mark_color(self.settings.mark_color)
         self.set_crosshair_lines_color(self.settings.crosshair_lines_color)
         if (self._data_mode == self.PSK_DATA_MODE
@@ -731,9 +733,8 @@ class App(GUI):
     def set_voltage_range(self, lower_value: float, upper_value: float):
         self.figure.plotItem.setYRange(lower_value, upper_value, padding=0.0)
 
-    def set_line_color(self, color: QColor):
-        self._plot_line.setPen(color)
-        self._plot_line.setBrush(color)
+    def set_plot_line_appearance(self):
+        self._plot_line.setPen(pg.mkPen(self.settings.line_color, width=0.5 * self.settings.line_thickness))
         self._canvas.replot()
 
     def set_mark_color(self, color: QColor):
