@@ -1,6 +1,7 @@
 ﻿#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 import sys
+from pathlib import Path
 from typing import List, Type, Set
 
 try:
@@ -15,9 +16,20 @@ except ImportError:
     Final = _Final()
 
 
+__author__: Final[str] = 'StSav012'
+__original_name__: Final[str] = 'psk_viewer'
+
 REQUIREMENTS: Final[List[str]] = ['PyQt5', 'pyqtgraph', 'scipy', 'pandas', 'openpyxl']
 
 if __name__ == '__main__':
+
+    if not hasattr(sys, '_MEIPASS') and not Path('.git').exists():
+        try:
+            import updater
+
+            updater.update(__author__, __original_name__)
+        except (OSError, ModuleNotFoundError):
+            pass
 
     if not hasattr(sys, '_MEIPASS'):  # if not embedded into an executable
         import importlib
