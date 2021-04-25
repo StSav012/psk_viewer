@@ -77,8 +77,8 @@ class App(GUI):
     PSK_WITH_JUMP_DATA_MODE: Final[int] = 2
     FS_DATA_MODE: Final[int] = -1
 
-    _GAMMA_DATA: Final[str] = 'gammaData'
-    _VOLTAGE_DATA: Final[str] = 'voltageData'
+    _GAMMA_DATA: Final[str] = 'gamma_data'  # should be the same as in class `PlotDataItem`
+    _VOLTAGE_DATA: Final[str] = 'voltage_data'  # should be the same as in class `PlotDataItem`
 
     def __init__(self, filename: str = '', flags=Qt.WindowFlags()):
         super().__init__(flags=flags)
@@ -113,11 +113,8 @@ class App(GUI):
         # cross hair
         self._crosshair_v_line = pg.InfiniteLine(angle=90, movable=False, pen=self.settings.crosshair_lines_color)
         self._crosshair_h_line = pg.InfiniteLine(angle=0, movable=False, pen=self.settings.crosshair_lines_color)
-        self._crosshair_h_line.setVisible(self.settings.show_crosshair)
-        self._crosshair_v_line.setVisible(self.settings.show_crosshair)
 
         self._cursor_balloon: pg.TextItem = pg.TextItem(color='#ccc' if self._is_dark else '#333')
-        self._cursor_balloon.setVisible(False)
         self.figure.addItem(self._cursor_balloon)
 
         self._mouse_moved_signal_proxy = pg.SignalProxy(self.figure.scene().sigMouseMoved,
@@ -162,8 +159,7 @@ class App(GUI):
 
         self.figure.plotItem.addItem(self._crosshair_v_line, ignoreBounds=True)
         self.figure.plotItem.addItem(self._crosshair_h_line, ignoreBounds=True)
-        self._crosshair_h_line.setVisible(False)
-        self._crosshair_v_line.setVisible(False)
+        self.hide_cursors()
 
         # customize menu
         titles_to_leave: List[str] = [
@@ -381,17 +377,17 @@ class App(GUI):
             for point in points:
                 index &= (items != point)
             item.setData(item.xData[index], item.yData[index])
-            if hasattr(item, 'voltage_data'):
+            if hasattr(item, self._VOLTAGE_DATA):
                 item.voltage_data = item.voltage_data[index]
-            if hasattr(item, 'gamma_data'):
+            if hasattr(item, self._GAMMA_DATA):
                 item.gamma_data = item.gamma_data[index]
 
             # update the table
             if self.user_found_lines.xData is not None and self.user_found_lines.yData is not None:
                 if self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE):
                     if (self.automatically_found_lines.xData is not None
-                            and hasattr(self.automatically_found_lines, 'voltage_data')
-                            and hasattr(self.automatically_found_lines, 'gamma_data')):
+                            and hasattr(self.automatically_found_lines, self._VOLTAGE_DATA)
+                            and hasattr(self.automatically_found_lines, self._GAMMA_DATA)):
                         self.model_found_lines.set_data(np.column_stack((
                             np.concatenate((self.automatically_found_lines.xData,
                                             self.user_found_lines.xData)),
@@ -408,7 +404,7 @@ class App(GUI):
                         )))
                 else:
                     if (self.automatically_found_lines.xData is not None
-                            and hasattr(self.automatically_found_lines, 'voltage_data')):
+                            and hasattr(self.automatically_found_lines, self._VOLTAGE_DATA)):
                         self.model_found_lines.set_data(np.column_stack((
                             np.concatenate((self.automatically_found_lines.xData, self.user_found_lines.xData)),
                             np.concatenate((self.automatically_found_lines.voltage_data,
@@ -422,8 +418,8 @@ class App(GUI):
             else:
                 if self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE):
                     if (self.automatically_found_lines.xData is not None
-                            and hasattr(self.automatically_found_lines, 'voltage_data')
-                            and hasattr(self.automatically_found_lines, 'gamma_data')):
+                            and hasattr(self.automatically_found_lines, self._VOLTAGE_DATA)
+                            and hasattr(self.automatically_found_lines, self._GAMMA_DATA)):
                         self.model_found_lines.set_data(np.column_stack((
                             self.automatically_found_lines.xData,
                             self.automatically_found_lines.voltage_data,
@@ -433,7 +429,7 @@ class App(GUI):
                         self.model_found_lines.clear()
                 else:
                     if (self.automatically_found_lines.xData is not None
-                            and hasattr(self.automatically_found_lines, 'voltage_data')):
+                            and hasattr(self.automatically_found_lines, self._VOLTAGE_DATA)):
                         self.model_found_lines.set_data(np.column_stack((
                             self.automatically_found_lines.xData,
                             self.automatically_found_lines.voltage_data,
@@ -486,17 +482,9 @@ class App(GUI):
                     self._cursor_balloon.setAnchor((anchor_x, anchor_y))
                 self._cursor_balloon.setVisible(self.settings.show_coordinates_at_crosshair)
             else:
-                self._crosshair_h_line.setVisible(False)
-                self._crosshair_v_line.setVisible(False)
-                self._cursor_x.setVisible(False)
-                self._cursor_y.setVisible(False)
-                self._cursor_balloon.setVisible(False)
+                self.hide_cursors()
         else:
-            self._crosshair_h_line.setVisible(False)
-            self._crosshair_v_line.setVisible(False)
-            self._cursor_x.setVisible(False)
-            self._cursor_y.setVisible(False)
-            self._cursor_balloon.setVisible(False)
+            self.hide_cursors()
 
     def on_plot_clicked(self, event: MouseClickEvent):
         pos: QPointF = event.scenePos()
@@ -716,6 +704,13 @@ class App(GUI):
             step: int = round(self.settings.jump / ((self._plot_line.xData[-1] - self._plot_line.xData[0])
                                                     / (self._plot_line.xData.size - 1)))
             self.toolbar.differentiate_action.setEnabled(step != 0.0)
+
+    def hide_cursors(self):
+        self._crosshair_h_line.setVisible(False)
+        self._crosshair_v_line.setVisible(False)
+        self._cursor_x.setVisible(False)
+        self._cursor_y.setVisible(False)
+        self._cursor_balloon.setVisible(False)
 
     @property
     def line(self):
@@ -1132,7 +1127,7 @@ class App(GUI):
             display_gamma = self.toolbar.switch_data_action.isChecked()
 
         if display_gamma:
-            if hasattr(self._plot_line, 'gamma_data'):  # something is loaded
+            if hasattr(self._plot_line, self._GAMMA_DATA):  # something is loaded
                 self._plot_line.setData(self._plot_line.xData, self._plot_line.gamma_data)
 
                 self._loading = True
@@ -1145,14 +1140,14 @@ class App(GUI):
                 self._loading = False
 
             if (self.automatically_found_lines.xData is not None
-                    and hasattr(self.automatically_found_lines, 'gamma_data')):  # something is marked
+                    and hasattr(self.automatically_found_lines, self._GAMMA_DATA)):  # something is marked
                 self.automatically_found_lines.setData(self.automatically_found_lines.xData,
                                                        self.automatically_found_lines.gamma_data)
             if (self.user_found_lines.xData is not None
-                    and hasattr(self.user_found_lines, 'gamma_data')):  # something is marked
+                    and hasattr(self.user_found_lines, self._GAMMA_DATA)):  # something is marked
                 self.user_found_lines.setData(self.user_found_lines.xData, self.user_found_lines.gamma_data)
         else:
-            if hasattr(self._plot_line, 'voltage_data'):  # something is loaded
+            if hasattr(self._plot_line, self._VOLTAGE_DATA):  # something is loaded
                 self._plot_line.setData(self._plot_line.xData, self._plot_line.voltage_data)
 
                 self._loading = True
@@ -1165,11 +1160,11 @@ class App(GUI):
                 self._loading = False
 
             if (self.automatically_found_lines.xData is not None
-                    and hasattr(self.automatically_found_lines, 'voltage_data')):  # something is marked
+                    and hasattr(self.automatically_found_lines, self._VOLTAGE_DATA)):  # something is marked
                 self.automatically_found_lines.setData(self.automatically_found_lines.xData,
                                                        self.automatically_found_lines.voltage_data)
             if (self.user_found_lines.xData is not None
-                    and hasattr(self.user_found_lines, 'voltage_data')):  # something is marked
+                    and hasattr(self.user_found_lines, self._VOLTAGE_DATA)):  # something is marked
                 self.user_found_lines.setData(self.user_found_lines.xData, self.user_found_lines.voltage_data)
 
         a: pg.AxisItem = self._canvas.getAxis('left')
@@ -1210,11 +1205,7 @@ class App(GUI):
         self.spin_voltage_min.setOpts(**opts)
         self.spin_voltage_max.setOpts(**opts)
 
-        # hide cursors
-        self._crosshair_h_line.setVisible(False)
-        self._crosshair_v_line.setVisible(False)
-        self._cursor_x.setVisible(False)
-        self._cursor_y.setVisible(False)
+        self.hide_cursors()
 
         # change visibility of the found lines table columns
         if display_gamma:
@@ -1288,10 +1279,7 @@ class App(GUI):
         # TODO: add legend to the figure to save
         import pyqtgraph.exporters
         exporter = pg.exporters.ImageExporter(self._canvas)
-        self._crosshair_h_line.setVisible(False)
-        self._crosshair_v_line.setVisible(False)
-        self._cursor_x.setVisible(False)
-        self._cursor_y.setVisible(False)
+        self.hide_cursors()
         exporter.export(copy=True)
 
     def save_figure(self):
@@ -1303,8 +1291,5 @@ class App(GUI):
         filename, _filter = self.save_file_dialog(_filter=_filter)
         if not filename:
             return
-        self._crosshair_h_line.setVisible(False)
-        self._crosshair_v_line.setVisible(False)
-        self._cursor_x.setVisible(False)
-        self._cursor_y.setVisible(False)
+        self.hide_cursors()
         exporter.export(filename)
