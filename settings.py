@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
-from typing import List, Type
+from typing import List, Type, Callable, Optional
 
 import pyqtgraph as pg
 from PyQt5.QtCore import QCoreApplication, QSettings
@@ -20,11 +20,19 @@ except ImportError:
 __all__ = ['Settings']
 
 
+_translate: Callable[[str, str, Optional[str], int], str] = QCoreApplication.translate
+
+
 class Settings(QSettings):
     """ convenient internal representation of the application settings """
     LINE_ENDS: Final[List[str]] = [r'Line Feed (\n)', r'Carriage Return (\r)', r'CR+LF (\r\n)', r'LF+CR (\n\r)']
     _LINE_ENDS: Final[List[str]] = ['\n', '\r', '\r\n', '\n\r']
-    CSV_SEPARATORS: Final[List[str]] = [r'comma (,)', r'tab (\t)', r'semicolon (;)', r'space ( )']
+    CSV_SEPARATORS: Final[List[str]] = [
+        _translate('csv separator', r'comma (,)'),
+        _translate('csv separator', r'tab (\t)'),
+        _translate('csv separator', r'semicolon (;)'),
+        _translate('csv separator', r'space ( )')
+    ]
     _CSV_SEPARATORS: Final[List[str]] = [',', '\t', ';', ' ']
 
     def __init__(self, *args):
@@ -33,7 +41,6 @@ class Settings(QSettings):
 
     @property
     def dialog(self):
-        _translate = QCoreApplication.translate
         opts = {
             'suffix': _translate('unit', 'Hz'),
             'siPrefix': True,
@@ -55,6 +62,7 @@ class Settings(QSettings):
                 _translate('preferences', 'Color:'): ('line_color',)
             },
             _translate('preferences', 'Marks'): {
+                _translate('preferences', 'Copy frequency to clipboard'): ('copy_frequency',),
                 _translate('preferences', 'Color:'): ('mark_color',)
             },
             _translate('preferences', 'Export'): {
@@ -102,6 +110,19 @@ class Settings(QSettings):
     def line_color(self, new_value: QColor):
         self.beginGroup('plotLine')
         self.setValue('color', new_value)
+        self.endGroup()
+
+    @property
+    def copy_frequency(self) -> bool:
+        self.beginGroup('marks')
+        v: bool = self.value('copyFrequency', False, bool)
+        self.endGroup()
+        return v
+
+    @copy_frequency.setter
+    def copy_frequency(self, new_value: bool):
+        self.beginGroup('marks')
+        self.setValue('copyFrequency', new_value)
         self.endGroup()
 
     @property

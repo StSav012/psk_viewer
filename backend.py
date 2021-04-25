@@ -252,7 +252,10 @@ class App(GUI):
 
         self.spin_threshold.setValue(self.get_config_value('lineSearch', 'threshold', 12.0, float))
 
-        self._data_type = self.get_config_value('display', 'unit', self._VOLTAGE_DATA, str)
+        if self.get_config_value('display', 'unit', self._VOLTAGE_DATA, str) == self._GAMMA_DATA:
+            self._data_type = self._GAMMA_DATA
+        else:
+            self._data_type = self._VOLTAGE_DATA
         self.toolbar.switch_data_action.setChecked(self._data_type == self._GAMMA_DATA)
         self.display_gamma_or_voltage()
 
@@ -545,6 +548,8 @@ class App(GUI):
             self.model_found_lines.append_data([self._plot_line.xData[closest_point_index],
                                                 self._plot_line.voltage_data[closest_point_index],
                                                 ])
+        if self.settings.copy_frequency:
+            copy_to_clipboard(str(1e-6 * self._plot_line.xData[closest_point_index]))
         self.toolbar.copy_trace_action.setEnabled(True)
         self.toolbar.save_trace_action.setEnabled(True)
         self.toolbar.clear_trace_action.setEnabled(True)
