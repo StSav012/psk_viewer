@@ -241,7 +241,6 @@ class GUI(QMainWindow):
         self.table_found_lines.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table_found_lines.setDropIndicatorShown(False)
         self.table_found_lines.setDragDropOverwriteMode(False)
-        self.table_found_lines.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table_found_lines.setCornerButtonEnabled(False)
         self.table_found_lines.setSortingEnabled(True)
         self.table_found_lines.setAlternatingRowColors(True)
