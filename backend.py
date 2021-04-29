@@ -326,6 +326,8 @@ class App(GUI):
 
         self.model_found_lines.modelReset.connect(adjust_columns)
 
+        self.table_found_lines.doubleClicked.connect(self.on_table_cell_double_clicked)
+
         def table_key_press_event(event: QKeyEvent):
             if event.matches(QKeySequence.Copy):
                 copy_to_clipboard(self.stringify_table_plain_text(False), self.stringify_table_html(False), Qt.RichText)
@@ -878,6 +880,9 @@ class App(GUI):
         next_line_freq = next_line_freq[~np.isnan(next_line_freq)]
         if next_line_freq.size:
             self.spin_frequency_center.setValue(next_line_freq[np.argmin(next_line_freq - init_frequency)])
+
+    def on_table_cell_double_clicked(self, index: QModelIndex):
+        self.spin_frequency_center.setValue(self.model_found_lines.item(index.row(), 0))
 
     def stringify_table_plain_text(self, whole_table: bool = True) -> str:
         """
