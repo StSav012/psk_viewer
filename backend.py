@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import pyqtgraph as pg
 from PyQt5.QtCore import QCoreApplication, QItemSelectionModel, QModelIndex, QPointF, QRectF, Qt
-from PyQt5.QtGui import QBrush, QColor, QKeyEvent, QKeySequence, QPalette
+from PyQt5.QtGui import QBrush, QKeyEvent, QKeySequence, QPalette, QPen
 from PyQt5.QtWidgets import QAction, QDesktopWidget, QHeaderView
 from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent
 
@@ -93,9 +93,7 @@ class App(GUI):
         self._canvas: pg.PlotItem = self.figure.getPlotItem()
         self._view_all_action: QAction = QAction()
 
-        self._plot_line: PlotDataItem = \
-            self.figure.plot(np.empty(0), name='',
-                             pen=pg.mkPen(self.settings.line_color, width=0.5 * self.settings.line_thickness))
+        self._plot_line: PlotDataItem = self.figure.plot(np.empty(0), name='')
 
         self._ignore_scale_change: bool = False
 
@@ -105,16 +103,14 @@ class App(GUI):
             self.model_signal: np.ndarray = np.empty(0)
             self.box_find_lines.hide()
         self.box_find_lines.setDisabled(True)
-        self.user_found_lines: PlotDataItem = \
-            self._canvas.scatterPlot(np.empty(0), pen=self.settings.mark_color, brush=self.settings.mark_color)
-        self.automatically_found_lines: PlotDataItem = \
-            self._canvas.scatterPlot(np.empty(0), pen=self.settings.mark_color, brush=self.settings.mark_color)
+        self.user_found_lines: PlotDataItem = self._canvas.scatterPlot(np.empty(0), symbol='o', pxMode=True)
+        self.automatically_found_lines: PlotDataItem = self._canvas.scatterPlot(np.empty(0), symbol='o', pxMode=True)
 
         self._data_type: str = self._VOLTAGE_DATA
 
         # cross hair
-        self._crosshair_v_line = pg.InfiniteLine(angle=90, movable=False, pen=self.settings.crosshair_lines_color)
-        self._crosshair_h_line = pg.InfiniteLine(angle=0, movable=False, pen=self.settings.crosshair_lines_color)
+        self._crosshair_v_line = pg.InfiniteLine(angle=90, movable=False)
+        self._crosshair_h_line = pg.InfiniteLine(angle=0, movable=False)
 
         self._cursor_balloon: pg.TextItem = pg.TextItem(color='#ccc' if self._is_dark else '#333')
         self.figure.addItem(self._cursor_balloon)
@@ -162,6 +158,10 @@ class App(GUI):
         self.figure.plotItem.addItem(self._crosshair_v_line, ignoreBounds=True)
         self.figure.plotItem.addItem(self._crosshair_h_line, ignoreBounds=True)
         self.hide_cursors()
+
+        self.set_plot_line_appearance()
+        self.set_marks_appearance()
+        self.set_crosshair_lines_appearance()
 
         # customize menu
         titles_to_leave: List[str] = [
@@ -704,8 +704,8 @@ class App(GUI):
         preferences_dialog: Preferences = Preferences(self.settings, self)
         preferences_dialog.exec()
         self.set_plot_line_appearance()
-        self.set_mark_color(self.settings.mark_color)
-        self.set_crosshair_lines_color(self.settings.crosshair_lines_color)
+        self.set_marks_appearance()
+        self.set_crosshair_lines_appearance()
         if (self._data_mode == self.PSK_DATA_MODE
                 and self._plot_line.xData is not None and self._plot_line.xData.size > 1):
             step: int = round(self.settings.jump / ((self._plot_line.xData[-1] - self._plot_line.xData[0])
@@ -737,16 +737,21 @@ class App(GUI):
         self._plot_line.setPen(pg.mkPen(self.settings.line_color, width=0.5 * self.settings.line_thickness))
         self._canvas.replot()
 
-    def set_mark_color(self, color: QColor):
-        self.automatically_found_lines.setSymbolPen(color)
-        self.automatically_found_lines.setSymbolBrush(color)
-        self.user_found_lines.setSymbolPen(color)
-        self.user_found_lines.setSymbolBrush(color)
+    def set_marks_appearance(self):
+        pen: QPen = pg.mkPen(self.settings.mark_pen, width=0.5 * self.settings.mark_pen_thickness)
+        brush: QBrush = pg.mkBrush(self.settings.mark_brush)
+        self.automatically_found_lines.setSymbolPen(pen)
+        self.automatically_found_lines.setSymbolBrush(brush)
+        self.automatically_found_lines.setSymbolSize(self.settings.mark_size)
+        self.user_found_lines.setSymbolPen(pen)
+        self.user_found_lines.setSymbolBrush(brush)
+        self.user_found_lines.setSymbolSize(self.settings.mark_size)
         self._canvas.replot()
 
-    def set_crosshair_lines_color(self, color: QColor):
-        self._crosshair_v_line.setPen(color)
-        self._crosshair_h_line.setPen(color)
+    def set_crosshair_lines_appearance(self):
+        pen: QPen = pg.mkPen(self.settings.crosshair_lines_color, width=0.5 * self.settings.crosshair_lines_thickness)
+        self._crosshair_v_line.setPen(pen)
+        self._crosshair_h_line.setPen(pen)
         self._canvas.replot()
 
     def find_lines(self, threshold: float) -> int:

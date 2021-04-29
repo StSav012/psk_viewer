@@ -64,7 +64,8 @@ class Settings(QSettings):
             _translate('preferences', 'Crosshair'): {
                 _translate('preferences', 'Show crosshair lines'): ('show_crosshair',),
                 _translate('preferences', 'Show coordinates'): ('show_coordinates_at_crosshair',),
-                _translate('preferences', 'Color:'): ('crosshair_lines_color',)
+                _translate('preferences', 'Color:'): ('crosshair_lines_color',),
+                _translate('preferences', 'Thickness:'): (line_opts, 'crosshair_lines_thickness',)
             },
             _translate('preferences', 'Line'): {
                 _translate('preferences', 'Color:'): ('line_color',),
@@ -72,7 +73,10 @@ class Settings(QSettings):
             },
             _translate('preferences', 'Marks'): {
                 _translate('preferences', 'Copy frequency to clipboard'): ('copy_frequency',),
-                _translate('preferences', 'Color:'): ('mark_color',)
+                _translate('preferences', 'Fill color:'): ('mark_brush',),
+                _translate('preferences', 'Border color:'): ('mark_pen',),
+                _translate('preferences', 'Size:'): (line_opts, 'mark_size',),
+                _translate('preferences', 'Border thickness:'): (line_opts, 'mark_pen_thickness',)
             },
             _translate('preferences', 'Export'): {
                 _translate('preferences', 'Line ending:'):
@@ -148,16 +152,55 @@ class Settings(QSettings):
         self.endGroup()
 
     @property
-    def mark_color(self) -> QColor:
+    def mark_brush(self) -> QColor:
         self.beginGroup('marks')
         v: QColor = self.value('color', self.line_color, QColor)
         self.endGroup()
         return v
 
-    @mark_color.setter
-    def mark_color(self, new_value: QColor):
+    @mark_brush.setter
+    def mark_brush(self, new_value: QColor):
         self.beginGroup('marks')
         self.setValue('color', new_value)
+        self.endGroup()
+
+    @property
+    def mark_pen(self) -> QColor:
+        self.beginGroup('marks')
+        v: QColor = self.value('borderColor', self.mark_brush, QColor)
+        self.endGroup()
+        return v
+
+    @mark_pen.setter
+    def mark_pen(self, new_value: QColor):
+        self.beginGroup('marks')
+        self.setValue('borderColor', new_value)
+        self.endGroup()
+
+    @property
+    def mark_size(self) -> float:
+        self.beginGroup('marks')
+        v: float = self.value('size', 10.0, float)
+        self.endGroup()
+        return v
+
+    @mark_size.setter
+    def mark_size(self, new_value: float):
+        self.beginGroup('marks')
+        self.setValue('size', new_value)
+        self.endGroup()
+
+    @property
+    def mark_pen_thickness(self) -> float:
+        self.beginGroup('marks')
+        v: float = self.value('borderThickness', 1.0, float)
+        self.endGroup()
+        return v
+
+    @mark_pen_thickness.setter
+    def mark_pen_thickness(self, new_value: float):
+        self.beginGroup('marks')
+        self.setValue('borderThickness', new_value)
         self.endGroup()
 
     @property
@@ -210,4 +253,17 @@ class Settings(QSettings):
     def crosshair_lines_color(self, new_value: QColor):
         self.beginGroup('crosshair')
         self.setValue('color', new_value)
+        self.endGroup()
+
+    @property
+    def crosshair_lines_thickness(self) -> float:
+        self.beginGroup('crosshair')
+        v: float = self.value('thickness', 2.0, float)
+        self.endGroup()
+        return v
+
+    @crosshair_lines_thickness.setter
+    def crosshair_lines_thickness(self, new_value: float):
+        self.beginGroup('crosshair')
+        self.setValue('thickness', new_value)
         self.endGroup()
