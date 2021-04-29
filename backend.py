@@ -307,24 +307,7 @@ class App(GUI):
         self.button_prev_line.clicked.connect(self.prev_found_line)
         self.button_next_line.clicked.connect(self.next_found_line)
 
-        def adjust_columns():
-            self.model_found_lines.header = (
-                    [_translate('main window', 'Frequency [MHz]')] +
-                    ([_translate('main window', 'Voltage [mV]'), _translate('main window', 'Absorption [cm⁻¹ × 10⁻⁶]')]
-                     * (self.table_found_lines.horizontalHeader().count() // 2))
-            )
-            for i in range(self.table_found_lines.horizontalHeader().count()):
-                self.table_found_lines.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
-
-            # change visibility of the found lines table columns
-            if self.toolbar.switch_data_action.isChecked():
-                self.table_found_lines.hideColumn(1)
-                self.table_found_lines.showColumn(2)
-            else:
-                self.table_found_lines.hideColumn(2)
-                self.table_found_lines.showColumn(1)
-
-        self.model_found_lines.modelReset.connect(adjust_columns)
+        self.model_found_lines.modelReset.connect(self.adjust_table_columns)
 
         self.table_found_lines.doubleClicked.connect(self.on_table_cell_double_clicked)
 
@@ -345,6 +328,23 @@ class App(GUI):
         self._view_all_action.triggered.connect(lambda: self._canvas.vb.autoRange(padding=0.0))
 
         self.figure.sceneObj.sigMouseClicked.connect(self.on_plot_clicked)
+
+    def adjust_table_columns(self):
+        self.model_found_lines.header = (
+                [_translate('main window', 'Frequency [MHz]')] +
+                ([_translate('main window', 'Voltage [mV]'), _translate('main window', 'Absorption [cm⁻¹ × 10⁻⁶]')]
+                 * (self.table_found_lines.horizontalHeader().count() // 2))
+        )
+        for i in range(self.table_found_lines.horizontalHeader().count()):
+            self.table_found_lines.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
+
+        # change visibility of the found lines table columns
+        if self.toolbar.switch_data_action.isChecked():
+            self.table_found_lines.hideColumn(1)
+            self.table_found_lines.showColumn(2)
+        else:
+            self.table_found_lines.hideColumn(2)
+            self.table_found_lines.showColumn(1)
 
     def on_xlim_changed(self, xlim: Iterable[float]):
         min_freq, max_freq = min(xlim), max(xlim)
