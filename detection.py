@@ -59,7 +59,7 @@ def peaks_positions(data_x: np.ndarray, data_y: np.ndarray, threshold: float = 0
         # nothing to do
         return np.empty(0)
 
-    std: np.ndarray = pd.Series(data_y).rolling(round(LINE_WIDTH / (data_x[1] - data_x[0])),
+    std: np.ndarray = pd.Series(data_y).rolling(int(round(LINE_WIDTH / (data_x[1] - data_x[0]))),
                                                 center=True).std().to_numpy()
     match: np.ndarray = np.array((std >= np.nanquantile(std, 1.0 - threshold)))
     match = remove_spikes(match, iterations=8)

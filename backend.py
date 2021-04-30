@@ -710,9 +710,9 @@ class App(GUI):
         self.set_crosshair_lines_appearance()
         if (self._data_mode == self.PSK_DATA_MODE
                 and self._plot_line.xData is not None and self._plot_line.xData.size > 1):
-            step: int = round(self.settings.jump / ((self._plot_line.xData[-1] - self._plot_line.xData[0])
-                                                    / (self._plot_line.xData.size - 1)))
-            self.toolbar.differentiate_action.setEnabled(step != 0.0)
+            step: int = int(round(self.settings.jump / ((self._plot_line.xData[-1] - self._plot_line.xData[0])
+                                                        / (self._plot_line.xData.size - 1))))
+            self.toolbar.differentiate_action.setEnabled(step != 0)
 
     def hide_cursors(self):
         self._crosshair_h_line.setVisible(False)
@@ -1121,7 +1121,7 @@ class App(GUI):
     def calculate_second_derivative(self):
         self.clear_found_lines()
         x: np.ndarray = self._plot_line.xData
-        step: int = round(self.settings.jump / ((x[-1] - x[0]) / (x.size - 1)))
+        step: int = int(round(self.settings.jump / ((x[-1] - x[0]) / (x.size - 1))))
         self._plot_line.voltage_data = (self._plot_line.voltage_data[step:-step]
                                         - (self._plot_line.voltage_data[2 * step:]
                                            + self._plot_line.voltage_data[:-2 * step]) / 2.)
