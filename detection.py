@@ -1,13 +1,6 @@
 # -*- coding: utf-8 -*-
-try:
-    from typing import Final
-except ImportError:
-    class _Final:
-        def __getitem__(self, item):
-            return item
 
-
-    Final = _Final()
+from typing import Final
 
 import numpy as np
 
@@ -15,7 +8,7 @@ LINE_WIDTH: Final[float] = 2.6e6
 
 
 def remove_spikes(sequence: np.ndarray, iterations: int = 1) -> np.ndarray:
-    from scipy import ndimage
+    from scipy import ndimage  # type: ignore
 
     sequence = ndimage.binary_dilation(sequence, iterations=iterations)
     sequence = ndimage.binary_erosion(sequence, iterations=iterations + 1)
@@ -24,7 +17,7 @@ def remove_spikes(sequence: np.ndarray, iterations: int = 1) -> np.ndarray:
 
 
 def correlation(model_y, another_x: np.ndarray, another_y: np.ndarray) -> np.ndarray:
-    from scipy.signal import butter, lfilter
+    from scipy.signal import butter, lfilter  # type: ignore
 
     def butter_bandpass_filter(data: np.ndarray, low_cut: float, high_cut: float, order: int = 5):
         def butter_bandpass():
@@ -54,7 +47,7 @@ def correlation(model_y, another_x: np.ndarray, another_y: np.ndarray) -> np.nda
 
 
 def peaks_positions(data_x: np.ndarray, data_y: np.ndarray, threshold: float = 0.0046228) -> np.ndarray:
-    import pandas as pd
+    import pandas as pd  # type: ignore
     if data_x.size < 2 or data_y.size < 2:
         # nothing to do
         return np.empty(0)

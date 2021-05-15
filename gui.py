@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import os
-from typing import Tuple
+from typing import Callable, Optional, Tuple
 
-import pyqtgraph as pg
+import pyqtgraph as pg  # type: ignore
 from PyQt5.QtCore import QCoreApplication, Qt
 from PyQt5.QtWidgets import QAbstractItemView, QCheckBox, QDockWidget, QFileDialog, QFormLayout, \
     QGridLayout, QMainWindow, QMessageBox, QPushButton, QStatusBar, QTableView, QVBoxLayout, QWidget
@@ -13,14 +13,16 @@ from settings import Settings
 from utils import load_icon
 from valuelabel import ValueLabel
 
+_translate: Callable[[str, str, Optional[str], int], str] = QCoreApplication.translate
+
 
 class GUI(QMainWindow):
-    def __init__(self, flags=Qt.WindowFlags()):
+    def __init__(self, flags: Qt.WindowFlags = Qt.WindowFlags()):
         super().__init__(flags=flags)
-        self.settings = Settings("SavSoft", "Spectrometer Viewer")
+        self.settings: Settings = Settings("SavSoft", "Spectrometer Viewer")
 
         # prevent config from being re-written while loading
-        self._loading = True
+        self._loading: bool = True
 
         self.central_widget: QWidget = QWidget(self, flags=Qt.WindowFlags())
         self.grid_layout: QGridLayout = QGridLayout(self.central_widget)
@@ -107,8 +109,6 @@ class GUI(QMainWindow):
         self.setup_ui_appearance()
 
     def setup_ui_appearance(self):
-        _translate = QCoreApplication.translate
-
         pg.fn.SI_PREFIXES = _translate('si prefixes', 'y,z,a,f,p,n,µ,m, ,k,M,G,T,P,E,Z,Y').split(',')
         pg.fn.SI_PREFIXES_ASCII = pg.fn.SI_PREFIXES
         pg.fn.SI_PREFIX_EXPONENTS.update(dict([(s, (i - 8) * 3) for i, s in enumerate(pg.fn.SI_PREFIXES)]))
@@ -279,7 +279,6 @@ class GUI(QMainWindow):
 
     def closeEvent(self, event):
         """ senseless joke in the loop """
-        _translate = QCoreApplication.translate
         close_code = QMessageBox.No
         while close_code == QMessageBox.No:
             close = QMessageBox()
@@ -338,7 +337,6 @@ class GUI(QMainWindow):
         # native dialog misbehaves when running inside snap but Qt dialog is tortoise-like in NT
         options: QFileDialog.Option = QFileDialog.DontUseNativeDialog if os.name != 'nt' else QFileDialog.DontUseSheet
         filename: str
-        _filter: str
         filename, _filter = QFileDialog.getSaveFileName(filter=_filter,
                                                         directory=directory,
                                                         initialFilter=initial_filter,

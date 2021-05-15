@@ -8,8 +8,7 @@ Required packages:
 - numpy
 - openpxl
 
-Required Python: >= 3.6
-Never tested with Python < 3.7, though.
+Required Python: >= 3.8
 
 For developers. To add a translation, use
    pylupdate5 -noobsolete *.py -ts xy_XY.ts

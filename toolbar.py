@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 from typing import Iterable, Optional, Union
 
 from PyQt5.QtCore import QSize
@@ -60,8 +61,6 @@ class NavigationToolbar(QToolBar):
             'configure'
         ]):
             a.setIcon(load_icon(i.lower()))
-        a: QAction
-        i: str
         for a, i in zip([
             self.open_action,
             self.clear_action,

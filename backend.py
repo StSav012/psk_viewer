@@ -1,15 +1,15 @@
 ﻿# -*- coding: utf-8 -*-
 
 import os
-from typing import Callable, Iterable, List, Optional, Tuple
+from typing import Callable, Final, Iterable, List, Optional, Tuple, cast
 
 import numpy as np
-import pandas as pd
-import pyqtgraph as pg
-from PyQt5.QtCore import QCoreApplication, QItemSelectionModel, QModelIndex, QPointF, QRectF, Qt
+import pandas as pd  # type: ignore
+import pyqtgraph as pg  # type: ignore
+from PyQt5.QtCore import Qt, QCoreApplication, QItemSelectionModel, QModelIndex, QPointF, QRectF
 from PyQt5.QtGui import QBrush, QKeyEvent, QKeySequence, QPalette, QPen
 from PyQt5.QtWidgets import QAction, QDesktopWidget, QHeaderView
-from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent
+from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent  # type: ignore
 
 import detection
 from gui import GUI
@@ -18,15 +18,7 @@ from toolbar import NavigationToolbar
 from utils import copy_to_clipboard, load_data_csv, load_data_fs, load_data_scandat, resource_path, \
     superscript_number, superscript_tag
 
-try:
-    from typing import Final
-except ImportError:
-    class _Final:
-        def __getitem__(self, item):
-            return item
-
-
-    Final = _Final()
+_translate: Callable[[str, str, Optional[str], int], str] = QCoreApplication.translate
 
 pg.ViewBox.suggestPadding = lambda *_: 0.0
 
@@ -69,9 +61,6 @@ class PlotDataItem(pg.PlotDataItem):
         self.gamma_data: np.ndarray = np.empty(0)
 
 
-_translate: Callable[[str, str, Optional[str], int], str] = QCoreApplication.translate
-
-
 class App(GUI):
     PSK_DATA_MODE: Final[int] = 1
     PSK_WITH_JUMP_DATA_MODE: Final[int] = 2
@@ -80,7 +69,7 @@ class App(GUI):
     _GAMMA_DATA: Final[str] = 'gamma_data'  # should be the same as in class `PlotDataItem`
     _VOLTAGE_DATA: Final[str] = 'voltage_data'  # should be the same as in class `PlotDataItem`
 
-    def __init__(self, filename: str = '', flags=Qt.WindowFlags()):
+    def __init__(self, filename: str = '', flags: Qt.WindowFlags = Qt.WindowFlags()):
         super().__init__(flags=flags)
 
         self._data_mode: int = 0
@@ -97,10 +86,11 @@ class App(GUI):
 
         self._ignore_scale_change: bool = False
 
+        self.model_signal: np.ndarray
         try:
-            self.model_signal: np.ndarray = pd.read_csv(resource_path('averaged fs signal filtered.csv')).values
+            self.model_signal = pd.read_csv(resource_path('averaged fs signal filtered.csv')).values
         except (OSError, BlockingIOError):
-            self.model_signal: np.ndarray = np.empty(0)
+            self.model_signal = np.empty(0)
             self.box_find_lines.hide()
         self.box_find_lines.setDisabled(True)
         self.user_found_lines: PlotDataItem = self._canvas.scatterPlot(np.empty(0), symbol='o', pxMode=True)
@@ -377,8 +367,9 @@ class App(GUI):
             return
         if ev.button() != Qt.LeftButton:
             return
+
+        point: pg.SpotItem
         if ev.modifiers() == Qt.ShiftModifier:
-            point: pg.SpotItem
             items: np.ndarray = item.scatter.data['item']
             index: np.ndarray = np.full(items.shape, True, np.bool_)
             for point in points:
@@ -449,9 +440,8 @@ class App(GUI):
             self.toolbar.clear_trace_action.setEnabled(not self.model_found_lines.is_empty)
 
         elif ev.modifiers() == Qt.NoModifier:
-            point: pg.SpotItem
             found_lines_frequencies: np.ndarray = self.model_found_lines.all_data[:, 0]
-            selected_points: List[int] = [np.argmin(np.abs(point.pos().x() - found_lines_frequencies))
+            selected_points: List[int] = [cast(int, np.argmin(np.abs(point.pos().x() - found_lines_frequencies)))
                                           for point in points]
             self.on_points_selected(selected_points)
 
@@ -501,8 +491,8 @@ class App(GUI):
             return
         if not self.figure.sceneBoundingRect().contains(pos):
             return
-        x_span: float = np.ptp(self._canvas.axes['bottom']['item'].range)
-        y_span: float = np.ptp(self._canvas.axes['left']['item'].range)
+        x_span: float = cast(float, np.ptp(self._canvas.axes['bottom']['item'].range))
+        y_span: float = cast(float, np.ptp(self._canvas.axes['left']['item'].range))
         point: QPointF = self._canvas.vb.mapSceneToView(pos)
         if self._plot_line.xData is None or not self._plot_line.xData.size:
             return
@@ -510,8 +500,8 @@ class App(GUI):
                                                (self._plot_line.yData - point.y()) / y_span))
         if distance > 0.01:
             return
-        closest_point_index: int = np.argmin(np.hypot((self._plot_line.xData - point.x()) / x_span,
-                                                      (self._plot_line.yData - point.y()) / y_span))
+        closest_point_index: int = cast(int, np.argmin(np.hypot((self._plot_line.xData - point.x()) / x_span,
+                                                                (self._plot_line.yData - point.y()) / y_span)))
         if self.user_found_lines.xData is None or self.user_found_lines.yData.size is None:
             self.user_found_lines.setData(
                 [self._plot_line.xData[closest_point_index]], [self._plot_line.yData[closest_point_index]]
@@ -576,7 +566,8 @@ class App(GUI):
         row: int
         for row in rows:
             index: QModelIndex = self.model_found_lines.index(row, 0)
-            sm.select(index, QItemSelectionModel.Select | QItemSelectionModel.Rows)
+            sm.select(index,
+                      cast(QItemSelectionModel.SelectionFlags, QItemSelectionModel.Select | QItemSelectionModel.Rows))
             self.table_found_lines.scrollTo(index)
 
     def spin_frequency_min_changed(self, new_value):
@@ -760,7 +751,7 @@ class App(GUI):
         if self._data_mode == 0 or self.model_signal.size < 2:
             return 0
 
-        from scipy import interpolate
+        from scipy import interpolate  # type: ignore
 
         x: Final[np.ndarray] = self._plot_line.xData
         y: Final[np.ndarray] = self._plot_line.yData
@@ -850,7 +841,7 @@ class App(GUI):
             line_data: np.ndarray = line.getData()[0]
             if line_data is None or not line_data.size:
                 continue
-            i: int = np.searchsorted(line_data, init_frequency, side='right') - 2
+            i: int = cast(int, np.searchsorted(line_data, init_frequency, side='right') - 2)
             if 0 <= i < line_data.size and line_data[i] != init_frequency:
                 prev_line_freq[index] = line_data[i]
             else:
@@ -872,7 +863,7 @@ class App(GUI):
             line_data: np.ndarray = line.getData()[0]
             if line_data is None or not line_data.size:
                 continue
-            i: int = np.searchsorted(line_data, init_frequency, side='left') + 1
+            i: int = cast(int, np.searchsorted(line_data, init_frequency, side='left') + 1)
             if i < line_data.size and line_data[i] != init_frequency:
                 next_line_freq[index] = line_data[i]
             else:
@@ -889,17 +880,18 @@ class App(GUI):
         Convert selected cells to string for copying as plain text
         :return: the plain text representation of the selected table lines
         """
+        text_matrix: List[List[str]]
         if whole_table:
-            text_matrix: List[List[str]] = [[self.model_found_lines.formatted_item(row, column)
-                                             for column in range(self.model_found_lines.columnCount())
-                                             if not self.table_found_lines.isColumnHidden(column)]
-                                            for row in range(self.model_found_lines.rowCount(available_count=True))]
+            text_matrix = [[self.model_found_lines.formatted_item(row, column)
+                            for column in range(self.model_found_lines.columnCount())
+                            if not self.table_found_lines.isColumnHidden(column)]
+                           for row in range(self.model_found_lines.rowCount(available_count=True))]
         else:
             si: QModelIndex
             rows: List[int] = sorted(list(set(si.row() for si in self.table_found_lines.selectedIndexes())))
             cols: List[int] = sorted(list(set(si.column() for si in self.table_found_lines.selectedIndexes())))
-            text_matrix: List[List[str]] = [['' for _ in range(len(cols))]
-                                            for _ in range(len(rows))]
+            text_matrix = [['' for _ in range(len(cols))]
+                           for _ in range(len(rows))]
             for si in self.table_found_lines.selectedIndexes():
                 text_matrix[rows.index(si.row())][cols.index(si.column())] = \
                     self.model_found_lines.formatted_item(si.row(), si.column())
@@ -912,17 +904,18 @@ class App(GUI):
         Convert selected cells to string for copying as rich text
         :return: the rich text representation of the selected table lines
         """
+        text_matrix: List[List[str]]
         if whole_table:
-            text_matrix: List[List[str]] = [[('<td>' + self.model_found_lines.formatted_item(row, column) + '</td>')
-                                             for column in range(self.model_found_lines.columnCount())
-                                             if not self.table_found_lines.isColumnHidden(column)]
-                                            for row in range(self.model_found_lines.rowCount(available_count=True))]
+            text_matrix = [[('<td>' + self.model_found_lines.formatted_item(row, column) + '</td>')
+                            for column in range(self.model_found_lines.columnCount())
+                            if not self.table_found_lines.isColumnHidden(column)]
+                           for row in range(self.model_found_lines.rowCount(available_count=True))]
         else:
             si: QModelIndex
             rows: List[int] = sorted(list(set(si.row() for si in self.table_found_lines.selectedIndexes())))
             cols: List[int] = sorted(list(set(si.column() for si in self.table_found_lines.selectedIndexes())))
-            text_matrix: List[List[str]] = [['' for _ in range(len(cols))]
-                                            for _ in range(len(rows))]
+            text_matrix = [['' for _ in range(len(cols))]
+                           for _ in range(len(rows))]
             for si in self.table_found_lines.selectedIndexes():
                 text_matrix[rows.index(si.row())][cols.index(si.column())] = \
                     '<td>' + self.model_found_lines.formatted_item(si.row(), si.column()) + '</td>'
@@ -1036,8 +1029,9 @@ class App(GUI):
         f: np.ndarray
         g: np.ndarray = np.empty(0)
         jump: float
+        fn: str
         if filename.casefold().endswith('.scandat'):
-            fn: str = os.path.splitext(filename)[0]
+            fn = os.path.splitext(filename)[0]
             f, v, g, jump = load_data_scandat(filename, self)
             if f.size and v.size:
                 self.settings.display_processing = True
@@ -1046,7 +1040,7 @@ class App(GUI):
                 else:
                     self._data_mode = self.PSK_DATA_MODE
         elif filename.casefold().endswith(('.csv', '.conf')):
-            fn: str = os.path.splitext(filename)[0]
+            fn = os.path.splitext(filename)[0]
             f, v, g, jump = load_data_csv(filename)
             if f.size and v.size:
                 self.settings.display_processing = True
@@ -1055,7 +1049,7 @@ class App(GUI):
                 else:
                     self._data_mode = self.PSK_DATA_MODE
         elif filename.casefold().endswith(('.fmd', '.frd')):
-            fn: str = os.path.splitext(filename)[0]
+            fn = os.path.splitext(filename)[0]
             f, v = load_data_fs(filename)
             if f.size and v.size:
                 self.settings.display_processing = False
@@ -1090,7 +1084,7 @@ class App(GUI):
         self.toolbar.copy_figure_action.setEnabled(True)
         self.toolbar.save_figure_action.setEnabled(True)
         self.toolbar.trace_action.setEnabled(True)
-        self.box_find_lines.setEnabled(self.model_signal.size)
+        self.box_find_lines.setEnabled(bool(self.model_signal.size))
 
         self._loading = True
         self.spin_frequency_min.setMaximum(max(max_frequency, self.spin_frequency_min.value()))
@@ -1147,8 +1141,8 @@ class App(GUI):
                 self._plot_line.setData(self._plot_line.xData, self._plot_line.gamma_data)
 
                 self._loading = True
-                min_gamma: float = self._plot_line.gamma_data.min()
-                max_gamma: float = self._plot_line.gamma_data.max()
+                min_gamma: float = np.min(self._plot_line.gamma_data)
+                max_gamma: float = np.max(self._plot_line.gamma_data)
                 if not self.check_voltage_persists.isChecked():
                     self.on_ylim_changed((min_gamma, max_gamma))
                 self.spin_voltage_min.setMaximum(max(max_gamma, self.spin_voltage_min.value()))
@@ -1167,8 +1161,8 @@ class App(GUI):
                 self._plot_line.setData(self._plot_line.xData, self._plot_line.voltage_data)
 
                 self._loading = True
-                min_voltage: float = self._plot_line.voltage_data.min()
-                max_voltage: float = self._plot_line.voltage_data.max()
+                min_voltage: float = np.min(self._plot_line.voltage_data)
+                max_voltage: float = np.max(self._plot_line.voltage_data)
                 if not self.check_voltage_persists.isChecked():
                     self.on_ylim_changed((min_voltage, max_voltage))
                 self.spin_voltage_min.setMaximum(max(max_voltage, self.spin_voltage_min.value()))
@@ -1293,14 +1287,14 @@ class App(GUI):
 
     def copy_figure(self):
         # TODO: add legend to the figure to save
-        import pyqtgraph.exporters
+        import pyqtgraph.exporters  # type: ignore
         exporter = pg.exporters.ImageExporter(self._canvas)
         self.hide_cursors()
         exporter.export(copy=True)
 
     def save_figure(self):
         # TODO: add legend to the figure to save
-        import pyqtgraph.exporters
+        import pyqtgraph.exporters  # type: ignore
         exporter = pg.exporters.ImageExporter(self._canvas)
         _filter: str = \
             _translate('file dialog', 'Image files') + ' (' + ' '.join(exporter.getSupportedImageFormats()) + ')'

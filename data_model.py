@@ -1,19 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from typing import Iterable, List, Optional, Union, Tuple
+from typing import Final, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
-
-try:
-    from typing import Final
-except ImportError:
-    class _Final:
-        def __getitem__(self, item):
-            return item
-
-
-    Final = _Final()
-
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt
 
 
@@ -69,7 +58,7 @@ class DataModel(QAbstractTableModel):
             return f'{value * scale:.{precision}f}'.replace('-', '−')
         return f'{value * scale:.{precision}f}'
 
-    def data(self, index: QModelIndex, role: Qt.ItemDataRole = Qt.DisplayRole) -> Optional[str]:
+    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Optional[str]:
         if index.isValid() and role == Qt.DisplayRole:
             return self.formatted_item(index.row(), index.column(), replace_hyphen=True)
         return None
@@ -80,12 +69,12 @@ class DataModel(QAbstractTableModel):
         else:
             return np.nan
 
-    def headerData(self, col, orientation, role: Qt.ItemDataRole = Qt.DisplayRole):
+    def headerData(self, col, orientation, role: int = Qt.DisplayRole) -> Optional[str]:
         if orientation == Qt.Horizontal and role == Qt.DisplayRole and 0 <= col < len(self._header):
             return self._header[col]
         return None
 
-    def setHeaderData(self, section: int, orientation: Qt.Orientation, value, role: int = ...) -> bool:
+    def setHeaderData(self, section: int, orientation: Qt.Orientation, value: str, role: int = Qt.DisplayRole) -> bool:
         if orientation == Qt.Horizontal and role == Qt.DisplayRole and 0 <= section < len(self._header):
             self._header[section] = value
             return True

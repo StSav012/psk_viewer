@@ -1,9 +1,11 @@
+# -*- coding: utf-8 -*-
+
 import math
 from typing import Optional, List, Union, Tuple
 
 from PyQt5.QtGui import QPaintEvent
 from PyQt5.QtWidgets import QLabel
-from pyqtgraph import functions as fn
+from pyqtgraph import functions as fn  # type: ignore
 from pyqtgraph import time
 
 __all__ = ['ValueLabel']

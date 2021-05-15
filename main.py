@@ -2,19 +2,7 @@
 # -*- coding: utf-8 -*-
 import sys
 from pathlib import Path
-from typing import List, Type, Set
-
-try:
-    from typing import Final
-except ImportError:
-    class _Final:
-        @staticmethod
-        def __getitem__(item: Type):
-            return item
-
-
-    Final = _Final()
-
+from typing import Final, List, Set
 
 __author__: Final[str] = 'StSav012'
 __original_name__: Final[str] = 'psk_viewer'

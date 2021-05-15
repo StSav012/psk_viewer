@@ -1,24 +1,13 @@
 # -*- coding: utf-8 -*-
-import os
-from typing import List, Type, Callable, Optional
 
-import pyqtgraph as pg
+import os
+from typing import Final, List, Callable, Optional
+
+import pyqtgraph as pg  # type: ignore
 from PyQt5.QtCore import QCoreApplication, QSettings
 from PyQt5.QtGui import QColor
 
-try:
-    from typing import Final
-except ImportError:
-    class _Final:
-        @staticmethod
-        def __getitem__(item: Type):
-            return item
-
-
-    Final = _Final()
-
 __all__ = ['Settings']
-
 
 _translate: Callable[[str, str, Optional[str], int], str] = QCoreApplication.translate
 

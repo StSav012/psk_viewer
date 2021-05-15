@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-from typing import Optional
 
-import pyqtgraph as pg
+from typing import Optional, Union
+
+import pyqtgraph as pg  # type: ignore
 from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QCheckBox, QComboBox, \
-    QDialog, QDialogButtonBox, QDoubleSpinBox, QFormLayout, QGroupBox, \
+from PyQt5.QtWidgets import QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFormLayout, QGroupBox, \
     QSpinBox, QVBoxLayout, QWidget
 
 from colorselector import ColorSelector
@@ -25,6 +25,12 @@ class Preferences(QDialog):
         if parent is not None:
             self.setWindowIcon(parent.windowIcon())
 
+        check_box: QCheckBox
+        combo_box: QComboBox
+        spin_box: pg.SpinBox
+        q_spin_box: Union[QSpinBox, QDoubleSpinBox]
+        color_selector: ColorSelector
+
         layout: QVBoxLayout = QVBoxLayout(self)
         for key, value in self.settings.dialog.items():
             if isinstance(value, dict) and value:
@@ -34,51 +40,51 @@ class Preferences(QDialog):
                     if isinstance(value2, tuple) and isinstance(value2[-1], str) and value2[-1]:
                         if len(value2) == 1:
                             if isinstance(getattr(self.settings, value2[-1]), bool):
-                                widget: QCheckBox = QCheckBox(self.tr(key2), box)
-                                setattr(widget, 'callback', value2[-1])
-                                widget.setChecked(getattr(self.settings, value2[-1]))
-                                widget.toggled.connect(
+                                check_box = QCheckBox(self.tr(key2), box)
+                                setattr(check_box, 'callback', value2[-1])
+                                check_box.setChecked(getattr(self.settings, value2[-1]))
+                                check_box.toggled.connect(
                                     lambda x: setattr(self.settings, getattr(self.sender(), 'callback'), x))
-                                box_layout.addWidget(widget)
+                                box_layout.addWidget(check_box)
                             elif isinstance(getattr(self.settings, value2[-1]), QColor):
-                                widget: ColorSelector = ColorSelector(box, getattr(self.settings, value2[-1]))
-                                setattr(widget, 'callback', value2[-1])
-                                widget.colorSelected.connect(
+                                color_selector = ColorSelector(box, getattr(self.settings, value2[-1]))
+                                setattr(color_selector, 'callback', value2[-1])
+                                color_selector.colorSelected.connect(
                                     lambda x: setattr(self.settings, getattr(self.sender(), 'callback'), x))
-                                box_layout.addRow(key2, widget)
+                                box_layout.addRow(key2, color_selector)
                             # no else
                         elif len(value2) == 2:
                             value3 = value2[0]
                             if isinstance(value3, (list, tuple)):
-                                widget: QComboBox = QComboBox(box)
-                                setattr(widget, 'callback', value2[-1])
+                                combo_box = QComboBox(box)
+                                setattr(combo_box, 'callback', value2[-1])
                                 for item in value3:
-                                    widget.addItem(self.tr(item))
-                                widget.setCurrentIndex(getattr(self.settings, value2[-1]))
-                                widget.currentIndexChanged.connect(
+                                    combo_box.addItem(self.tr(item))
+                                combo_box.setCurrentIndex(getattr(self.settings, value2[-1]))
+                                combo_box.currentIndexChanged.connect(
                                     lambda x: setattr(self.settings, getattr(self.sender(), 'callback'), x))
-                                box_layout.addRow(self.tr(key2), widget)
+                                box_layout.addRow(self.tr(key2), combo_box)
                             elif isinstance(getattr(self.settings, value2[-1]), float) and isinstance(value3, dict):
-                                widget: pg.SpinBox = pg.SpinBox(box, getattr(self.settings, value2[-1]))
-                                widget.setOpts(**value3)
-                                setattr(widget, 'callback', value2[-1])
-                                widget.valueChanged.connect(
+                                spin_box = pg.SpinBox(box, getattr(self.settings, value2[-1]))
+                                spin_box.setOpts(**value3)
+                                setattr(spin_box, 'callback', value2[-1])
+                                spin_box.valueChanged.connect(
                                     lambda x: setattr(self.settings, getattr(self.sender(), 'callback'), x))
-                                box_layout.addRow(key2, widget)
+                                box_layout.addRow(key2, spin_box)
                             # no else
                         elif len(value2) == 3:
                             value3a = value2[0]
                             value3b = value2[1]
                             if isinstance(value3a, (list, tuple)) and isinstance(value3b, (list, tuple)):
-                                widget: QComboBox = QComboBox(box)
-                                setattr(widget, 'callback', value2[-1])
+                                combo_box = QComboBox(box)
+                                setattr(combo_box, 'callback', value2[-1])
                                 for index, item in enumerate(value3a):
-                                    widget.addItem(self.tr(item), value3b[index])
-                                widget.setCurrentIndex(value3b.index(getattr(self.settings, value2[-1])))
-                                widget.currentIndexChanged.connect(
+                                    combo_box.addItem(self.tr(item), value3b[index])
+                                combo_box.setCurrentIndex(value3b.index(getattr(self.settings, value2[-1])))
+                                combo_box.currentIndexChanged.connect(
                                     lambda _: setattr(self.settings, getattr(self.sender(), 'callback'),
                                                       self.sender().currentData()))
-                                box_layout.addRow(self.tr(key2), widget)
+                                box_layout.addRow(self.tr(key2), combo_box)
                             elif (isinstance(value3a, slice)
                                   and isinstance(getattr(self.settings, value2[-1]), (int, float))
                                   and isinstance(value3b, tuple)):
@@ -86,27 +92,27 @@ class Preferences(QDialog):
                                         and (value3a.stop is None or isinstance(value3a.stop, int))
                                         and (value3a.step is None or isinstance(value3a.step, int))
                                         and isinstance(getattr(self.settings, value2[-1]), int)):
-                                    widget: QSpinBox = QSpinBox(box)
+                                    q_spin_box = QSpinBox(box)
                                 else:
-                                    widget: QDoubleSpinBox = QDoubleSpinBox(box)
-                                setattr(widget, 'callback', value2[-1])
+                                    q_spin_box = QDoubleSpinBox(box)
+                                setattr(q_spin_box, 'callback', value2[-1])
                                 if value3a.start is not None:
-                                    widget.setMinimum(value3a.start)
+                                    q_spin_box.setMinimum(value3a.start)
                                 if value3a.stop is not None:
-                                    widget.setMaximum(value3a.stop)
+                                    q_spin_box.setMaximum(value3a.stop)
                                 if value3a.step is not None:
-                                    widget.setSingleStep(value3a.step)
-                                widget.setValue(getattr(self.settings, value2[-1]))
+                                    q_spin_box.setSingleStep(value3a.step)
+                                q_spin_box.setValue(getattr(self.settings, value2[-1]))
                                 if len(value3b) == 2:
-                                    widget.setPrefix(str(value3b[0]))
-                                    widget.setSuffix(str(value3b[1]))
+                                    q_spin_box.setPrefix(str(value3b[0]))
+                                    q_spin_box.setSuffix(str(value3b[1]))
                                 elif len(value3b) == 1:
-                                    widget.setSuffix(str(value3b[0]))
+                                    q_spin_box.setSuffix(str(value3b[0]))
                                 # no else
-                                widget.valueChanged.connect(
+                                q_spin_box.valueChanged.connect(
                                     lambda _: setattr(self.settings, getattr(self.sender(), 'callback'),
                                                       self.sender().value()))
-                                box_layout.addRow(self.tr(key2), widget)
+                                box_layout.addRow(self.tr(key2), q_spin_box)
                             # no else
                         # no else
                     # no else
