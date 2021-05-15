@@ -4,7 +4,7 @@ import math
 from typing import Optional, List, Union, Tuple
 
 from PyQt5.QtGui import QPaintEvent
-from PyQt5.QtWidgets import QLabel
+from PyQt5.QtWidgets import QLabel, QWidget
 from pyqtgraph import functions as fn  # type: ignore
 from pyqtgraph import time
 
@@ -27,8 +27,9 @@ class ValueLabel(QLabel):
     siPrefix: bool
     decimals: int
 
-    def __init__(self, parent=None, suffix: Optional[str] = None, siPrefix: bool = False, decimals: int = 3,
-                 averageTime: float = 0., formatStr: Optional[str] = None):
+    def __init__(self, parent: Optional[QWidget] = None,
+                 suffix: Optional[str] = None, siPrefix: bool = False, decimals: int = 3,
+                 averageTime: float = 0., formatStr: Optional[str] = None) -> None:
         """
         ==============      ==================================================================================
         **Arguments:**
@@ -54,7 +55,7 @@ class ValueLabel(QLabel):
         else:
             self.formatStr = formatStr
 
-    def setValue(self, value: Union[int, float]):
+    def setValue(self, value: Union[int, float]) -> None:
         now: float = time()
         self.values.append((now, value))
         cutoff: float = now - self.averageTime
@@ -62,24 +63,24 @@ class ValueLabel(QLabel):
             self.values.pop(0)
         self.update()
 
-    def setFormatStr(self, text: str):
+    def setFormatStr(self, text: str) -> None:
         self.formatStr = text
         self.update()
 
-    def setAverageTime(self, t: float):
+    def setAverageTime(self, t: float) -> None:
         self.averageTime = t
 
-    def averageValue(self):
+    def averageValue(self) -> float:
         if self.values:
             return sum(v[1] for v in self.values) / float(len(self.values))
         else:
             return math.nan
 
-    def paintEvent(self, ev: QPaintEvent):
+    def paintEvent(self, ev: QPaintEvent) -> None:
         self.setText(self.generateText())
         return QLabel.paintEvent(self, ev)
 
-    def generateText(self):
+    def generateText(self) -> str:
         if len(self.values) == 0:
             return ''
         val: float = self.averageValue()

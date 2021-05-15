@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, BinaryIO, Dict, Final, List, Optional, TextIO, Union
 
 
-def update(user: str, repo_name: str, branch: str = 'master'):
+def update(user: str, repo_name: str, branch: str = 'master') -> None:
     extraction_root: Path = Path.cwd()
     repo_url: Final[str] = f'https://github.com/{user}/{repo_name}/archive/{branch}.zip'
     r: http.client.HTTPResponse

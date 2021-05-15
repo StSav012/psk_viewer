@@ -2,7 +2,7 @@
 
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QColor, QPalette
-from PyQt5.QtWidgets import QColorDialog, QPushButton
+from PyQt5.QtWidgets import QColorDialog, QPushButton, QWidget
 
 __all__ = ['ColorSelector']
 
@@ -10,23 +10,13 @@ __all__ = ['ColorSelector']
 class ColorSelector(QPushButton):
     colorSelected = pyqtSignal(QColor, name='colorSelected')
 
-    def __init__(self, *args, **kwargs):
-        self.color: QColor = QColor.fromRgb(0)
+    def __init__(self, parent: QWidget, color: QColor) -> None:
+        super().__init__(parent)
 
-        index: int = 0
-        while index < len(args):
-            arg = args[index]
-            if isinstance(arg, QColor):
-                self.color = arg
-                args = args[:index] + args[index + 1:]
-            else:
-                index += 1
-        self.color = kwargs.pop('color', self.color)
-
-        super().__init__(*args, **kwargs)
+        self.color: QColor = color
 
         self.setAutoFillBackground(True)
-        self.paint_putton()
+        self.paint_button()
 
         self.setText(self.color.name())
 
@@ -35,17 +25,17 @@ class ColorSelector(QPushButton):
 
         self.clicked.connect(self.on_button_clicked)
 
-    def on_button_clicked(self):
+    def on_button_clicked(self) -> None:
         self.color_dialog.setCurrentColor(self.color)
         self.color_dialog.exec()
 
-    def on_color_changed(self, color: QColor):
+    def on_color_changed(self, color: QColor) -> None:
         self.color = color
         self.setText(self.color.name())
-        self.paint_putton()
+        self.paint_button()
         self.colorSelected.emit(color)
 
-    def paint_putton(self):
+    def paint_button(self) -> None:
         pal: QPalette = self.palette()
         pal.setColor(QPalette.Button, self.color)
         pal.setColor(QPalette.ButtonText, QColor('white' if self.color.lightnessF() < 0.5 else 'black'))

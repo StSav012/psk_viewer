@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import os
-from typing import Final, List, Callable, Optional
+from typing import Any, Dict, Final, List, Callable, Optional
 
 import pyqtgraph as pg  # type: ignore
-from PyQt5.QtCore import QCoreApplication, QSettings
+from PyQt5.QtCore import QCoreApplication, QObject, QSettings
 from PyQt5.QtGui import QColor
 
 __all__ = ['Settings']
@@ -24,12 +24,12 @@ class Settings(QSettings):
     ]
     _CSV_SEPARATORS: Final[List[str]] = [',', '\t', ';', ' ']
 
-    def __init__(self, *args):
-        super().__init__(*args)
+    def __init__(self, organization: str, application: str, parent: QObject) -> None:
+        super().__init__(organization, application, parent)
         self.display_processing: bool = True
 
     @property
-    def dialog(self):
+    def dialog(self) -> Dict[str, Dict[str, Any]]:
         jump_opts = {
             'suffix': _translate('unit', 'Hz'),
             'siPrefix': True,
@@ -83,7 +83,7 @@ class Settings(QSettings):
         return self._LINE_ENDS[v]
 
     @line_end.setter
-    def line_end(self, new_value: str):
+    def line_end(self, new_value: str) -> None:
         self.beginGroup('export')
         self.setValue('lineEnd', self._LINE_ENDS.index(new_value))
         self.endGroup()
@@ -96,7 +96,7 @@ class Settings(QSettings):
         return self._CSV_SEPARATORS[v]
 
     @csv_separator.setter
-    def csv_separator(self, new_value: str):
+    def csv_separator(self, new_value: str) -> None:
         self.beginGroup('export')
         self.setValue('csvSeparator', self._CSV_SEPARATORS.index(new_value))
         self.endGroup()
@@ -109,7 +109,7 @@ class Settings(QSettings):
         return v
 
     @line_color.setter
-    def line_color(self, new_value: QColor):
+    def line_color(self, new_value: QColor) -> None:
         self.beginGroup('plotLine')
         self.setValue('color', new_value)
         self.endGroup()
@@ -122,7 +122,7 @@ class Settings(QSettings):
         return v
 
     @line_thickness.setter
-    def line_thickness(self, new_value: float):
+    def line_thickness(self, new_value: float) -> None:
         self.beginGroup('plotLine')
         self.setValue('thickness', new_value)
         self.endGroup()
@@ -135,7 +135,7 @@ class Settings(QSettings):
         return v
 
     @copy_frequency.setter
-    def copy_frequency(self, new_value: bool):
+    def copy_frequency(self, new_value: bool) -> None:
         self.beginGroup('marks')
         self.setValue('copyFrequency', new_value)
         self.endGroup()
@@ -148,7 +148,7 @@ class Settings(QSettings):
         return v
 
     @mark_brush.setter
-    def mark_brush(self, new_value: QColor):
+    def mark_brush(self, new_value: QColor) -> None:
         self.beginGroup('marks')
         self.setValue('color', new_value)
         self.endGroup()
@@ -161,7 +161,7 @@ class Settings(QSettings):
         return v
 
     @mark_pen.setter
-    def mark_pen(self, new_value: QColor):
+    def mark_pen(self, new_value: QColor) -> None:
         self.beginGroup('marks')
         self.setValue('borderColor', new_value)
         self.endGroup()
@@ -174,7 +174,7 @@ class Settings(QSettings):
         return v
 
     @mark_size.setter
-    def mark_size(self, new_value: float):
+    def mark_size(self, new_value: float) -> None:
         self.beginGroup('marks')
         self.setValue('size', new_value)
         self.endGroup()
@@ -187,7 +187,7 @@ class Settings(QSettings):
         return v
 
     @mark_pen_thickness.setter
-    def mark_pen_thickness(self, new_value: float):
+    def mark_pen_thickness(self, new_value: float) -> None:
         self.beginGroup('marks')
         self.setValue('borderThickness', new_value)
         self.endGroup()
@@ -200,7 +200,7 @@ class Settings(QSettings):
         return v
 
     @jump.setter
-    def jump(self, new_value: float):
+    def jump(self, new_value: float) -> None:
         self.beginGroup('processing')
         self.setValue('jump', new_value)
         self.endGroup()
@@ -213,7 +213,7 @@ class Settings(QSettings):
         return v
 
     @show_crosshair.setter
-    def show_crosshair(self, new_value: bool):
+    def show_crosshair(self, new_value: bool) -> None:
         self.beginGroup('crosshair')
         self.setValue('show', new_value)
         self.endGroup()
@@ -226,7 +226,7 @@ class Settings(QSettings):
         return v
 
     @show_coordinates_at_crosshair.setter
-    def show_coordinates_at_crosshair(self, new_value: bool):
+    def show_coordinates_at_crosshair(self, new_value: bool) -> None:
         self.beginGroup('crosshair')
         self.setValue('showCoordinates', new_value)
         self.endGroup()
@@ -239,7 +239,7 @@ class Settings(QSettings):
         return v
 
     @crosshair_lines_color.setter
-    def crosshair_lines_color(self, new_value: QColor):
+    def crosshair_lines_color(self, new_value: QColor) -> None:
         self.beginGroup('crosshair')
         self.setValue('color', new_value)
         self.endGroup()
@@ -252,7 +252,7 @@ class Settings(QSettings):
         return v
 
     @crosshair_lines_thickness.setter
-    def crosshair_lines_thickness(self, new_value: float):
+    def crosshair_lines_thickness(self, new_value: float) -> None:
         self.beginGroup('crosshair')
         self.setValue('thickness', new_value)
         self.endGroup()

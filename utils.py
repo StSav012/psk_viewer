@@ -76,7 +76,8 @@ def superscript_tag(html: str) -> str:
     return text
 
 
-def copy_to_clipboard(plain_text: str, rich_text: str = '', text_type: Union[Qt.TextFormat, str] = Qt.PlainText):
+def copy_to_clipboard(plain_text: str, rich_text: str = '', text_type: Union[Qt.TextFormat, str] = Qt.PlainText) \
+        -> None:
     from PyQt5.QtGui import QClipboard
     from PyQt5.QtCore import QMimeData
     from PyQt5.QtWidgets import QApplication

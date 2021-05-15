@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import os
-from typing import Callable, Optional, Tuple
+from typing import Any, Callable, Optional, Tuple, Type, cast
 
 import pyqtgraph as pg  # type: ignore
 from PyQt5.QtCore import QCoreApplication, Qt
+from PyQt5.QtGui import QCloseEvent
 from PyQt5.QtWidgets import QAbstractItemView, QCheckBox, QDockWidget, QFileDialog, QFormLayout, \
     QGridLayout, QMainWindow, QMessageBox, QPushButton, QStatusBar, QTableView, QVBoxLayout, QWidget
 
@@ -17,9 +18,9 @@ _translate: Callable[[str, str, Optional[str], int], str] = QCoreApplication.tra
 
 
 class GUI(QMainWindow):
-    def __init__(self, flags: Qt.WindowFlags = Qt.WindowFlags()):
+    def __init__(self, flags: Qt.WindowFlags = Qt.WindowFlags()) -> None:
         super().__init__(flags=flags)
-        self.settings: Settings = Settings("SavSoft", "Spectrometer Viewer")
+        self.settings: Settings = Settings("SavSoft", "Spectrometer Viewer", self)
 
         # prevent config from being re-written while loading
         self._loading: bool = True
@@ -108,7 +109,7 @@ class GUI(QMainWindow):
 
         self.setup_ui_appearance()
 
-    def setup_ui_appearance(self):
+    def setup_ui_appearance(self) -> None:
         pg.fn.SI_PREFIXES = _translate('si prefixes', 'y,z,a,f,p,n,µ,m, ,k,M,G,T,P,E,Z,Y').split(',')
         pg.fn.SI_PREFIXES_ASCII = pg.fn.SI_PREFIXES
         pg.fn.SI_PREFIX_EXPONENTS.update(dict([(s, (i - 8) * 3) for i, s in enumerate(pg.fn.SI_PREFIXES)]))
@@ -277,7 +278,7 @@ class GUI(QMainWindow):
 
         self.adjustSize()
 
-    def closeEvent(self, event):
+    def closeEvent(self, event: QCloseEvent) -> None:
         """ senseless joke in the loop """
         close_code = QMessageBox.No
         while close_code == QMessageBox.No:
@@ -298,7 +299,7 @@ class GUI(QMainWindow):
                 event.ignore()
         return
 
-    def get_config_value(self, section: str, key: str, default, _type):
+    def get_config_value(self, section: str, key: str, default: Any, _type: Type) -> Any:
         if section not in self.settings.childGroups():
             return default
         self.settings.beginGroup(section)
@@ -310,7 +311,7 @@ class GUI(QMainWindow):
         self.settings.endGroup()
         return v
 
-    def set_config_value(self, section: str, key: str, value):
+    def set_config_value(self, section: str, key: str, value: Any) -> None:
         if self._loading:
             return
         self.settings.beginGroup(section)
@@ -320,7 +321,7 @@ class GUI(QMainWindow):
         self.settings.setValue(key, value)
         self.settings.endGroup()
 
-    def open_file_dialog(self, _filter=''):
+    def open_file_dialog(self, _filter: str = '') -> Tuple[str, str]:
         directory = self.get_config_value('open', 'location', '', str)
         # native dialog misbehaves when running inside snap but Qt dialog is tortoise-like in NT
         options = QFileDialog.DontUseNativeDialog if os.name != 'nt' else QFileDialog.DontUseSheet

@@ -16,8 +16,8 @@ __all__ = ['Preferences']
 class Preferences(QDialog):
     """ GUI preferences dialog """
 
-    def __init__(self, settings: Settings, parent: Optional[QWidget] = None, *args):
-        super().__init__(parent, *args)
+    def __init__(self, settings: Settings, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
 
         self.settings: Settings = settings
         self.setModal(True)

@@ -16,11 +16,11 @@ def remove_spikes(sequence: np.ndarray, iterations: int = 1) -> np.ndarray:
     return sequence
 
 
-def correlation(model_y, another_x: np.ndarray, another_y: np.ndarray) -> np.ndarray:
+def correlation(model_y: np.ndarray, another_x: np.ndarray, another_y: np.ndarray) -> np.ndarray:
     from scipy.signal import butter, lfilter  # type: ignore
 
-    def butter_bandpass_filter(data: np.ndarray, low_cut: float, high_cut: float, order: int = 5):
-        def butter_bandpass():
+    def butter_bandpass_filter(data: np.ndarray, low_cut: float, high_cut: float, order: int = 5) -> np.ndarray:
+        def butter_bandpass():  # type: ignore
             nyq: float = 0.5 * fs
             low: float = low_cut / nyq
             high: float = high_cut / nyq

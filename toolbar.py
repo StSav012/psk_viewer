@@ -4,13 +4,13 @@ from typing import Iterable, Optional, Union
 
 from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QColor, QIcon, QKeySequence, QPalette
-from PyQt5.QtWidgets import QAction, QToolBar
+from PyQt5.QtWidgets import QAction, QToolBar, QWidget
 
 from utils import load_icon, mix_colors
 
 
 class NavigationToolbar(QToolBar):
-    def __init__(self, parent, *,
+    def __init__(self, parent: QWidget, *,
                  parameters_title: str = 'Figure options',
                  parameters_icon: Optional[Union[QIcon, str]] = None):
         super().__init__('Navigation Toolbar', parent)
@@ -127,7 +127,7 @@ class NavigationToolbar(QToolBar):
         self.setIconSize(QSize(24, 24))
         self.layout().setSpacing(12)
 
-    def add_shortcuts_to_tooltips(self):
+    def add_shortcuts_to_tooltips(self) -> None:
         a: QAction
         tooltip_text_color: QColor = self.palette().color(QPalette.ToolTipText)
         tooltip_base_color: QColor = self.palette().color(QPalette.ToolTipBase)
