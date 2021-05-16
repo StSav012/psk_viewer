@@ -2,14 +2,14 @@
 
 from typing import Final, Iterable, List, Optional, Tuple, Union, cast
 
-import numpy as np
+import numpy as np  # type: ignore
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, QObject, Qt
 
 
 class DataModel(QAbstractTableModel):
     ROW_BATCH_COUNT: Final[int] = 96
 
-    def __init__(self, parent: QObject) -> None:
+    def __init__(self, parent: Optional[QObject]) -> None:
         super().__init__(parent)
         self._data: np.ndarray = np.empty((0, 0))
         self._rows_loaded: int = self.ROW_BATCH_COUNT
@@ -33,7 +33,7 @@ class DataModel(QAbstractTableModel):
 
     @property
     def is_empty(self) -> bool:
-        return self._data.size == 0
+        return bool(self._data.size == 0)
 
     def rowCount(self, parent: Optional[QModelIndex] = None, *, available_count: bool = False) -> int:
         if available_count:
@@ -67,7 +67,7 @@ class DataModel(QAbstractTableModel):
         if 0 <= row_index < self._data.shape[0] and 0 <= column_index < self._data.shape[1]:
             return cast(float, self._data[row_index, column_index])
         else:
-            return np.nan
+            return cast(float, np.nan)
 
     def headerData(self, col: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> Optional[str]:
         if orientation == Qt.Horizontal and role == Qt.DisplayRole and 0 <= col < len(self._header):

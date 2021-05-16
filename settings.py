@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
-from typing import Any, Dict, Final, List, Callable, Optional
+from typing import Any, Dict, Final, List
 
 import pyqtgraph as pg  # type: ignore
 from PyQt5.QtCore import QCoreApplication, QObject, QSettings
@@ -9,7 +9,7 @@ from PyQt5.QtGui import QColor
 
 __all__ = ['Settings']
 
-_translate: Callable[[str, str, Optional[str], int], str] = QCoreApplication.translate
+_translate = QCoreApplication.translate
 
 
 class Settings(QSettings):

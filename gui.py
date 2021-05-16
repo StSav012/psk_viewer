@@ -1,20 +1,33 @@
 # -*- coding: utf-8 -*-
 
 import os
-from typing import Any, Callable, Optional, Tuple, Type, cast
+from typing import Any, Tuple, Type, cast
 
+import numpy as np  # type: ignore
 import pyqtgraph as pg  # type: ignore
 from PyQt5.QtCore import QCoreApplication, Qt
-from PyQt5.QtGui import QCloseEvent
+from PyQt5.QtGui import QCloseEvent, QKeySequence, QKeyEvent
 from PyQt5.QtWidgets import QAbstractItemView, QCheckBox, QDockWidget, QFileDialog, QFormLayout, \
     QGridLayout, QMainWindow, QMessageBox, QPushButton, QStatusBar, QTableView, QVBoxLayout, QWidget
 
 from data_model import DataModel
 from settings import Settings
-from utils import load_icon
+from utils import load_icon, copy_to_clipboard
 from valuelabel import ValueLabel
 
-_translate: Callable[[str, str, Optional[str], int], str] = QCoreApplication.translate
+_translate = QCoreApplication.translate
+
+
+class TableView(QTableView):
+    def keyPressEvent(self, e: QKeyEvent) -> None:
+        if e.matches(QKeySequence.Copy):
+            copy_to_clipboard(self.parent().parent().stringify_table_plain_text(False),
+                              self.parent().parent().stringify_table_html(False),
+                              Qt.RichText)
+            e.accept()
+        elif e.matches(QKeySequence.SelectAll):
+            self.parent().parent().table_found_lines.selectAll()
+            e.accept()
 
 
 class GUI(QMainWindow):
@@ -93,7 +106,7 @@ class GUI(QMainWindow):
         # Found Lines table
         self.box_found_lines: QDockWidget = QDockWidget(self.central_widget)
         self.box_found_lines.setObjectName('box_found_lines')
-        self.table_found_lines: QTableView = QTableView(self.box_found_lines)
+        self.table_found_lines: TableView = TableView(self.box_found_lines)
         self.model_found_lines: DataModel = DataModel(self)
 
         self.status_bar: QStatusBar = QStatusBar()
@@ -171,24 +184,33 @@ class GUI(QMainWindow):
                                           | Qt.TextSelectableByMouse)
 
         self.box_legend.setWidget(self.legend)
-        self.box_legend.setFeatures(self.box_legend.features() & ~self.box_legend.DockWidgetClosable)
+        self.box_legend.setFeatures(cast(QDockWidget.DockWidgetFeatures,
+                                         cast(int, self.box_legend.features()) & ~self.box_legend.DockWidgetClosable))
         self.addDockWidget(Qt.LeftDockWidgetArea, self.box_legend)
 
         # TODO: adjust size when undocked
         self.box_frequency.setWidget(self.group_frequency)
-        self.box_frequency.setFeatures(self.box_frequency.features() & ~self.box_frequency.DockWidgetClosable)
+        self.box_frequency.setFeatures(cast(QDockWidget.DockWidgetFeatures,
+                                            cast(int, self.box_frequency.features())
+                                            & ~self.box_frequency.DockWidgetClosable))
         self.addDockWidget(Qt.LeftDockWidgetArea, self.box_frequency)
 
         self.box_voltage.setWidget(self.group_voltage)
-        self.box_voltage.setFeatures(self.box_voltage.features() & ~self.box_voltage.DockWidgetClosable)
+        self.box_voltage.setFeatures(cast(QDockWidget.DockWidgetFeatures,
+                                          cast(int, self.box_voltage.features())
+                                          & ~self.box_voltage.DockWidgetClosable))
         self.addDockWidget(Qt.LeftDockWidgetArea, self.box_voltage)
 
         self.box_find_lines.setWidget(self.group_find_lines)
-        self.box_find_lines.setFeatures(self.box_find_lines.features() & ~self.box_find_lines.DockWidgetClosable)
+        self.box_find_lines.setFeatures(cast(QDockWidget.DockWidgetFeatures,
+                                             cast(int, self.box_find_lines.features())
+                                             & ~self.box_find_lines.DockWidgetClosable))
         self.addDockWidget(Qt.LeftDockWidgetArea, self.box_find_lines)
 
         self.box_found_lines.setWidget(self.table_found_lines)
-        self.box_found_lines.setFeatures(self.box_found_lines.features() & ~self.box_found_lines.DockWidgetClosable)
+        self.box_found_lines.setFeatures(cast(QDockWidget.DockWidgetFeatures,
+                                              cast(int, self.box_found_lines.features())
+                                              & ~self.box_found_lines.DockWidgetClosable))
         self.addDockWidget(Qt.RightDockWidgetArea, self.box_found_lines)
 
         self.grid_layout.addWidget(self.figure)
@@ -280,14 +302,15 @@ class GUI(QMainWindow):
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """ senseless joke in the loop """
-        close_code = QMessageBox.No
+        close_code: int = QMessageBox.No
         while close_code == QMessageBox.No:
             close = QMessageBox()
             close.setText(_translate('main window', 'Are you sure?'))
             close.setIcon(QMessageBox.Question)
             close.setWindowIcon(self.windowIcon())
             close.setWindowTitle(self.windowTitle())
-            close.setStandardButtons(QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
+            close.setStandardButtons(cast(QMessageBox.StandardButtons,
+                                          QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel))
             close_code = close.exec()
 
             if close_code == QMessageBox.Yes:
@@ -299,7 +322,7 @@ class GUI(QMainWindow):
                 event.ignore()
         return
 
-    def get_config_value(self, section: str, key: str, default: Any, _type: Type) -> Any:
+    def get_config_value(self, section: str, key: str, default: Any, _type: Type[Any]) -> Any:
         if section not in self.settings.childGroups():
             return default
         self.settings.beginGroup(section)

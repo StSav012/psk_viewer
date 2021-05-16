@@ -1,14 +1,14 @@
 ﻿# -*- coding: utf-8 -*-
 
 import os
-from typing import Callable, Final, Iterable, List, Optional, Tuple, cast
+from typing import Final, Iterable, List, Optional, Tuple, cast
 
-import numpy as np
+import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 import pyqtgraph as pg  # type: ignore
 import pyqtgraph.exporters  # type: ignore
 from PyQt5.QtCore import Qt, QCoreApplication, QItemSelectionModel, QModelIndex, QPointF, QRectF
-from PyQt5.QtGui import QBrush, QKeyEvent, QKeySequence, QPalette, QPen
+from PyQt5.QtGui import QBrush, QPalette, QPen
 from PyQt5.QtWidgets import QAction, QDesktopWidget, QHeaderView
 from pyqtgraph import PlotWidget
 from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent  # type: ignore
@@ -20,7 +20,7 @@ from toolbar import NavigationToolbar
 from utils import copy_to_clipboard, load_data_csv, load_data_fs, load_data_scandat, resource_path, \
     superscript_number, superscript_tag
 
-_translate: Callable[[str, str, Optional[str], int], str] = QCoreApplication.translate
+_translate = QCoreApplication.translate
 
 pg.ViewBox.suggestPadding = lambda *_: 0.0
 
@@ -87,6 +87,8 @@ class App(GUI):
         self._view_all_action: QAction = QAction()
 
         self._plot_line: PlotDataItem = self.figure.plot(np.empty(0), name='')
+        self._plot_line.voltage_data = np.empty(0)
+        self._plot_line.gamma_data = np.empty(0)
 
         self._ignore_scale_change: bool = False
 
@@ -99,20 +101,24 @@ class App(GUI):
         self.box_find_lines.setDisabled(True)
         self.user_found_lines: PlotDataItem = self._canvas.scatterPlot(np.empty(0), symbol='o', pxMode=True)
         self.automatically_found_lines: PlotDataItem = self._canvas.scatterPlot(np.empty(0), symbol='o', pxMode=True)
+        self.user_found_lines.voltage_data = np.empty(0)
+        self.user_found_lines.gamma_data = np.empty(0)
+        self.automatically_found_lines.voltage_data = np.empty(0)
+        self.automatically_found_lines.gamma_data = np.empty(0)
 
         self._data_type: str = self._VOLTAGE_DATA
 
         # cross hair
-        self._crosshair_v_line = pg.InfiniteLine(angle=90, movable=False)
-        self._crosshair_h_line = pg.InfiniteLine(angle=0, movable=False)
+        self._crosshair_v_line: pg.InfiniteLine = pg.InfiniteLine(angle=90, movable=False)
+        self._crosshair_h_line: pg.InfiniteLine = pg.InfiniteLine(angle=0, movable=False)
 
         self._cursor_balloon: pg.TextItem = pg.TextItem(color='#ccc' if self._is_dark else '#333')
         self.figure.addItem(self._cursor_balloon)
 
-        self._mouse_moved_signal_proxy = pg.SignalProxy(self.figure.scene().sigMouseMoved,
-                                                        rateLimit=10, slot=self.on_mouse_moved)
-        self._axis_range_changed_signal_proxy = pg.SignalProxy(self.figure.sigRangeChanged,
-                                                               rateLimit=20, slot=self.on_lim_changed)
+        self._mouse_moved_signal_proxy: pg.SignalProxy = pg.SignalProxy(self.figure.scene().sigMouseMoved,
+                                                                        rateLimit=10, slot=self.on_mouse_moved)
+        self._axis_range_changed_signal_proxy: pg.SignalProxy = pg.SignalProxy(self.figure.sigRangeChanged,
+                                                                               rateLimit=20, slot=self.on_lim_changed)
 
         self.setup_ui()
 
@@ -162,6 +168,7 @@ class App(GUI):
             self._canvas.ctrl.alphaGroup.parent().title(),
             self._canvas.ctrl.gridGroup.parent().title(),
         ]
+        action: QAction
         for action in self._canvas.ctrlMenu.actions():
             if action.text() not in titles_to_leave:
                 self._canvas.ctrlMenu.removeAction(action)
@@ -259,8 +266,7 @@ class App(GUI):
         return
 
     def setup_ui_actions(self) -> None:
-        # noinspection PyTypeChecker
-        self.toolbar.open_action.triggered.connect(self.load_data)
+        self.toolbar.open_action.triggered.connect(lambda: cast(None, self.load_data()))
         self.toolbar.clear_action.triggered.connect(self.clear)
         self.toolbar.differentiate_action.triggered.connect(self.calculate_second_derivative)
         self.toolbar.switch_data_action.toggled.connect(self.on_switch_data_action_toggled)
@@ -301,25 +307,15 @@ class App(GUI):
         self.button_prev_line.clicked.connect(self.prev_found_line)
         self.button_next_line.clicked.connect(self.next_found_line)
 
-        self.model_found_lines.modelReset.connect(self.adjust_table_columns)
+        self.model_found_lines.modelReset.connect(self.adjust_table_columns)  # type: ignore
 
         self.table_found_lines.doubleClicked.connect(self.on_table_cell_double_clicked)
-
-        def table_key_press_event(e: QKeyEvent) -> None:
-            if e.matches(QKeySequence.Copy):
-                copy_to_clipboard(self.stringify_table_plain_text(False), self.stringify_table_html(False), Qt.RichText)
-                e.accept()
-            elif e.matches(QKeySequence.SelectAll):
-                self.table_found_lines.selectAll()
-                e.accept()
-
-        self.table_found_lines.keyPressEvent = table_key_press_event
 
         line: PlotDataItem
         for line in (self.automatically_found_lines, self.user_found_lines):
             line.sigPointsClicked.connect(self.on_points_clicked)
 
-        self._view_all_action.triggered.connect(lambda: self._canvas.vb.autoRange(padding=0.0))
+        self._view_all_action.triggered.connect(lambda: cast(None, self._canvas.vb.autoRange(padding=0.0)))
 
         self.figure.sceneObj.sigMouseClicked.connect(self.on_plot_clicked)
 
@@ -364,7 +360,7 @@ class App(GUI):
         self.set_voltage_range(lower_value=min_voltage,
                                upper_value=max_voltage)
 
-    def on_points_clicked(self, item: pg.PlotDataItem, points: Iterable[pg.SpotItem], ev: MouseClickEvent) -> None:
+    def on_points_clicked(self, item: PlotDataItem, points: Iterable[pg.SpotItem], ev: MouseClickEvent) -> None:
         if item.xData is None or item.yData is None:
             return
         if not self.trace_mode:
@@ -379,17 +375,17 @@ class App(GUI):
             for point in points:
                 index &= (items != point)
             item.setData(item.xData[index], item.yData[index])
-            if hasattr(item, self._VOLTAGE_DATA):
+            if item.voltage_data.size:
                 item.voltage_data = item.voltage_data[index]
-            if hasattr(item, self._GAMMA_DATA):
+            if item.gamma_data.size:
                 item.gamma_data = item.gamma_data[index]
 
             # update the table
             if self.user_found_lines.xData is not None and self.user_found_lines.yData is not None:
                 if self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE):
                     if (self.automatically_found_lines.xData is not None
-                            and hasattr(self.automatically_found_lines, self._VOLTAGE_DATA)
-                            and hasattr(self.automatically_found_lines, self._GAMMA_DATA)):
+                            and self.automatically_found_lines.voltage_data.size
+                            and self.automatically_found_lines.gamma_data.size):
                         self.model_found_lines.set_data(np.column_stack((
                             np.concatenate((self.automatically_found_lines.xData,
                                             self.user_found_lines.xData)),
@@ -406,7 +402,7 @@ class App(GUI):
                         )))
                 else:
                     if (self.automatically_found_lines.xData is not None
-                            and hasattr(self.automatically_found_lines, self._VOLTAGE_DATA)):
+                            and self.automatically_found_lines.voltage_data.size):
                         self.model_found_lines.set_data(np.column_stack((
                             np.concatenate((self.automatically_found_lines.xData, self.user_found_lines.xData)),
                             np.concatenate((self.automatically_found_lines.voltage_data,
@@ -420,8 +416,8 @@ class App(GUI):
             else:
                 if self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE):
                     if (self.automatically_found_lines.xData is not None
-                            and hasattr(self.automatically_found_lines, self._VOLTAGE_DATA)
-                            and hasattr(self.automatically_found_lines, self._GAMMA_DATA)):
+                            and self.automatically_found_lines.voltage_data.size
+                            and self.automatically_found_lines.gamma_data.size):
                         self.model_found_lines.set_data(np.column_stack((
                             self.automatically_found_lines.xData,
                             self.automatically_found_lines.voltage_data,
@@ -431,7 +427,7 @@ class App(GUI):
                         self.model_found_lines.clear()
                 else:
                     if (self.automatically_found_lines.xData is not None
-                            and hasattr(self.automatically_found_lines, self._VOLTAGE_DATA)):
+                            and self.automatically_found_lines.voltage_data.size):
                         self.model_found_lines.set_data(np.column_stack((
                             self.automatically_found_lines.xData,
                             self.automatically_found_lines.voltage_data,
@@ -830,7 +826,7 @@ class App(GUI):
 
         self._ignore_scale_change = False
 
-        return found_lines.size
+        return cast(int, found_lines.size)
 
     def prev_found_line(self) -> None:
         if self.model_signal.size < 2:
@@ -1141,7 +1137,7 @@ class App(GUI):
             display_gamma = self.toolbar.switch_data_action.isChecked()
 
         if display_gamma:
-            if hasattr(self._plot_line, self._GAMMA_DATA):  # something is loaded
+            if self._plot_line.xData is not None and self._plot_line.gamma_data.size:  # something is loaded
                 self._plot_line.setData(self._plot_line.xData, self._plot_line.gamma_data)
 
                 self._loading = True
@@ -1154,14 +1150,14 @@ class App(GUI):
                 self._loading = False
 
             if (self.automatically_found_lines.xData is not None
-                    and hasattr(self.automatically_found_lines, self._GAMMA_DATA)):  # something is marked
+                    and self.automatically_found_lines.gamma_data.size):  # something is marked
                 self.automatically_found_lines.setData(self.automatically_found_lines.xData,
                                                        self.automatically_found_lines.gamma_data)
             if (self.user_found_lines.xData is not None
-                    and hasattr(self.user_found_lines, self._GAMMA_DATA)):  # something is marked
+                    and self.user_found_lines.gamma_data.size):  # something is marked
                 self.user_found_lines.setData(self.user_found_lines.xData, self.user_found_lines.gamma_data)
         else:
-            if hasattr(self._plot_line, self._VOLTAGE_DATA):  # something is loaded
+            if self._plot_line.xData is not None and self._plot_line.voltage_data.size:  # something is loaded
                 self._plot_line.setData(self._plot_line.xData, self._plot_line.voltage_data)
 
                 self._loading = True
@@ -1174,11 +1170,11 @@ class App(GUI):
                 self._loading = False
 
             if (self.automatically_found_lines.xData is not None
-                    and hasattr(self.automatically_found_lines, self._VOLTAGE_DATA)):  # something is marked
+                    and self.automatically_found_lines.voltage_data.size):  # something is marked
                 self.automatically_found_lines.setData(self.automatically_found_lines.xData,
                                                        self.automatically_found_lines.voltage_data)
             if (self.user_found_lines.xData is not None
-                    and hasattr(self.user_found_lines, self._VOLTAGE_DATA)):  # something is marked
+                    and self.user_found_lines.voltage_data.size):  # something is marked
                 self.user_found_lines.setData(self.user_found_lines.xData, self.user_found_lines.voltage_data)
 
         a: pg.AxisItem = self._canvas.getAxis('left')

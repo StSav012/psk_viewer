@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from typing import Final
+from typing import Final, Tuple, cast
 
-import numpy as np
+import numpy as np  # type: ignore
 
 LINE_WIDTH: Final[float] = 2.6e6
 
@@ -20,16 +20,16 @@ def correlation(model_y: np.ndarray, another_x: np.ndarray, another_y: np.ndarra
     from scipy.signal import butter, lfilter  # type: ignore
 
     def butter_bandpass_filter(data: np.ndarray, low_cut: float, high_cut: float, order: int = 5) -> np.ndarray:
-        def butter_bandpass():  # type: ignore
+        def butter_bandpass() -> Tuple[np.ndarray, np.ndarray]:
             nyq: float = 0.5 * fs
             low: float = low_cut / nyq
             high: float = high_cut / nyq
             if low > 0. and high < fs:
-                return butter(order, [low, high], btype='bandpass')
+                return cast(Tuple[np.ndarray, np.ndarray], butter(order, [low, high], btype='bandpass'))
             if low > 0. and high >= fs:
-                return butter(order, low, btype='highpass')
+                return cast(Tuple[np.ndarray, np.ndarray], butter(order, low, btype='highpass'))
             if low <= 0. and high < fs:
-                return butter(order, high, btype='lowpass')
+                return cast(Tuple[np.ndarray, np.ndarray], butter(order, high, btype='lowpass'))
             raise ValueError
 
         return lfilter(*butter_bandpass(), data)

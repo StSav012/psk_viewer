@@ -2,14 +2,14 @@
 
 import os
 import sys
-from typing import Final, Union, Tuple, List, Callable, Optional
+from typing import Final, Union, Tuple, List
 
-import numpy as np
+import numpy as np  # type: ignore
 from PyQt5.QtCore import Qt, QCoreApplication
 from PyQt5.QtGui import QIcon, QPalette, QPixmap, QColor
 from PyQt5.QtWidgets import QInputDialog, QWidget
 
-_translate: Callable[[str, str, Optional[str], int], str] = QCoreApplication.translate
+_translate = QCoreApplication.translate
 
 VOLTAGE_GAIN: Final[float] = 5.0
 
