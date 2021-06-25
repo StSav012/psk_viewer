@@ -7,7 +7,7 @@ import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 import pyqtgraph as pg  # type: ignore
 import pyqtgraph.exporters  # type: ignore
-from PyQt5.QtCore import Qt, QCoreApplication, QItemSelectionModel, QModelIndex, QPointF, QRectF
+from PyQt5.QtCore import QCoreApplication, QItemSelectionModel, QModelIndex, QPointF, QRectF, Qt
 from PyQt5.QtGui import QBrush, QPalette, QPen
 from PyQt5.QtWidgets import QAction, QDesktopWidget, QHeaderView
 from pyqtgraph import PlotWidget
@@ -18,7 +18,7 @@ from gui import GUI
 from preferences import Preferences
 from toolbar import NavigationToolbar
 from utils import copy_to_clipboard, load_data_csv, load_data_fs, load_data_scandat, resource_path, \
-    superscript_number, superscript_tag
+    superscript_number
 
 _translate = QCoreApplication.translate
 
@@ -467,7 +467,7 @@ class App(GUI):
 
                 if self.settings.show_coordinates_at_crosshair:
                     self._cursor_balloon.setPos(point)
-                    self._cursor_balloon.setText(self._cursor_x.text() + '\n' + superscript_tag(self._cursor_y.text()))
+                    self._cursor_balloon.setHtml(self._cursor_x.text() + '<br>' + self._cursor_y.text())
                     balloon_border: QRectF = self._cursor_balloon.boundingRect()
                     sx: float
                     sy: float
