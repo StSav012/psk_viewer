@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtGui import QColor, QPalette
-from PyQt5.QtWidgets import QColorDialog, QPushButton, QWidget
+from PySide6.QtCore import Signal
+from PySide6.QtGui import QColor, QPalette
+from PySide6.QtWidgets import QColorDialog, QPushButton, QWidget
 
 __all__ = ['ColorSelector']
 
 
 class ColorSelector(QPushButton):
-    colorSelected = pyqtSignal(QColor, name='colorSelected')
+    colorSelected = Signal(QColor, name='colorSelected')
 
     def __init__(self, parent: QWidget, color: QColor) -> None:
         super().__init__(parent)

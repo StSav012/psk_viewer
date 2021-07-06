@@ -3,8 +3,8 @@
 import math
 from typing import Optional, List, Union, Tuple
 
-from PyQt5.QtGui import QPaintEvent
-from PyQt5.QtWidgets import QLabel, QWidget
+from PySide6.QtGui import QPaintEvent
+from PySide6.QtWidgets import QLabel, QWidget
 from pyqtgraph import functions as fn  # type: ignore
 from pyqtgraph import time
 

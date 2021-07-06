@@ -2,9 +2,9 @@
 
 from typing import Iterable, Optional, Union
 
-from PyQt5.QtCore import QSize
-from PyQt5.QtGui import QColor, QIcon, QKeySequence, QPalette
-from PyQt5.QtWidgets import QAction, QToolBar, QWidget
+from PySide6.QtCore import QSize
+from PySide6.QtGui import QAction, QColor, QIcon, QKeySequence, QPalette
+from PySide6.QtWidgets import QToolBar, QWidget
 
 from utils import load_icon, mix_colors
 

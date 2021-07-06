@@ -7,9 +7,9 @@ import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 import pyqtgraph as pg  # type: ignore
 import pyqtgraph.exporters  # type: ignore
-from PyQt5.QtCore import QCoreApplication, QItemSelectionModel, QModelIndex, QPointF, QRectF, Qt
-from PyQt5.QtGui import QBrush, QPalette, QPen
-from PyQt5.QtWidgets import QAction, QDesktopWidget, QHeaderView
+from PySide6.QtCore import QByteArray, QCoreApplication, QItemSelectionModel, QModelIndex, QPointF, QRectF, Qt
+from PySide6.QtGui import QAction, QBrush, QPalette, QPen, QScreen
+from PySide6.QtWidgets import QHeaderView, QMessageBox
 from pyqtgraph import PlotWidget
 from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent  # type: ignore
 
@@ -238,17 +238,13 @@ class App(GUI):
         self._loading = True
         # common settings
         if self.settings.contains('windowGeometry'):
-            self.restoreGeometry(self.settings.value('windowGeometry', ''))
+            self.restoreGeometry(cast(QByteArray, self.settings.value('windowGeometry', QByteArray())))
         else:
             window_frame = self.frameGeometry()
-            desktop_center = QDesktopWidget().availableGeometry().center()
+            desktop_center = QScreen().availableGeometry().center()
             window_frame.moveCenter(desktop_center)
             self.move(window_frame.topLeft())
-        _v = self.settings.value('windowState', '')
-        if isinstance(_v, str):
-            self.restoreState(_v.encode())
-        else:
-            self.restoreState(_v)
+        self.restoreState(cast(QByteArray, self.settings.value('windowState', QByteArray())))
 
         self.check_frequency_persists.setChecked(self.get_config_value('frequency', 'persists', False, bool))
         self.check_voltage_persists.setChecked(self.get_config_value('voltage', 'persists', False, bool))
@@ -993,6 +989,16 @@ class App(GUI):
         self._canvas.replot()
 
     def clear(self) -> None:
+        close: QMessageBox = QMessageBox()
+        close.setText(_translate('main window', 'Are you sure?'))
+        close.setIcon(QMessageBox.Question)
+        close.setWindowIcon(self.windowIcon())
+        close.setWindowTitle(self.windowTitle())
+        close.setStandardButtons(cast(QMessageBox.StandardButtons,
+                                      QMessageBox.Yes | QMessageBox.Cancel))
+        if close.exec() != QMessageBox.Yes:
+            return
+
         self._plot_line.clear()
         self.clear_found_lines()
         if self.legend_item is not None:
@@ -1009,6 +1015,11 @@ class App(GUI):
         self.toolbar.save_trace_action.setEnabled(False)
         self.toolbar.clear_trace_action.setEnabled(False)
         self.box_find_lines.setEnabled(False)
+        self._cursor_balloon.setVisible(False)
+        self._crosshair_h_line.setVisible(False)
+        self._crosshair_v_line.setVisible(False)
+        self._cursor_x.setVisible(True)
+        self._cursor_y.setVisible(True)
         self._canvas.replot()
 
     def update_legend(self) -> None:

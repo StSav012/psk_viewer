@@ -7,7 +7,7 @@ from typing import Final, List, Set
 __author__: Final[str] = 'StSav012'
 __original_name__: Final[str] = 'psk_viewer'
 
-REQUIREMENTS: Final[List[str]] = ['PyQt5', 'pyqtgraph', 'scipy', 'pandas', 'openpyxl']
+REQUIREMENTS: Final[List[str]] = ['PySide6', 'pyqtgraph', 'scipy', 'pandas', 'openpyxl']
 
 if __name__ == '__main__':
 
@@ -31,8 +31,8 @@ if __name__ == '__main__':
                 if subprocess.check_call([sys.executable, '-m', 'pip', 'install', package]):
                     raise ex
 
-    from PyQt5.QtCore import QLibraryInfo, QLocale, QTranslator
-    from PyQt5.QtWidgets import QApplication
+    from PySide6.QtCore import QLibraryInfo, QLocale, QTranslator
+    from PySide6.QtWidgets import QApplication
 
     from utils import resource_path
     from backend import App
@@ -64,4 +64,4 @@ if __name__ == '__main__':
         window: App = App(a)
         window.show()
         windows.append(window)
-    app.exec_()
+    app.exec()

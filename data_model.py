@@ -3,7 +3,7 @@
 from typing import Final, Iterable, List, Optional, Tuple, Union, cast
 
 import numpy as np  # type: ignore
-from PyQt5.QtCore import QAbstractTableModel, QModelIndex, QObject, Qt
+from PySide6.QtCore import QAbstractTableModel, QModelIndex, QObject, Qt
 
 
 class DataModel(QAbstractTableModel):

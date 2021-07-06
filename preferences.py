@@ -3,8 +3,8 @@
 from typing import Optional, Union
 
 import pyqtgraph as pg  # type: ignore
-from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFormLayout, QGroupBox, \
+from PySide6.QtGui import QColor
+from PySide6.QtWidgets import QCheckBox, QComboBox, QDialog, QDialogButtonBox, QDoubleSpinBox, QFormLayout, QGroupBox, \
     QSpinBox, QVBoxLayout, QWidget
 
 from colorselector import ColorSelector

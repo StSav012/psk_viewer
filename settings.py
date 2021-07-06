@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import os
-from typing import Any, Dict, Final, List
+from typing import Any, Dict, Final, List, cast
 
 import pyqtgraph as pg  # type: ignore
-from PyQt5.QtCore import QCoreApplication, QObject, QSettings
-from PyQt5.QtGui import QColor
+from PySide6.QtCore import QCoreApplication, QObject, QSettings
+from PySide6.QtGui import QColor
 
 __all__ = ['Settings']
 
@@ -78,7 +78,7 @@ class Settings(QSettings):
     @property
     def line_end(self) -> str:
         self.beginGroup('export')
-        v: int = self.value('lineEnd', self._LINE_ENDS.index(os.linesep), int)
+        v: int = cast(int, self.value('lineEnd', self._LINE_ENDS.index(os.linesep), int))
         self.endGroup()
         return self._LINE_ENDS[v]
 
@@ -91,7 +91,7 @@ class Settings(QSettings):
     @property
     def csv_separator(self) -> str:
         self.beginGroup('export')
-        v: int = self.value('csvSeparator', self._CSV_SEPARATORS.index('\t'), int)
+        v: int = cast(int, self.value('csvSeparator', self._CSV_SEPARATORS.index('\t'), int))
         self.endGroup()
         return self._CSV_SEPARATORS[v]
 
@@ -104,7 +104,7 @@ class Settings(QSettings):
     @property
     def line_color(self) -> QColor:
         self.beginGroup('plotLine')
-        v: QColor = self.value('color', pg.intColor(5), QColor)
+        v: QColor = cast(QColor, self.value('color', pg.intColor(5)))
         self.endGroup()
         return v
 
@@ -117,7 +117,7 @@ class Settings(QSettings):
     @property
     def line_thickness(self) -> float:
         self.beginGroup('plotLine')
-        v: float = self.value('thickness', 2.0, float)
+        v: float = cast(float, self.value('thickness', 2.0, float))
         self.endGroup()
         return v
 
@@ -130,7 +130,7 @@ class Settings(QSettings):
     @property
     def copy_frequency(self) -> bool:
         self.beginGroup('marks')
-        v: bool = self.value('copyFrequency', False, bool)
+        v: bool = cast(bool, self.value('copyFrequency', False, bool))
         self.endGroup()
         return v
 
@@ -143,7 +143,7 @@ class Settings(QSettings):
     @property
     def mark_brush(self) -> QColor:
         self.beginGroup('marks')
-        v: QColor = self.value('color', self.line_color, QColor)
+        v: QColor = cast(QColor, self.value('color', self.line_color))
         self.endGroup()
         return v
 
@@ -156,7 +156,7 @@ class Settings(QSettings):
     @property
     def mark_pen(self) -> QColor:
         self.beginGroup('marks')
-        v: QColor = self.value('borderColor', self.mark_brush, QColor)
+        v: QColor = cast(QColor, self.value('borderColor', self.mark_brush))
         self.endGroup()
         return v
 
@@ -169,7 +169,7 @@ class Settings(QSettings):
     @property
     def mark_size(self) -> float:
         self.beginGroup('marks')
-        v: float = self.value('size', 10.0, float)
+        v: float = cast(float, self.value('size', 10.0, float))
         self.endGroup()
         return v
 
@@ -182,7 +182,7 @@ class Settings(QSettings):
     @property
     def mark_pen_thickness(self) -> float:
         self.beginGroup('marks')
-        v: float = self.value('borderThickness', 1.0, float)
+        v: float = cast(float, self.value('borderThickness', 1.0, float))
         self.endGroup()
         return v
 
@@ -195,7 +195,7 @@ class Settings(QSettings):
     @property
     def jump(self) -> float:
         self.beginGroup('processing')
-        v: float = self.value('jump', 600e3, float)
+        v: float = cast(float, self.value('jump', 600e3, float))
         self.endGroup()
         return v
 
@@ -208,7 +208,7 @@ class Settings(QSettings):
     @property
     def show_crosshair(self) -> bool:
         self.beginGroup('crosshair')
-        v: bool = self.value('show', True, bool)
+        v: bool = cast(bool, self.value('show', True, bool))
         self.endGroup()
         return v
 
@@ -221,7 +221,7 @@ class Settings(QSettings):
     @property
     def show_coordinates_at_crosshair(self) -> bool:
         self.beginGroup('crosshair')
-        v: bool = self.value('showCoordinates', True, bool)
+        v: bool = cast(bool, self.value('showCoordinates', True, bool))
         self.endGroup()
         return v
 
@@ -234,7 +234,7 @@ class Settings(QSettings):
     @property
     def crosshair_lines_color(self) -> QColor:
         self.beginGroup('crosshair')
-        v: QColor = self.value('color', pg.intColor(1), QColor)
+        v: QColor = cast(QColor, self.value('color', pg.intColor(1)))
         self.endGroup()
         return v
 
@@ -247,7 +247,7 @@ class Settings(QSettings):
     @property
     def crosshair_lines_thickness(self) -> float:
         self.beginGroup('crosshair')
-        v: float = self.value('thickness', 2.0, float)
+        v: float = cast(float, self.value('thickness', 2.0, float))
         self.endGroup()
         return v
 

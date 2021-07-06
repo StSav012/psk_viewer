@@ -5,9 +5,9 @@ from typing import Any, Tuple, Type, cast
 
 import numpy as np  # type: ignore
 import pyqtgraph as pg  # type: ignore
-from PyQt5.QtCore import QCoreApplication, Qt
-from PyQt5.QtGui import QCloseEvent, QKeySequence, QKeyEvent
-from PyQt5.QtWidgets import QAbstractItemView, QCheckBox, QDockWidget, QFileDialog, QFormLayout, \
+from PySide6.QtCore import QCoreApplication, Qt
+from PySide6.QtGui import QCloseEvent, QKeySequence, QKeyEvent
+from PySide6.QtWidgets import QAbstractItemView, QCheckBox, QDockWidget, QFileDialog, QFormLayout, \
     QGridLayout, QMainWindow, QMessageBox, QPushButton, QStatusBar, QTableView, QVBoxLayout, QWidget
 
 from data_model import DataModel
@@ -38,7 +38,7 @@ class GUI(QMainWindow):
         # prevent config from being re-written while loading
         self._loading: bool = True
 
-        self.central_widget: QWidget = QWidget(self, flags=Qt.WindowFlags())
+        self.central_widget: QWidget = QWidget(self)
         self.grid_layout: QGridLayout = QGridLayout(self.central_widget)
 
         # Frequency box
@@ -304,7 +304,7 @@ class GUI(QMainWindow):
         """ senseless joke in the loop """
         close_code: int = QMessageBox.No
         while close_code == QMessageBox.No:
-            close = QMessageBox()
+            close: QMessageBox = QMessageBox()
             close.setText(_translate('main window', 'Are you sure?'))
             close.setIcon(QMessageBox.Question)
             close.setWindowIcon(self.windowIcon())
@@ -347,9 +347,10 @@ class GUI(QMainWindow):
     def open_file_dialog(self, _filter: str = '') -> Tuple[str, str]:
         directory = self.get_config_value('open', 'location', '', str)
         # native dialog misbehaves when running inside snap but Qt dialog is tortoise-like in NT
-        options = QFileDialog.DontUseNativeDialog if os.name != 'nt' else QFileDialog.DontUseSheet
-        filename, _filter = QFileDialog.getOpenFileName(filter=_filter,
-                                                        directory=directory,
+        options: QFileDialog.Options = QFileDialog.DontUseNativeDialog if os.name != 'nt' else QFileDialog.Options()
+        filename, _filter = QFileDialog.getOpenFileName(self,
+                                                        filter=_filter,
+                                                        dir=directory,
                                                         options=options)
         if filename:
             self.set_config_value('open', 'location', os.path.split(filename)[0])
@@ -359,11 +360,12 @@ class GUI(QMainWindow):
         directory: str = self.get_config_value('save', 'location', '', str)
         initial_filter: str = self.get_config_value('save', 'filter', '', str)
         # native dialog misbehaves when running inside snap but Qt dialog is tortoise-like in NT
-        options: QFileDialog.Option = QFileDialog.DontUseNativeDialog if os.name != 'nt' else QFileDialog.DontUseSheet
+        options: QFileDialog.Options = QFileDialog.DontUseNativeDialog if os.name != 'nt' else QFileDialog.Options()
         filename: str
-        filename, _filter = QFileDialog.getSaveFileName(filter=_filter,
-                                                        directory=directory,
-                                                        initialFilter=initial_filter,
+        filename, _filter = QFileDialog.getSaveFileName(self,
+                                                        filter=_filter,
+                                                        dir=directory,
+                                                        selectedFilter=initial_filter,
                                                         options=options)
         if os.path.split(filename)[0]:
             self.set_config_value('save', 'location', os.path.split(filename)[0])
