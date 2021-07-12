@@ -8,7 +8,7 @@ __all__ = ['ColorSelector']
 
 
 class ColorSelector(QPushButton):
-    colorSelected = Signal(QColor, name='colorSelected')
+    colorSelected: Signal = Signal(QColor, name='colorSelected')
 
     def __init__(self, parent: QWidget, color: QColor) -> None:
         super().__init__(parent)

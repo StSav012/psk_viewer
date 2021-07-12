@@ -7,7 +7,8 @@ import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 import pyqtgraph as pg  # type: ignore
 import pyqtgraph.exporters  # type: ignore
-from PySide6.QtCore import QByteArray, QCoreApplication, QItemSelectionModel, QModelIndex, QPointF, QRectF, Qt
+from PySide6.QtCore import QByteArray, QCoreApplication, QItemSelectionModel, QModelIndex, \
+    QPoint, QPointF, QRect, QRectF, Qt
 from PySide6.QtGui import QAction, QBrush, QPalette, QPen, QScreen
 from PySide6.QtWidgets import QHeaderView, QMessageBox
 from pyqtgraph import PlotWidget
@@ -240,8 +241,8 @@ class App(GUI):
         if self.settings.contains('windowGeometry'):
             self.restoreGeometry(cast(QByteArray, self.settings.value('windowGeometry', QByteArray())))
         else:
-            window_frame = self.frameGeometry()
-            desktop_center = QScreen().availableGeometry().center()
+            window_frame: QRect = self.frameGeometry()
+            desktop_center: QPoint = QScreen().availableGeometry().center()
             window_frame.moveCenter(desktop_center)
             self.move(window_frame.topLeft())
         self.restoreState(cast(QByteArray, self.settings.value('windowState', QByteArray())))

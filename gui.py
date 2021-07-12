@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import os
+import re
 from typing import Any, Tuple, Type, cast
 
 import numpy as np  # type: ignore
 import pyqtgraph as pg  # type: ignore
+from pyqtgraph import functions as fn
 from PySide6.QtCore import QCoreApplication, Qt
 from PySide6.QtGui import QCloseEvent, QKeySequence, QKeyEvent
 from PySide6.QtWidgets import QAbstractItemView, QCheckBox, QDockWidget, QFileDialog, QFormLayout, \
@@ -123,17 +125,17 @@ class GUI(QMainWindow):
         self.setup_ui_appearance()
 
     def setup_ui_appearance(self) -> None:
-        pg.fn.SI_PREFIXES = _translate('si prefixes', 'y,z,a,f,p,n,µ,m, ,k,M,G,T,P,E,Z,Y').split(',')
-        pg.fn.SI_PREFIXES_ASCII = pg.fn.SI_PREFIXES
-        pg.fn.SI_PREFIX_EXPONENTS.update(dict([(s, (i - 8) * 3) for i, s in enumerate(pg.fn.SI_PREFIXES)]))
+        fn.SI_PREFIXES = _translate('si prefixes', 'y,z,a,f,p,n,µ,m, ,k,M,G,T,P,E,Z,Y').split(',')
+        fn.SI_PREFIXES_ASCII = fn.SI_PREFIXES
+        fn.SI_PREFIX_EXPONENTS.update(dict([(s, (i - 8) * 3) for i, s in enumerate(fn.SI_PREFIXES)]))
         if _translate('si prefix alternative micro', 'u'):
-            pg.fn.SI_PREFIX_EXPONENTS[_translate('si prefix alternative micro', 'u')] = -6
-        pg.fn.FLOAT_REGEX = pg.re.compile(
+            fn.SI_PREFIX_EXPONENTS[_translate('si prefix alternative micro', 'u')] = -6
+        fn.FLOAT_REGEX = re.compile(
             r'(?P<number>[+-]?((((\d+(\.\d*)?)|(\d*\.\d+))([eE][+-]?\d+)?)'
             r'|(nan|NaN|NAN|inf|Inf|INF)))\s*'
-            r'((?P<siPrefix>[u(' + '|'.join(pg.fn.SI_PREFIXES) + r')]?)(?P<suffix>\w.*))?$')
-        pg.fn.INT_REGEX = pg.re.compile(r'(?P<number>[+-]?\d+)\s*'
-                                        r'(?P<siPrefix>[u(' + '|'.join(pg.fn.SI_PREFIXES) + r')]?)(?P<suffix>.*)$')
+            r'((?P<siPrefix>[u(' + '|'.join(fn.SI_PREFIXES) + r')]?)(?P<suffix>\w.*))?$')
+        fn.INT_REGEX = re.compile(r'(?P<number>[+-]?\d+)\s*'
+                                  r'(?P<siPrefix>[u(' + '|'.join(fn.SI_PREFIXES) + r')]?)(?P<suffix>.*)$')
 
         self.setWindowIcon(load_icon('main'))
 
@@ -176,12 +178,6 @@ class GUI(QMainWindow):
 
         self.v_layout_find_lines.addLayout(self.form_layout_find_lines)
         self.v_layout_find_lines.addLayout(self.grid_layout_find_lines)
-
-        _value_label_interaction_flags = (Qt.LinksAccessibleByKeyboard
-                                          | Qt.LinksAccessibleByMouse
-                                          | Qt.TextBrowserInteraction
-                                          | Qt.TextSelectableByKeyboard
-                                          | Qt.TextSelectableByMouse)
 
         self.box_legend.setWidget(self.legend)
         self.box_legend.setFeatures(cast(QDockWidget.DockWidgetFeatures,
@@ -338,7 +334,7 @@ class GUI(QMainWindow):
         if self._loading:
             return
         self.settings.beginGroup(section)
-        if isinstance(value, pg.np.float64):
+        if isinstance(value, np.float64):
             value = float(value)
         # print(section, key, value, type(value))
         self.settings.setValue(key, value)
