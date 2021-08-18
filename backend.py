@@ -83,6 +83,7 @@ class App(GUI):
 
         self.legend_item: pg.LegendItem = pg.LegendItem(offset=(0, 0))
         self.toolbar: NavigationToolbar = NavigationToolbar(self, parameters_icon='configure')
+        self.addToolBar(Qt.TopToolBarArea, self.toolbar)
 
         self._canvas: pg.PlotItem = self.figure.getPlotItem()
         self._view_all_action: QAction = QAction()
@@ -95,7 +96,7 @@ class App(GUI):
 
         self.model_signal: np.ndarray
         try:
-            self.model_signal = pd.read_csv(resource_path('averaged fs signal filtered.csv')).values
+            self.model_signal = pd.read_csv(resource_path('averaged fs signal filtered.csv')).values.ravel()
         except (OSError, BlockingIOError):
             self.model_signal = np.empty(0)
             self.box_find_lines.hide()
@@ -503,8 +504,10 @@ class App(GUI):
             self.user_found_lines.setData(
                 [self._plot_line.xData[closest_point_index]], [self._plot_line.yData[closest_point_index]]
             )
-            self.user_found_lines.voltage_data = np.array([self._plot_line.voltage_data[closest_point_index]])
-            self.user_found_lines.gamma_data = np.array([self._plot_line.gamma_data[closest_point_index]])
+            if self._plot_line.voltage_data.size > closest_point_index:
+                self.user_found_lines.voltage_data = np.array([self._plot_line.voltage_data[closest_point_index]])
+            if self._plot_line.gamma_data.size > closest_point_index:
+                self.user_found_lines.gamma_data = np.array([self._plot_line.gamma_data[closest_point_index]])
         else:
             # avoid the same point to be marked several times
             if np.any((self.user_found_lines.xData == self._plot_line.xData[closest_point_index])
@@ -515,10 +518,12 @@ class App(GUI):
                     and np.any((self.automatically_found_lines.xData == self._plot_line.xData[closest_point_index])
                                & (self.automatically_found_lines.yData == self._plot_line.yData[closest_point_index]))):
                 return
-            self.user_found_lines.voltage_data = np.append(self.user_found_lines.voltage_data,
-                                                           self._plot_line.voltage_data[closest_point_index])
-            self.user_found_lines.gamma_data = np.append(self.user_found_lines.gamma_data,
-                                                         self._plot_line.gamma_data[closest_point_index])
+            if self._plot_line.voltage_data.size > closest_point_index:
+                self.user_found_lines.voltage_data = np.append(self.user_found_lines.voltage_data,
+                                                               self._plot_line.voltage_data[closest_point_index])
+            if self._plot_line.gamma_data.size > closest_point_index:
+                self.user_found_lines.gamma_data = np.append(self.user_found_lines.gamma_data,
+                                                             self._plot_line.gamma_data[closest_point_index])
 
             if self._data_type == self._VOLTAGE_DATA:
                 self.user_found_lines.setData(

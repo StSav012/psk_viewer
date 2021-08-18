@@ -26,17 +26,23 @@ if __name__ == '__main__':
             try:
                 importlib.import_module(package)
             except (ImportError, ModuleNotFoundError) as ex:
+                if str(ex).startswith('libOpenGL.so.0'):
+                    print('Ensure that `libopengl0` is installed')
+                    exit(0)
+
                 import subprocess
 
                 if subprocess.check_call([sys.executable, '-m', 'pip', 'install', package]):
                     raise ex
 
-    from PySide6.QtCore import QLibraryInfo, QLocale, QTranslator
+    from PySide6.QtCore import QLibraryInfo, QLocale, QTranslator, Qt
     from PySide6.QtWidgets import QApplication
 
     from utils import resource_path
     from backend import App
 
+    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
     app: QApplication = QApplication(sys.argv)
 
     languages: Set[str] = set(QLocale().uiLanguages() + [QLocale().bcp47Name(), QLocale().name()])

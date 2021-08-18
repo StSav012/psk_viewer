@@ -2,7 +2,7 @@
 
 from typing import Iterable, Optional, Union
 
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QAction, QColor, QIcon, QKeySequence, QPalette
 from PySide6.QtWidgets import QToolBar, QWidget
 
@@ -15,6 +15,8 @@ class NavigationToolbar(QToolBar):
                  parameters_icon: Optional[Union[QIcon, str]] = None):
         super().__init__('Navigation Toolbar', parent)
         self.setObjectName('NavigationToolbar')
+
+        self.setAllowedAreas(Qt.AllToolBarAreas)
 
         self.parameters_title: str = parameters_title
         self.parameters_icon: Optional[QIcon] = (load_icon(parameters_icon) if isinstance(parameters_icon, str)
