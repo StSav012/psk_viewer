@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
-from typing import Any, Dict, Final, List, cast
+from typing import Dict, Final, List, Tuple, Union, cast
 
 import pyqtgraph as pg  # type: ignore
 from PySide6.QtCore import QCoreApplication, QObject, QSettings
@@ -14,23 +14,30 @@ _translate = QCoreApplication.translate
 
 class Settings(QSettings):
     """ convenient internal representation of the application settings """
-    LINE_ENDS: Final[List[str]] = [r'Line Feed (\n)', r'Carriage Return (\r)', r'CR+LF (\r\n)', r'LF+CR (\n\r)']
     _LINE_ENDS: Final[List[str]] = ['\n', '\r', '\r\n', '\n\r']
-    CSV_SEPARATORS: Final[List[str]] = [
-        _translate('csv separator', r'comma (,)'),
-        _translate('csv separator', r'tab (\t)'),
-        _translate('csv separator', r'semicolon (;)'),
-        _translate('csv separator', r'space ( )')
-    ]
     _CSV_SEPARATORS: Final[List[str]] = [',', '\t', ';', ' ']
 
     def __init__(self, organization: str, application: str, parent: QObject) -> None:
         super().__init__(organization, application, parent)
         self.display_processing: bool = True
+        # for some reason, the lists are not being translated when used as class variables
+        self.LINE_ENDS: Final[List[str]] = [
+            _translate('line end', r'Line Feed (\n)'),
+            _translate('line end', r'Carriage Return (\r)'),
+            _translate('line end', r'CR+LF (\r\n)'),
+            _translate('line end', r'LF+CR (\n\r)')]
+        self.CSV_SEPARATORS: Final[List[str]] = [
+            _translate('csv separator', r'comma (,)'),
+            _translate('csv separator', r'tab (\t)'),
+            _translate('csv separator', r'semicolon (;)'),
+            _translate('csv separator', r'space ( )')
+        ]
 
     @property
-    def dialog(self) -> Dict[str, Dict[str, Any]]:
-        jump_opts = {
+    def dialog(self) -> Dict[str, Dict[str, Union[Tuple[str],
+                                                  Tuple[Dict[str, Union[bool, int, float, str]], str],
+                                                  Tuple[List[str], List[str], str]]]]:
+        jump_opts: Dict[str, Union[bool, int, str]] = {
             'suffix': _translate('unit', 'Hz'),
             'siPrefix': True,
             'decimals': 0,
@@ -38,11 +45,12 @@ class Settings(QSettings):
             'compactHeight': False,
             'format': '{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}'
         }
-        line_opts = {
+        line_opts: Dict[str, Union[bool, int, float, str]] = {
             'suffix': _translate('unit', 'px'),
             'siPrefix': False,
             'decimals': 1,
             'dec': False,
+            'step': 0.1,
             'compactHeight': False,
             'format': '{value:.{decimals}f}{suffixGap}{suffix}'
         }
@@ -62,6 +70,7 @@ class Settings(QSettings):
             },
             _translate('preferences', 'Marks'): {
                 _translate('preferences', 'Copy frequency to clipboard'): ('copy_frequency',),
+                _translate('preferences', 'Fancy exponents in the table'): ('fancy_table_numbers',),
                 _translate('preferences', 'Fill color:'): ('mark_brush',),
                 _translate('preferences', 'Border color:'): ('mark_pen',),
                 _translate('preferences', 'Size:'): (line_opts, 'mark_size',),
@@ -255,4 +264,17 @@ class Settings(QSettings):
     def crosshair_lines_thickness(self, new_value: float) -> None:
         self.beginGroup('crosshair')
         self.setValue('thickness', new_value)
+        self.endGroup()
+
+    @property
+    def fancy_table_numbers(self) -> bool:
+        self.beginGroup('marks')
+        v: bool = cast(bool, self.value('fancyFormat', True, bool))
+        self.endGroup()
+        return v
+
+    @fancy_table_numbers.setter
+    def fancy_table_numbers(self, new_value: bool) -> None:
+        self.beginGroup('marks')
+        self.setValue('fancyFormat', new_value)
         self.endGroup()

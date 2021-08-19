@@ -5,6 +5,8 @@ from typing import Final, Iterable, List, Optional, Tuple, Union, cast
 import numpy as np  # type: ignore
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, QObject, Qt
 
+from utils import superscript_tag
+
 
 class DataModel(QAbstractTableModel):
     ROW_BATCH_COUNT: Final[int] = 96
@@ -15,7 +17,7 @@ class DataModel(QAbstractTableModel):
         self._rows_loaded: int = self.ROW_BATCH_COUNT
 
         self._header: List[str] = []
-        self._format: List[Tuple[int, float]] = []
+        self._format: List[Tuple[int, float, bool]] = []
         self._sort_column: int = 0
         self._sort_order: Qt.SortOrder = Qt.DescendingOrder
 
@@ -53,7 +55,26 @@ class DataModel(QAbstractTableModel):
             return str(value)
         precision: int
         scale: float
-        precision, scale = self._format[column]
+        fancy: bool
+        precision, scale, fancy = self._format[column]
+        if np.isnan(scale):
+            if fancy:
+                s: str = f'{value:.{precision}e}'
+                while 'e+0' in s:
+                    s = s.replace('e+0', 'e+')
+                while 'e-0' in s:
+                    s = s.replace('e-0', 'e-')
+                if s.endswith('e+') or s.endswith('e-'):
+                    s = s[:-2]
+                s = s.replace('e+', 'e', 1)
+                if replace_hyphen:
+                    s = s.replace('-', '−')
+                s = s.replace('e', '×10<sup>', 1) + '</sup>'
+                return superscript_tag(s)
+            else:
+                if replace_hyphen:
+                    return f'{value:.{precision}e}'.replace('-', '−')
+                return f'{value:.{precision}e}'
         if replace_hyphen:
             return f'{value * scale:.{precision}f}'.replace('-', '−')
         return f'{value * scale:.{precision}f}'
@@ -82,8 +103,8 @@ class DataModel(QAbstractTableModel):
 
     def set_format(self, new_format: List[Tuple[int, float]]) -> None:
         self.beginResetModel()
-        self._format = [(int(p), float(s) if not np.isnan(float(s)) else 1.0)
-                        for p, s in new_format]
+        f: Union[Tuple[int, float, bool], Tuple[int, float]]
+        self._format = [(int(round(f[0])), float(f[1]), bool(f[2]) if len(f) > 2 else False) for f in new_format]
         self.endResetModel()
 
     def set_data(self, new_data: Union[List[List[float]], np.ndarray]) -> None:

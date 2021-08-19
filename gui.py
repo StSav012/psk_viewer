@@ -236,7 +236,7 @@ class GUI(QMainWindow):
         self.button_move_x_right_fine.setText('+' + pg.siFormat(5e7, suffix=_translate('unit', 'Hz')))
         self.button_move_x_right_coarse.setText('+' + pg.siFormat(5e8, suffix=_translate('unit', 'Hz')))
 
-        self.box_voltage.setWindowTitle(_translate('main window', 'Voltage'))
+        self.box_voltage.setWindowTitle(_translate('main window', 'Vertical Axis'))
         self.check_voltage_persists.setText(_translate('main window', 'Keep voltage range'))
 
         self.button_zoom_y_out_coarse.setText(_translate('main window', '−50%'))
@@ -253,7 +253,7 @@ class GUI(QMainWindow):
         self.button_next_line.setText(_translate('main window', 'Next Line'))
 
         self.box_found_lines.setWindowTitle(_translate('main window', 'Found Lines'))
-        self.model_found_lines.set_format([(3, 1e-6), (4, 1e3), (4, 1e6)])
+        self.model_found_lines.set_format([(3, 1e-6), (4, 1e3), (4, np.nan, self.settings.fancy_table_numbers)])
         self.table_found_lines.setModel(self.model_found_lines)
         self.table_found_lines.setMouseTracking(True)
         self.table_found_lines.setContextMenuPolicy(Qt.ActionsContextMenu)

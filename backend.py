@@ -320,7 +320,7 @@ class App(GUI):
     def adjust_table_columns(self) -> None:
         self.model_found_lines.header = (
                 [_translate('main window', 'Frequency [MHz]')] +
-                ([_translate('main window', 'Voltage [mV]'), _translate('main window', 'Absorption [cm⁻¹ × 10⁻⁶]')]
+                ([_translate('main window', 'Voltage [mV]'), _translate('main window', 'Absorption [cm⁻¹]')]
                  * (self.table_found_lines.horizontalHeader().count() // 2))
         )
         for i in range(self.table_found_lines.horizontalHeader().count()):
@@ -701,6 +701,7 @@ class App(GUI):
         self.set_plot_line_appearance()
         self.set_marks_appearance()
         self.set_crosshair_lines_appearance()
+        self.model_found_lines.set_format([(3, 1e-6), (4, 1e3), (4, np.nan, self.settings.fancy_table_numbers)])
         if (self._data_mode == self.PSK_DATA_MODE
                 and self._plot_line.xData is not None and self._plot_line.xData.size > 1):
             step: int = int(round(self.settings.jump / ((self._plot_line.xData[-1] - self._plot_line.xData[0])
