@@ -85,7 +85,7 @@ The least evident part of the interface is the toolbar. Its buttons allow you to
   - replace the displayed data with their finite-step second derivative (if appropriate);
   - switch the displayed data between the detector voltage and the absorption values (if appropriate);
   - export the displayed data into a numerical table or as a picture;
-  - mark interested data points, copy the values, save them, or delete them;
+  - mark interesting data points, copy the values, save them, or remove the marks;
   - customize colors, lines thickness, and some text formatting.
 
 Read the tooltips, they may appear useful.
