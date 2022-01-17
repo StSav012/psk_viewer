@@ -22,6 +22,7 @@ if __name__ == '__main__':
     if not hasattr(sys, '_MEIPASS'):  # if not embedded into an executable
         import importlib
 
+        pip_updated: bool = False
         for package in REQUIREMENTS:
             try:
                 importlib.import_module(package)
@@ -32,7 +33,11 @@ if __name__ == '__main__':
 
                 import subprocess
 
-                if subprocess.check_call([sys.executable, '-m', 'pip', 'install', package]):
+                if not pip_updated:
+                    if subprocess.check_call((sys.executable, '-m', 'pip', 'install', '-U', 'pip')):
+                        raise ex
+                    pip_updated = True
+                if subprocess.check_call((sys.executable, '-m', 'pip', 'install', package)):
                     raise ex
 
     from PySide6.QtCore import QLibraryInfo, QLocale, QTranslator, Qt
