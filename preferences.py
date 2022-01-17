@@ -3,7 +3,6 @@
 from typing import Dict, List, Optional, Tuple, Union
 
 import pyqtgraph as pg  # type: ignore
-from PySide6.QtCore import Slot
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QGroupBox, \
     QVBoxLayout, QWidget
@@ -57,12 +56,13 @@ class Preferences(QDialog):
                         check_box = QCheckBox(self.tr(key2), box)
                         setattr(check_box, 'callback', value2[-1])
                         check_box.setChecked(getattr(self.settings, value2[-1]))
-                        check_box.toggled.connect(self._on_event)
+                        check_box.toggled.connect(lambda *args, sender=check_box: self._on_event(*args, sender))
                         box_layout.addWidget(check_box)
                     elif isinstance(getattr(self.settings, value2[-1]), QColor):
                         color_selector = ColorSelector(box, getattr(self.settings, value2[-1]))
                         setattr(color_selector, 'callback', value2[-1])
-                        color_selector.colorSelected.connect(self._on_event)
+                        color_selector.colorSelected.connect(
+                            lambda *args, sender=color_selector: self._on_event(*args, sender))
                         box_layout.addRow(key2, color_selector)
                     # no else
                 elif len(value2) == 2:
@@ -72,7 +72,7 @@ class Preferences(QDialog):
                         spin_box = pg.SpinBox(box, getattr(self.settings, value2[-1]))
                         spin_box.setOpts(**value3)
                         setattr(spin_box, 'callback', value2[-1])
-                        spin_box.valueChanged.connect(self._on_event)
+                        spin_box.valueChanged.connect(lambda *args, sender=spin_box: self._on_event(*args, sender))
                         box_layout.addRow(key2, spin_box)
                     # no else
                 elif len(value2) == 3:
@@ -86,7 +86,8 @@ class Preferences(QDialog):
                         for index, item in enumerate(value3a):
                             combo_box.addItem(self.tr(item), value3b[index])
                         combo_box.setCurrentIndex(value3b.index(getattr(self.settings, value2[-1])))
-                        combo_box.currentIndexChanged.connect(self._on_combo_box_current_index_changed)
+                        combo_box.currentIndexChanged.connect(
+                            lambda *args, sender=combo_box: self._on_combo_box_current_index_changed(*args, sender))
                         box_layout.addRow(self.tr(key2), combo_box)
                     # no else
                 # no else
@@ -95,12 +96,9 @@ class Preferences(QDialog):
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
 
-    @Slot(bool)
-    @Slot(float)
-    @Slot(QColor)
-    def _on_event(self, x: Union[bool, float, QColor]) -> None:
-        setattr(self.settings, getattr(self.sender(), 'callback'), x)
+    # https://forum.qt.io/post/671245
+    def _on_event(self, x: Union[bool, float, QColor], sender: QWidget) -> None:
+        setattr(self.settings, getattr(sender, 'callback'), x)
 
-    @Slot(int)
-    def _on_combo_box_current_index_changed(self, _: int) -> None:
-        setattr(self.settings, getattr(self.sender(), 'callback'), self.sender().currentData())
+    def _on_combo_box_current_index_changed(self, _: int, sender: QComboBox) -> None:
+        setattr(self.settings, getattr(sender, 'callback'), sender.currentData())
