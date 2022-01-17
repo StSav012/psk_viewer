@@ -62,6 +62,7 @@ class PlotDataItem(pg.PlotDataItem):  # type: ignore
     def __init__(self, *args, **kwargs) -> None:  # type: ignore
         super().__init__(*args, **kwargs)
 
+        self.frequency_data: np.ndarray = np.empty(0)
         self.voltage_data: np.ndarray = np.empty(0)
         self.gamma_data: np.ndarray = np.empty(0)
 
@@ -89,6 +90,7 @@ class App(GUI):
         self._view_all_action: QAction = QAction()
 
         self._plot_line: PlotDataItem = self.figure.plot(np.empty(0), name='')
+        self._plot_line.frequency_data = np.empty(0)
         self._plot_line.voltage_data = np.empty(0)
         self._plot_line.gamma_data = np.empty(0)
 
@@ -1086,6 +1088,7 @@ class App(GUI):
         self._plot_line.setData(f,
                                 (g if self.toolbar.switch_data_action.isChecked() else v),
                                 name=new_label)
+        self._plot_line.frequency_data = f
         self._plot_line.gamma_data = g
         self._plot_line.voltage_data = v
 
@@ -1132,7 +1135,7 @@ class App(GUI):
 
     def calculate_second_derivative(self) -> None:
         self.clear_found_lines()
-        x: np.ndarray = self._plot_line.xData
+        x: np.ndarray = self._plot_line.frequency_data
         step: int = int(round(self.settings.jump / ((x[-1] - x[0]) / (x.size - 1))))
         self._plot_line.voltage_data = (self._plot_line.voltage_data[step:-step]
                                         - (self._plot_line.voltage_data[2 * step:]
@@ -1140,7 +1143,7 @@ class App(GUI):
         self._plot_line.gamma_data = (self._plot_line.gamma_data[step:-step]
                                       - (self._plot_line.gamma_data[2 * step:]
                                          + self._plot_line.gamma_data[:-2 * step]) / 2.)
-        self._plot_line.xData = x[step:-step]
+        self._plot_line.frequency_data = x[step:-step]
         self.toolbar.differentiate_action.setEnabled(False)
         self._data_mode = self.PSK_WITH_JUMP_DATA_MODE
         self.display_gamma_or_voltage()
@@ -1155,8 +1158,8 @@ class App(GUI):
             display_gamma = self.toolbar.switch_data_action.isChecked()
 
         if display_gamma:
-            if self._plot_line.xData is not None and self._plot_line.gamma_data.size:  # something is loaded
-                self._plot_line.setData(self._plot_line.xData, self._plot_line.gamma_data)
+            if self._plot_line.frequency_data.size and self._plot_line.gamma_data.size:  # something is loaded
+                self._plot_line.setData(self._plot_line.frequency_data, self._plot_line.gamma_data)
 
                 self._loading = True
                 min_gamma: float = np.min(self._plot_line.gamma_data)
@@ -1175,8 +1178,8 @@ class App(GUI):
                     and self.user_found_lines.gamma_data.size):  # something is marked
                 self.user_found_lines.setData(self.user_found_lines.xData, self.user_found_lines.gamma_data)
         else:
-            if self._plot_line.xData is not None and self._plot_line.voltage_data.size:  # something is loaded
-                self._plot_line.setData(self._plot_line.xData, self._plot_line.voltage_data)
+            if self._plot_line.frequency_data.size and self._plot_line.voltage_data.size:  # something is loaded
+                self._plot_line.setData(self._plot_line.frequency_data, self._plot_line.voltage_data)
 
                 self._loading = True
                 min_voltage: float = np.min(self._plot_line.voltage_data)
