@@ -165,8 +165,6 @@ class DataModel(QAbstractTableModel):
         return cast(bool, self._data.shape[0] > self._rows_loaded)
 
     def fetchMore(self, index: QModelIndex = QModelIndex()) -> None:
-        # FIXME: if the 0th column is hidden, no data gets fetched despite it is available according to `canFetchMore`
-        #  For now, the only solution is to load more than one screen can display. If the table is scrolled, data loads.
         # https://sateeshkumarb.wordpress.com/2012/04/01/paginated-display-of-table-data-in-pyqt/
         reminder: int = self._data.shape[0] - self._rows_loaded
         items_to_fetch: int = min(reminder, self.ROW_BATCH_COUNT)
