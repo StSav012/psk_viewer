@@ -25,7 +25,6 @@ class NavigationToolbar(QToolBar):
         self.open_action: QAction = QAction(self)
         self.clear_action: QAction = QAction(self)
         self.differentiate_action: QAction = QAction(self)
-        self.switch_data_action: QAction = QAction(self)
         self.save_data_action: QAction = QAction(self)
         self.copy_figure_action: QAction = QAction(self)
         self.save_figure_action: QAction = QAction(self)
@@ -42,7 +41,6 @@ class NavigationToolbar(QToolBar):
             self.open_action,
             self.clear_action,
             self.differentiate_action,
-            self.switch_data_action,
             self.save_data_action,
             self.copy_figure_action,
             self.save_figure_action,
@@ -54,7 +52,6 @@ class NavigationToolbar(QToolBar):
         ], [
             'open', 'delete',
             'secondDerivative',
-            '',
             'saveTable',
             'copyImage',
             'saveImage',
@@ -67,7 +64,6 @@ class NavigationToolbar(QToolBar):
             self.open_action,
             self.clear_action,
             self.differentiate_action,
-            self.switch_data_action,
             self.save_data_action,
             self.copy_figure_action,
             self.save_figure_action,
@@ -80,7 +76,6 @@ class NavigationToolbar(QToolBar):
             'Ctrl+O',
             'Ctrl+W',
             'Ctrl+/',
-            'Ctrl+`',
             '',
             '', '',
             'Ctrl+*',
@@ -96,7 +91,6 @@ class NavigationToolbar(QToolBar):
         self.addAction(self.clear_action)
         self.addSeparator()
         self.addAction(self.differentiate_action)
-        self.addAction(self.switch_data_action)
         self.addSeparator()
         self.addAction(self.save_data_action)
         self.addAction(self.copy_figure_action)
@@ -111,7 +105,6 @@ class NavigationToolbar(QToolBar):
 
         self.clear_action.setEnabled(False)
         self.differentiate_action.setEnabled(False)
-        self.switch_data_action.setEnabled(False)
         self.save_data_action.setEnabled(False)
         self.copy_figure_action.setEnabled(False)
         self.save_figure_action.setEnabled(False)
@@ -120,7 +113,6 @@ class NavigationToolbar(QToolBar):
         self.save_trace_action.setEnabled(False)
         self.clear_trace_action.setEnabled(False)
 
-        self.switch_data_action.setCheckable(True)
         self.trace_action.setCheckable(True)
 
         # Aesthetic adjustments - we need to set these explicitly in PyQt5

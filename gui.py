@@ -84,6 +84,8 @@ class GUI(QMainWindow):
 
         self.check_voltage_persists: QCheckBox = QCheckBox(self.group_voltage)
 
+        self.switch_data_action: QPushButton = QPushButton(self.group_voltage)
+
         # Zoom Y
         self.button_zoom_y_out_coarse: QPushButton = QPushButton(self.group_voltage)
         self.button_zoom_y_out_fine: QPushButton = QPushButton(self.group_voltage)
@@ -166,6 +168,14 @@ class GUI(QMainWindow):
         self.grid_layout_voltage.addWidget(self.button_zoom_y_out_fine, 1, 1)
         self.grid_layout_voltage.addWidget(self.button_zoom_y_in_fine, 1, 2)
         self.grid_layout_voltage.addWidget(self.button_zoom_y_in_coarse, 1, 3)
+
+        self.v_layout_voltage.addWidget(self.switch_data_action)
+        self.switch_data_action.setEnabled(False)
+        self.switch_data_action.setCheckable(True)
+        self.switch_data_action.setShortcut('Ctrl+`')
+        self.switch_data_action.setText(_translate('main window', 'Show Absorption'))
+        self.switch_data_action.setToolTip(_translate('main window',
+                                                      'Switch Y data between absorption and voltage'))
 
         self.v_layout_voltage.addLayout(self.form_layout_voltage)
         self.v_layout_voltage.addLayout(self.grid_layout_voltage)

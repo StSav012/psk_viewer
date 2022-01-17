@@ -201,9 +201,6 @@ class App(GUI):
                                                                  "Calculate second derivative"))
         self.toolbar.differentiate_action.setToolTip(_translate("plot toolbar action",
                                                                 "Calculate finite-step second derivative"))
-        self.toolbar.switch_data_action.setIconText(_translate("plot toolbar action", "Show Absorption"))
-        self.toolbar.switch_data_action.setToolTip(_translate("plot toolbar action",
-                                                              "Switch Y data between absorption and voltage"))
         self.toolbar.save_data_action.setIconText(_translate("plot toolbar action", "Save Data"))
         self.toolbar.save_data_action.setToolTip(_translate("plot toolbar action", "Export the visible data"))
         self.toolbar.copy_figure_action.setIconText(_translate("plot toolbar action", "Copy Figure"))
@@ -259,7 +256,7 @@ class App(GUI):
             self._data_type = self._GAMMA_DATA
         else:
             self._data_type = self._VOLTAGE_DATA
-        self.toolbar.switch_data_action.setChecked(self._data_type == self._GAMMA_DATA)
+        self.switch_data_action.setChecked(self._data_type == self._GAMMA_DATA)
         self.display_gamma_or_voltage()
 
         self._loading = False
@@ -269,7 +266,6 @@ class App(GUI):
         self.toolbar.open_action.triggered.connect(lambda: cast(None, self.load_data()))
         self.toolbar.clear_action.triggered.connect(self.clear)
         self.toolbar.differentiate_action.triggered.connect(self.calculate_second_derivative)
-        self.toolbar.switch_data_action.toggled.connect(self.on_switch_data_action_toggled)
         self.toolbar.save_data_action.triggered.connect(self.save_data)
         self.toolbar.copy_figure_action.triggered.connect(self.copy_figure)
         self.toolbar.save_figure_action.triggered.connect(self.save_figure)
@@ -292,6 +288,7 @@ class App(GUI):
         self.button_move_x_right_coarse.clicked.connect(lambda: self.button_move_x_clicked(500.))
         self.check_frequency_persists.toggled.connect(self.check_frequency_persists_toggled)
 
+        self.switch_data_action.toggled.connect(self.on_switch_data_action_toggled)
         self.spin_voltage_min.valueChanged.connect(self.spin_voltage_min_changed)
         self.spin_voltage_max.valueChanged.connect(self.spin_voltage_max_changed)
         self.button_zoom_y_out_coarse.clicked.connect(lambda: self.button_zoom_y_clicked(1. / 0.5))
@@ -329,7 +326,7 @@ class App(GUI):
             self.table_found_lines.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
 
         # change visibility of the found lines' table columns
-        if self.toolbar.switch_data_action.isChecked():
+        if self.switch_data_action.isChecked():
             self.table_found_lines.hideColumn(1)
             self.table_found_lines.showColumn(2)
         else:
@@ -1084,10 +1081,10 @@ class App(GUI):
         new_label: str = os.path.split(fn)[-1]
 
         if self._data_mode == self.FS_DATA_MODE:
-            self.toolbar.switch_data_action.setChecked(False)
+            self.switch_data_action.setChecked(False)
 
         self._plot_line.setData(f,
-                                (g if self.toolbar.switch_data_action.isChecked() else v),
+                                (g if self.switch_data_action.isChecked() else v),
                                 name=new_label)
         self._plot_line.frequency_data = f
         self._plot_line.gamma_data = g
@@ -1100,8 +1097,7 @@ class App(GUI):
 
         self.toolbar.clear_action.setEnabled(True)
         self.toolbar.differentiate_action.setEnabled(self._data_mode == self.PSK_DATA_MODE)
-        self.toolbar.switch_data_action.setEnabled(self._data_mode in (self.PSK_DATA_MODE,
-                                                                       self.PSK_WITH_JUMP_DATA_MODE))
+        self.switch_data_action.setEnabled(self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE))
         self.toolbar.save_data_action.setEnabled(True)
         self.toolbar.copy_figure_action.setEnabled(True)
         self.toolbar.save_figure_action.setEnabled(True)
@@ -1156,7 +1152,12 @@ class App(GUI):
 
     def display_gamma_or_voltage(self, display_gamma: Optional[bool] = None) -> None:
         if display_gamma is None:
-            display_gamma = self.toolbar.switch_data_action.isChecked()
+            display_gamma = self.switch_data_action.isChecked()
+
+        if display_gamma:
+            self.box_voltage.setWindowTitle(_translate('main window', 'Absorption'))
+        else:
+            self.box_voltage.setWindowTitle(_translate('main window', 'Voltage'))
 
         if display_gamma:
             if self._plot_line.frequency_data.size and self._plot_line.gamma_data.size:  # something is loaded
@@ -1269,7 +1270,7 @@ class App(GUI):
             if filename_parts[1] != '.csv':
                 filename += '.csv'
             sep: str = self.settings.csv_separator
-            if self.toolbar.switch_data_action.isChecked():
+            if self.switch_data_action.isChecked():
                 data = np.vstack((x * 1e-6, y)).transpose()
                 # noinspection PyTypeChecker
                 np.savetxt(filename, data,
@@ -1296,7 +1297,7 @@ class App(GUI):
                 filename += '.xlsx'
             with pd.ExcelWriter(filename) as writer:
                 df: pd.DataFrame
-                if self.toolbar.switch_data_action.isChecked():
+                if self.switch_data_action.isChecked():
                     data = np.vstack((x * 1e-6, y)).transpose()
                     df = pd.DataFrame(data)
                     df.to_excel(writer, index=False, header=[_translate('main window', 'Frequency [MHz]'),
