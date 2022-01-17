@@ -9,7 +9,7 @@ from utils import superscript_tag
 
 
 class DataModel(QAbstractTableModel):
-    ROW_BATCH_COUNT: Final[int] = 96
+    ROW_BATCH_COUNT: Final[int] = 5
 
     def __init__(self, parent: Optional[QObject]) -> None:
         super().__init__(parent)
@@ -162,13 +162,13 @@ class DataModel(QAbstractTableModel):
         self.endResetModel()
 
     def canFetchMore(self, index: QModelIndex = QModelIndex()) -> bool:
-        return cast(bool, self._data.shape[1] > self._rows_loaded)
+        return cast(bool, self._data.shape[0] > self._rows_loaded)
 
     def fetchMore(self, index: QModelIndex = QModelIndex()) -> None:
         # FIXME: if the 0th column is hidden, no data gets fetched despite it is available according to `canFetchMore`
         #  For now, the only solution is to load more than one screen can display. If the table is scrolled, data loads.
         # https://sateeshkumarb.wordpress.com/2012/04/01/paginated-display-of-table-data-in-pyqt/
-        reminder: int = self._data.shape[1] - self._rows_loaded
+        reminder: int = self._data.shape[0] - self._rows_loaded
         items_to_fetch: int = min(reminder, self.ROW_BATCH_COUNT)
         self.beginInsertRows(QModelIndex(), self._rows_loaded, self._rows_loaded + items_to_fetch - 1)
         self._rows_loaded += items_to_fetch
