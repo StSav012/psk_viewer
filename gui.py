@@ -262,6 +262,7 @@ class GUI(QMainWindow):
         self.table_found_lines.setDragDropOverwriteMode(False)
         self.table_found_lines.setCornerButtonEnabled(False)
         self.table_found_lines.setSortingEnabled(True)
+        self.table_found_lines.sortByColumn(0, Qt.SortOrder.AscendingOrder)
         self.table_found_lines.setAlternatingRowColors(True)
         self.table_found_lines.horizontalHeader().setDefaultSectionSize(90)
         self.table_found_lines.horizontalHeader().setHighlightSections(False)

@@ -19,7 +19,7 @@ class DataModel(QAbstractTableModel):
         self._header: List[str] = []
         self._format: List[Tuple[int, float, bool]] = []
         self._sort_column: int = 0
-        self._sort_order: Qt.SortOrder = Qt.DescendingOrder
+        self._sort_order: Qt.SortOrder = Qt.SortOrder.AscendingOrder
 
     @property
     def header(self) -> List[str]:
@@ -113,7 +113,7 @@ class DataModel(QAbstractTableModel):
         self._rows_loaded = self.ROW_BATCH_COUNT
         if self._sort_column < self._data.shape[1]:
             sort_indices: np.ndarray = np.argsort(self._data[:, self._sort_column], kind='heapsort')
-            if self._sort_order == Qt.DescendingOrder:
+            if self._sort_order == Qt.SortOrder.DescendingOrder:
                 sort_indices = sort_indices[::-1]
             self._data = self._data[sort_indices]
         self.endResetModel()
@@ -124,7 +124,7 @@ class DataModel(QAbstractTableModel):
             self._data = np.row_stack((self._data, new_data_line))
             if self._sort_column < self._data.shape[1]:
                 sort_indices: np.ndarray = np.argsort(self._data[:, self._sort_column], kind='heapsort')
-                if self._sort_order == Qt.DescendingOrder:
+                if self._sort_order == Qt.SortOrder.DescendingOrder:
                     sort_indices = sort_indices[::-1]
                 self._data = self._data[sort_indices]
         else:
@@ -138,7 +138,7 @@ class DataModel(QAbstractTableModel):
                 self._data = np.row_stack((self._data, new_data_line))
         if self._sort_column < self._data.shape[1]:
             sort_indices: np.ndarray = np.argsort(self._data[:, self._sort_column], kind='heapsort')
-            if self._sort_order == Qt.DescendingOrder:
+            if self._sort_order == Qt.SortOrder.DescendingOrder:
                 sort_indices = sort_indices[::-1]
             self._data = self._data[sort_indices]
         self.endResetModel()
@@ -149,11 +149,11 @@ class DataModel(QAbstractTableModel):
         self._rows_loaded = self.ROW_BATCH_COUNT
         self.endResetModel()
 
-    def sort(self, column: int, order: Qt.SortOrder = Qt.AscendingOrder) -> None:
+    def sort(self, column: int, order: Qt.SortOrder = Qt.SortOrder.AscendingOrder) -> None:
         if column >= self._data.shape[1]:
             return
         sort_indices: np.ndarray = np.argsort(self._data[:, column], kind='heapsort')
-        if order == Qt.DescendingOrder:
+        if order == Qt.SortOrder.DescendingOrder:
             sort_indices = sort_indices[::-1]
         self._sort_column = column
         self._sort_order = order
