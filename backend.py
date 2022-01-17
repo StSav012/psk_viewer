@@ -845,6 +845,7 @@ class App(GUI):
         i: int = cast(int, np.searchsorted(line_data, init_frequency, side='right') - 2)
         if 0 <= i < line_data.size and line_data[i] != init_frequency:
             self.spin_frequency_center.setValue(line_data[i])
+            self.ensure_y_fits()
 
     def next_found_line(self) -> None:
         if self.model_signal.size < 2:
@@ -858,9 +859,27 @@ class App(GUI):
         i: int = cast(int, np.searchsorted(line_data, init_frequency, side='left') + 1)
         if i < line_data.size and line_data[i] != init_frequency:
             self.spin_frequency_center.setValue(line_data[i])
+            self.ensure_y_fits()
 
     def on_table_cell_double_clicked(self, index: QModelIndex) -> None:
         self.spin_frequency_center.setValue(self.model_found_lines.item(index.row(), 0))
+        self.ensure_y_fits()
+
+    def ensure_y_fits(self) -> None:
+        if self._plot_line.xData is None or self._plot_line.xData.size < 2:
+            return
+        if self._plot_line.yData is None or self._plot_line.yData.size < 2:
+            return
+        x: pg.AxisItem = self._canvas.getAxis('bottom')
+        y: pg.AxisItem = self._canvas.getAxis('left')
+        visible_points: np.ndarray \
+            = self._plot_line.yData[(self._plot_line.xData >= min(x.range)) & (self._plot_line.xData <= max(x.range))]
+        if np.any(visible_points < min(y.range)):
+            minimum: float = np.min(visible_points)
+            self.set_voltage_range(minimum - 0.05 * (max(y.range) - minimum), max(y.range))
+        if np.any(visible_points > max(y.range)):
+            maximum: float = np.max(visible_points)
+            self.set_voltage_range(min(y.range), maximum + 0.05 * (maximum - min(y.range)))
 
     def stringify_table_plain_text(self, whole_table: bool = True) -> str:
         """
