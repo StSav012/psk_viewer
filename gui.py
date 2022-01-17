@@ -99,7 +99,7 @@ class GUI(QMainWindow):
         self.grid_layout_find_lines: QGridLayout = QGridLayout()
         self.spin_threshold: pg.SpinBox = pg.SpinBox(self.group_find_lines)
         self.spin_threshold.setMinimum(1.0)
-        self.spin_threshold.setMaximum(1000.0)
+        self.spin_threshold.setMaximum(10000.0)
         self.button_find_lines: QPushButton = QPushButton(self.group_find_lines)
         self.button_clear_lines: QPushButton = QPushButton(self.group_find_lines)
         self.button_prev_line: QPushButton = QPushButton(self.group_find_lines)
