@@ -328,7 +328,7 @@ class App(GUI):
         for i in range(self.table_found_lines.horizontalHeader().count()):
             self.table_found_lines.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
 
-        # change visibility of the found lines table columns
+        # change visibility of the found lines' table columns
         if self.toolbar.switch_data_action.isChecked():
             self.table_found_lines.hideColumn(1)
             self.table_found_lines.showColumn(2)
@@ -839,21 +839,12 @@ class App(GUI):
 
         init_frequency: float = self.spin_frequency_center.value()
 
-        prev_line_freq: np.ndarray = np.full(len(self.automatically_found_lines), np.nan)
-        index: int
-        line: pg.ScatterPlotItem
-        for index, line in enumerate(self.automatically_found_lines):
-            line_data: np.ndarray = line.getData()[0]
-            if line_data is None or not line_data.size:
-                continue
-            i: int = cast(int, np.searchsorted(line_data, init_frequency, side='right') - 2)
-            if 0 <= i < line_data.size and line_data[i] != init_frequency:
-                prev_line_freq[index] = line_data[i]
-            else:
-                prev_line_freq[index] = np.nan
-        prev_line_freq = prev_line_freq[~np.isnan(prev_line_freq)]
-        if prev_line_freq.size:
-            self.spin_frequency_center.setValue(prev_line_freq[np.argmin(init_frequency - prev_line_freq)])
+        line_data: np.ndarray = self.automatically_found_lines.xData
+        if line_data is None or not line_data.size:
+            return
+        i: int = cast(int, np.searchsorted(line_data, init_frequency, side='right') - 2)
+        if 0 <= i < line_data.size and line_data[i] != init_frequency:
+            self.spin_frequency_center.setValue(line_data[i])
 
     def next_found_line(self) -> None:
         if self.model_signal.size < 2:
@@ -861,21 +852,12 @@ class App(GUI):
 
         init_frequency: float = self.spin_frequency_center.value()
 
-        next_line_freq: np.ndarray = np.full(len(self.automatically_found_lines), np.nan)
-        index: int
-        line: pg.ScatterPlotItem
-        for index, line in enumerate(self.automatically_found_lines):
-            line_data: np.ndarray = line.getData()[0]
-            if line_data is None or not line_data.size:
-                continue
-            i: int = cast(int, np.searchsorted(line_data, init_frequency, side='left') + 1)
-            if i < line_data.size and line_data[i] != init_frequency:
-                next_line_freq[index] = line_data[i]
-            else:
-                next_line_freq[index] = np.nan
-        next_line_freq = next_line_freq[~np.isnan(next_line_freq)]
-        if next_line_freq.size:
-            self.spin_frequency_center.setValue(next_line_freq[np.argmin(next_line_freq - init_frequency)])
+        line_data: np.ndarray = self.automatically_found_lines.xData
+        if line_data is None or not line_data.size:
+            return
+        i: int = cast(int, np.searchsorted(line_data, init_frequency, side='left') + 1)
+        if i < line_data.size and line_data[i] != init_frequency:
+            self.spin_frequency_center.setValue(line_data[i])
 
     def on_table_cell_double_clicked(self, index: QModelIndex) -> None:
         self.spin_frequency_center.setValue(self.model_found_lines.item(index.row(), 0))
