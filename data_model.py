@@ -2,16 +2,18 @@
 
 from typing import Final, Iterable, List, Optional, Tuple, Union, cast
 
-import numpy as np  # type: ignore
+import numpy as np
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, QObject, Qt
 
 from utils import superscript_tag
+
+__all__ = ('DataModel',)
 
 
 class DataModel(QAbstractTableModel):
     ROW_BATCH_COUNT: Final[int] = 5
 
-    def __init__(self, parent: Optional[QObject]) -> None:
+    def __init__(self, parent: Optional[QObject] = None) -> None:
         super().__init__(parent)
         self._data: np.ndarray = np.empty((0, 0))
         self._rows_loaded: int = self.ROW_BATCH_COUNT
