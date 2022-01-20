@@ -4,7 +4,7 @@ import os
 import re
 from typing import Any, Tuple, Type, cast
 
-import numpy as np  # type: ignore
+import numpy as np
 import pyqtgraph as pg  # type: ignore
 from PySide6.QtCore import QCoreApplication, Qt
 from PySide6.QtGui import QKeySequence, QKeyEvent
@@ -24,12 +24,12 @@ _translate = QCoreApplication.translate
 
 class TableView(QTableView):
     def keyPressEvent(self, e: QKeyEvent) -> None:
-        if e.matches(QKeySequence.Copy):
+        if e.matches(QKeySequence.StandardKey.Copy):
             copy_to_clipboard(self.parent().parent().stringify_table_plain_text(False),
                               self.parent().parent().stringify_table_html(False),
-                              Qt.RichText)
+                              Qt.TextFormat.RichText)
             e.accept()
-        elif e.matches(QKeySequence.SelectAll):
+        elif e.matches(QKeySequence.StandardKey.SelectAll):
             self.parent().parent().table_found_lines.selectAll()
             e.accept()
 
