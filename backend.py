@@ -71,7 +71,6 @@ class App(GUI):
 
         self._is_dark: bool = self.palette().color(QPalette.Window).lightness() < 128
 
-        self.legend_item: pg.LegendItem = pg.LegendItem(offset=(0, 0))
         self.toolbar: NavigationToolbar = NavigationToolbar(self, parameters_icon='configure')
         self.addToolBar(Qt.TopToolBarArea, self.toolbar)
 
@@ -132,15 +131,6 @@ class App(GUI):
                 ax = ax_d['item']
                 ax.setPen('k')
                 ax.setTextPen('k')
-
-        self.legend.setCentralItem(self.legend_item)
-        if self._is_dark:
-            self.legend.setBackground(QBrush(pg.mkColor(0, 0, 0, 0)))
-            self.legend_item.setLabelTextColor(255, 255, 255, 255)
-        else:
-            self.legend.setBackground(QBrush(pg.mkColor(255, 255, 255, 0)))
-            self.legend_item.setLabelTextColor(0, 0, 0, 255)
-        # self._legend_box.sceneObj.sigMouseClicked.connect(self.on_legend_click)
 
         self.figure.plotItem.addItem(self._crosshair_v_line, ignoreBounds=True)
         self.figure.plotItem.addItem(self._crosshair_h_line, ignoreBounds=True)
@@ -880,7 +870,7 @@ class App(GUI):
         close.setText(_translate('main window', 'Are you sure?'))
         close.setIcon(QMessageBox.Question)
         close.setWindowIcon(self.windowIcon())
-        close.setWindowTitle(self.windowTitle())
+        close.setWindowTitle(_translate('main window', 'Spectrometer Data Viewer'))
         close.setStandardButtons(cast(QMessageBox.StandardButtons,
                                       QMessageBox.Yes | QMessageBox.Cancel))
         if close.exec() != QMessageBox.Yes:
@@ -888,9 +878,6 @@ class App(GUI):
 
         self._plot_line.clear()
         self.clear_found_lines()
-        if self.legend_item is not None:
-            self.legend_item.clear()
-            # self._legend.setVisible(False)
         self.toolbar.trace_action.setChecked(False)
         self.toolbar.clear_action.setEnabled(False)
         self.toolbar.differentiate_action.setEnabled(False)
@@ -908,12 +895,7 @@ class App(GUI):
         self._cursor_x.setVisible(True)
         self._cursor_y.setVisible(True)
         self._canvas.replot()
-
-    def update_legend(self) -> None:
-        self.legend_item.clear()
-        if self._plot_line.name():
-            self.legend_item.addItem(self._plot_line, self._plot_line.name())
-        self.legend.setMinimumWidth(self.legend_item.boundingRect().width())
+        self.setWindowTitle(_translate('main window', 'Spectrometer Data Viewer'))
 
     def load_data(self, filename: str = '') -> bool:
         if not filename:
@@ -971,8 +953,6 @@ class App(GUI):
         min_frequency: float = f[0]
         max_frequency: float = f[-1]
 
-        self.update_legend()
-
         self.toolbar.clear_action.setEnabled(True)
         step: int = int(round(self.settings.jump / ((max_frequency - min_frequency) / (f.size - 1))))
         self.toolbar.differentiate_action.setEnabled(self._data_mode == self.PSK_DATA_MODE
@@ -1000,6 +980,8 @@ class App(GUI):
                                  upper_value=self.spin_frequency_max.value())
         self.set_voltage_range(lower_value=self.spin_voltage_min.value(),
                                upper_value=self.spin_voltage_max.value())
+
+        self.setWindowTitle(_translate('main window', '%s — Spectrometer Data Viewer') % filename)
 
         return True
 
@@ -1168,13 +1150,11 @@ class App(GUI):
                                 sheet_name=self._plot_line.name() or _translate('workbook', 'Sheet1'))
 
     def copy_figure(self) -> None:
-        # TODO: add legend to the figure to save
         exporter = pg.exporters.ImageExporter(self._canvas)
         self.hide_cursors()
         exporter.export(copy=True)
 
     def save_figure(self) -> None:
-        # TODO: add legend to the figure to save
         exporter = pg.exporters.ImageExporter(self._canvas)
         _filter: str = \
             _translate('file dialog', 'Image files') + ' (' + ' '.join(exporter.getSupportedImageFormats()) + ')'

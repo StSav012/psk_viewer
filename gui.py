@@ -118,9 +118,6 @@ class GUI(QMainWindow):
         # plot
         self.figure: pg.PlotWidget = pg.PlotWidget(self.central_widget)
         self.figure.setFocusPolicy(Qt.ClickFocus)
-        self.legend: pg.GraphicsLayoutWidget = pg.GraphicsLayoutWidget()
-        self.box_legend: QDockWidget = QDockWidget(self.central_widget)
-        self.box_legend.setObjectName('box_legend')
         self._cursor_x: ValueLabel = ValueLabel(self.status_bar, siPrefix=True, decimals=6)
         self._cursor_y: ValueLabel = ValueLabel(self.status_bar, siPrefix=True, decimals=3)
 
@@ -189,11 +186,6 @@ class GUI(QMainWindow):
         self.v_layout_find_lines.addLayout(self.form_layout_find_lines)
         self.v_layout_find_lines.addLayout(self.grid_layout_find_lines)
 
-        self.box_legend.setWidget(self.legend)
-        self.box_legend.setFeatures(cast(QDockWidget.DockWidgetFeatures,
-                                         cast(int, self.box_legend.features()) & ~self.box_legend.DockWidgetClosable))
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.box_legend)
-
         # TODO: adjust size when undocked
         self.box_frequency.setWidget(self.group_frequency)
         self.box_frequency.setFeatures(cast(QDockWidget.DockWidgetFeatures,
@@ -230,8 +222,6 @@ class GUI(QMainWindow):
 
         self._cursor_x.suffix = _translate('unit', 'Hz')
         self._cursor_y.suffix = _translate('unit', 'V')
-
-        self.box_legend.setWindowTitle(_translate('main window', 'Legend'))
 
         self.box_frequency.setWindowTitle(_translate('main window', 'Frequency'))
         self.check_frequency_persists.setText(_translate('main window', 'Keep frequency range'))
@@ -315,7 +305,7 @@ class GUI(QMainWindow):
             close.setText(_translate('main window', 'Are you sure?'))
             close.setIcon(QMessageBox.Question)
             close.setWindowIcon(self.windowIcon())
-            close.setWindowTitle(self.windowTitle())
+            close.setWindowTitle(_translate('main window', 'Spectrometer Data Viewer'))
             close.setStandardButtons(cast(QMessageBox.StandardButtons,
                                           QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel))
             close_code = close.exec()
