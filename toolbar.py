@@ -2,7 +2,7 @@
 
 from typing import Iterable, Optional, Union
 
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QColor, QIcon, QKeySequence, QPalette
 from PySide6.QtWidgets import QToolBar, QWidget
 
@@ -113,13 +113,8 @@ class NavigationToolbar(QToolBar):
         self.save_trace_action.setEnabled(False)
         self.clear_trace_action.setEnabled(False)
 
+        self.differentiate_action.setCheckable(True)
         self.trace_action.setCheckable(True)
-
-        # Aesthetic adjustments - we need to set these explicitly in PyQt5
-        # otherwise the layout looks different - but we don't want to set it if
-        # not using HiDPI icons otherwise they look worse than before.
-        self.setIconSize(QSize(24, 24))
-        self.layout().setSpacing(12)
 
     def add_shortcuts_to_tooltips(self) -> None:
         a: QAction

@@ -6,13 +6,13 @@ from typing import Any, Tuple, Type, cast
 
 import numpy as np  # type: ignore
 import pyqtgraph as pg  # type: ignore
-from pyqtgraph import functions as fn
 from PySide6.QtCore import QCoreApplication, Qt
 from PySide6.QtGui import QCloseEvent, QKeySequence, QKeyEvent
 from PySide6.QtWidgets import QAbstractItemView, QCheckBox, QDockWidget, QFileDialog, QFormLayout, \
     QGridLayout, QMainWindow, QMessageBox, QPushButton, QStatusBar, QTableView, QVBoxLayout, QWidget
+from pyqtgraph import functions as fn
 
-from data_model import DataModel
+from found_lines_model import FoundLinesModel
 from settings import Settings
 from utils import load_icon, copy_to_clipboard
 from valuelabel import ValueLabel
@@ -111,7 +111,7 @@ class GUI(QMainWindow):
         self.box_found_lines: QDockWidget = QDockWidget(self.central_widget)
         self.box_found_lines.setObjectName('box_found_lines')
         self.table_found_lines: TableView = TableView(self.box_found_lines)
-        self.model_found_lines: DataModel = DataModel(self)
+        self.model_found_lines: FoundLinesModel = FoundLinesModel(self)
 
         self.status_bar: QStatusBar = QStatusBar()
 
