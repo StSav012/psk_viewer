@@ -41,6 +41,12 @@ class PlotDataItem:
         self._voltage_data = voltage_data[sorting_indices]
         self._gamma_data = gamma_data[sorting_indices]
 
+    def clear(self) -> None:
+        self._frequency_data = np.empty(0)
+        self._voltage_data = np.empty(0)
+        self._gamma_data = np.empty(0)
+        self.jump = np.nan
+
     @property
     def frequency_data(self) -> np.ndarray:
         if np.isnan(self._jump):

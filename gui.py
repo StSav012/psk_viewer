@@ -7,15 +7,17 @@ from typing import Any, Tuple, Type, cast
 import numpy as np  # type: ignore
 import pyqtgraph as pg  # type: ignore
 from PySide6.QtCore import QCoreApplication, Qt
-from PySide6.QtGui import QCloseEvent, QKeySequence, QKeyEvent
+from PySide6.QtGui import QKeySequence, QKeyEvent
 from PySide6.QtWidgets import QAbstractItemView, QCheckBox, QDockWidget, QFileDialog, QFormLayout, \
-    QGridLayout, QMainWindow, QMessageBox, QPushButton, QStatusBar, QTableView, QVBoxLayout, QWidget
+    QGridLayout, QMainWindow, QPushButton, QStatusBar, QTableView, QVBoxLayout, QWidget
 from pyqtgraph import functions as fn
 
 from found_lines_model import FoundLinesModel
 from settings import Settings
 from utils import load_icon, copy_to_clipboard
 from valuelabel import ValueLabel
+
+__all__ = ['GUI', 'TableView']
 
 _translate = QCoreApplication.translate
 
@@ -296,28 +298,6 @@ class GUI(QMainWindow):
         self.spin_threshold.setOpts(compactHeight=False)
 
         self.adjustSize()
-
-    def closeEvent(self, event: QCloseEvent) -> None:
-        """ senseless joke in the loop """
-        close_code: int = QMessageBox.No
-        while close_code == QMessageBox.No:
-            close: QMessageBox = QMessageBox()
-            close.setText(_translate('main window', 'Are you sure?'))
-            close.setIcon(QMessageBox.Question)
-            close.setWindowIcon(self.windowIcon())
-            close.setWindowTitle(_translate('main window', 'Spectrometer Data Viewer'))
-            close.setStandardButtons(cast(QMessageBox.StandardButtons,
-                                          QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel))
-            close_code = close.exec()
-
-            if close_code == QMessageBox.Yes:
-                self.settings.setValue('windowGeometry', self.saveGeometry())
-                self.settings.setValue('windowState', self.saveState())
-                self.settings.sync()
-                event.accept()
-            elif close_code == QMessageBox.Cancel:
-                event.ignore()
-        return
 
     def get_config_value(self, section: str, key: str, default: Any, _type: Type[Any]) -> Any:
         if section not in self.settings.childGroups():

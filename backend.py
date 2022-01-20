@@ -9,7 +9,7 @@ import pyqtgraph as pg  # type: ignore
 import pyqtgraph.exporters  # type: ignore
 from PySide6.QtCore import QByteArray, QCoreApplication, QItemSelectionModel, QModelIndex, \
     QPoint, QPointF, QRect, QRectF, Qt
-from PySide6.QtGui import QAction, QBrush, QPalette, QPen, QScreen
+from PySide6.QtGui import QAction, QBrush, QPalette, QPen, QScreen, QCloseEvent
 from PySide6.QtWidgets import QHeaderView, QMessageBox
 from pyqtgraph import PlotWidget
 from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent  # type: ignore
@@ -21,6 +21,8 @@ from preferences import Preferences
 from toolbar import NavigationToolbar
 from utils import copy_to_clipboard, load_data_csv, load_data_fs, load_data_scandat, resource_path, \
     superscript_number
+
+__all__ = ['App']
 
 _translate = QCoreApplication.translate
 
@@ -207,6 +209,31 @@ class App(GUI):
         self._canvas.ctrl.autoAlphaCheck.setText(_translate("plot context menu action", "Auto"))
 
         self._canvas.vb.menu.setTitle(_translate('menu', 'Plot Options'))
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        """ senseless joke in the loop """
+        close: QMessageBox = QMessageBox()
+        close.setText(_translate('main window', 'Are you sure?'))
+        close.setIcon(QMessageBox.Icon.Question)
+        close.setWindowIcon(self.windowIcon())
+        close.setWindowTitle(_translate('main window', 'Spectrometer Data Viewer'))
+        close.setStandardButtons(cast(QMessageBox.StandardButtons,
+                                      QMessageBox.StandardButton.Yes
+                                      | QMessageBox.StandardButton.No
+                                      | QMessageBox.StandardButton.Cancel))
+        close_code: QMessageBox.StandardButton = (QMessageBox.StandardButton.No
+                                                  if self._plot_data.frequency_span > 0.0
+                                                  else QMessageBox.StandardButton.Yes)
+        while close_code == QMessageBox.StandardButton.No:
+            close_code = close.exec()
+
+        if close_code == QMessageBox.StandardButton.Yes:
+            self.settings.setValue('windowGeometry', self.saveGeometry())
+            self.settings.setValue('windowState', self.saveState())
+            self.settings.sync()
+            event.accept()
+        elif close_code == QMessageBox.StandardButton.Cancel:
+            event.ignore()
 
     def load_config(self) -> None:
         self._loading = True
@@ -868,15 +895,16 @@ class App(GUI):
     def clear(self) -> None:
         close: QMessageBox = QMessageBox()
         close.setText(_translate('main window', 'Are you sure?'))
-        close.setIcon(QMessageBox.Question)
+        close.setIcon(QMessageBox.Icon.Question)
         close.setWindowIcon(self.windowIcon())
         close.setWindowTitle(_translate('main window', 'Spectrometer Data Viewer'))
         close.setStandardButtons(cast(QMessageBox.StandardButtons,
-                                      QMessageBox.Yes | QMessageBox.Cancel))
-        if close.exec() != QMessageBox.Yes:
+                                      QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel))
+        if close.exec() != QMessageBox.StandardButton.Yes:
             return
 
         self._plot_line.clear()
+        self._plot_data.clear()
         self.clear_found_lines()
         self.toolbar.trace_action.setChecked(False)
         self.toolbar.clear_action.setEnabled(False)
@@ -895,6 +923,7 @@ class App(GUI):
         self._cursor_x.setVisible(True)
         self._cursor_y.setVisible(True)
         self._canvas.replot()
+        self.status_bar.clearMessage()
         self.setWindowTitle(_translate('main window', 'Spectrometer Data Viewer'))
 
     def load_data(self, filename: str = '') -> bool:
