@@ -253,6 +253,9 @@ class GUI(QMainWindow):
         self.button_clear_lines.setText(_translate('main window', 'Clear Automatically Found Lines'))
         self.button_prev_line.setText(_translate('main window', 'Previous Line'))
         self.button_next_line.setText(_translate('main window', 'Next Line'))
+        self.button_clear_lines.setEnabled(False)
+        self.button_next_line.setEnabled(False)
+        self.button_prev_line.setEnabled(False)
 
         self.box_found_lines.setWindowTitle(_translate('main window', 'Found Lines'))
         self.model_found_lines.set_format([(3, 1e-6), (4, 1e3), (4, np.nan, self.settings.fancy_table_numbers)])

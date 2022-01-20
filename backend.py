@@ -730,6 +730,10 @@ class App(GUI):
         self.toolbar.save_trace_action.setEnabled(not self.model_found_lines.is_empty)
         self.toolbar.clear_trace_action.setEnabled(not self.model_found_lines.is_empty)
 
+        self.button_clear_lines.setEnabled(found_lines.size)
+        self.button_next_line.setEnabled(found_lines.size)
+        self.button_prev_line.setEnabled(found_lines.size)
+
         self._ignore_scale_change = False
 
         return cast(int, found_lines.size)
@@ -877,9 +881,12 @@ class App(GUI):
         self._canvas.replot()
 
         self.model_found_lines.set_lines(self._plot_data, self.user_found_lines_data)
-        self.toolbar.copy_trace_action.setEnabled(True)
-        self.toolbar.save_trace_action.setEnabled(True)
-        self.toolbar.clear_trace_action.setEnabled(True)
+        self.toolbar.copy_trace_action.setEnabled(self.model_found_lines.is_empty)
+        self.toolbar.save_trace_action.setEnabled(self.model_found_lines.is_empty)
+        self.toolbar.clear_trace_action.setEnabled(self.model_found_lines.is_empty)
+        self.button_clear_lines.setEnabled(False)
+        self.button_next_line.setEnabled(False)
+        self.button_prev_line.setEnabled(False)
 
     def clear_found_lines(self) -> None:
         self.automatically_found_lines.clear()
@@ -890,6 +897,9 @@ class App(GUI):
         self.toolbar.copy_trace_action.setEnabled(False)
         self.toolbar.save_trace_action.setEnabled(False)
         self.toolbar.clear_trace_action.setEnabled(False)
+        self.button_clear_lines.setEnabled(False)
+        self.button_next_line.setEnabled(False)
+        self.button_prev_line.setEnabled(False)
         self._canvas.replot()
 
     def clear(self) -> None:
