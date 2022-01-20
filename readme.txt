@@ -17,5 +17,6 @@ Required packages:
 Required Python: >= 3.8
 
 For developers. To add a translation, use
-   pylupdate5 -noobsolete *.py -ts xy_XY.ts
-   lrelease *.ts
+   pyside6-lupdate -noobsolete -tr-function-alias translate="_translate" *.py -ts translations/xy.ts
+   pyside6-linguist translations/*.ts
+   pyside6-lrelease translations/*.ts
