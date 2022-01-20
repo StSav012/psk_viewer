@@ -4,7 +4,7 @@ from typing import Iterable, Optional, Union
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QColor, QIcon, QKeySequence, QPalette
-from PySide6.QtWidgets import QToolBar, QWidget
+from PySide6.QtWidgets import QToolBar, QWidget, QApplication
 
 from utils import load_icon, mix_colors
 
@@ -115,6 +115,14 @@ class NavigationToolbar(QToolBar):
 
         self.differentiate_action.setCheckable(True)
         self.trace_action.setCheckable(True)
+
+        about_qt_action: QAction = QAction(self)
+        about_qt_action.setIcon(load_icon('qt_logo'))
+        about_qt_action.setMenuRole(QAction.MenuRole.AboutQtRole)
+        about_qt_action.setText(self.tr('About Qt'))
+        about_qt_action.triggered.connect(QApplication.aboutQt)
+        self.addSeparator()
+        self.addAction(about_qt_action)
 
     def add_shortcuts_to_tooltips(self) -> None:
         a: QAction
