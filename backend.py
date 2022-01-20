@@ -614,15 +614,14 @@ class App(GUI):
         self.set_marks_appearance()
         self.set_crosshair_lines_appearance()
         self.model_found_lines.set_format([(3, 1e-6), (4, 1e3), (4, np.nan, self.settings.fancy_table_numbers)])
-        if (self._data_mode == self.PSK_DATA_MODE
-                and self._plot_line.xData is not None and self._plot_line.xData.size > 1):
-            step: int = int(round(self.settings.jump / ((self._plot_line.xData[-1] - self._plot_line.xData[0])
-                                                        / (self._plot_line.xData.size - 1))))
-            self.toolbar.differentiate_action.setEnabled(0 < step < 0.25 * self._plot_line.xData.size)
-            # TODO:
-            #  - recalculate the second derivative if possible
-            #  - set the jump step size equal to the measurement grid size
-            self.display_gamma_or_voltage()
+        if self._data_mode == self.PSK_DATA_MODE and self._plot_data.frequency_span > 0.0:
+            jump: float = round(self.settings.jump / self._plot_data.frequency_step) * self._plot_data.frequency_step
+            self.toolbar.differentiate_action.setEnabled(0. < jump < 0.25 * self._plot_data.frequency_span)
+            if not (0. < jump < 0.25 * self._plot_data.frequency_span):
+                self.toolbar.differentiate_action.blockSignals(True)
+                self.toolbar.differentiate_action.setChecked(False)
+                self.toolbar.differentiate_action.blockSignals(False)
+        self.display_gamma_or_voltage()
 
     def hide_cursors(self) -> None:
         self._crosshair_h_line.setVisible(False)

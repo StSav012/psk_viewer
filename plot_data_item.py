@@ -45,8 +45,7 @@ class PlotDataItem:
     def frequency_data(self) -> np.ndarray:
         if np.isnan(self._jump):
             return self._frequency_data
-        step: int = int(round(self._jump /
-                              ((self._frequency_data[-1] - self._frequency_data[0]) / (self._frequency_data.size - 1))))
+        step: int = int(round(self._jump / self.frequency_step))
         if step == 0:
             return self._frequency_data
         if 2 * step >= self._frequency_data.size:
@@ -57,9 +56,7 @@ class PlotDataItem:
     def voltage_data(self) -> np.ndarray:
         if np.isnan(self._jump):
             return self._voltage_data
-        step: int = int(round(self._jump /
-                              ((self._frequency_data[-1] - self._frequency_data[0])
-                               / (self._frequency_data.size - 1))))
+        step: int = int(round(self._jump / self.frequency_step))
         if 2 * step >= self._voltage_data.size:
             return np.empty(0)
         if step == 0:
@@ -70,14 +67,31 @@ class PlotDataItem:
     def gamma_data(self) -> np.ndarray:
         if np.isnan(self._jump):
             return self._gamma_data
-        step: int = int(round(self._jump /
-                              ((self._frequency_data[-1] - self._frequency_data[0])
-                               / (self._frequency_data.size - 1))))
+        step: int = int(round(self._jump / self.frequency_step))
         if 2 * step >= self._gamma_data.size:
             return np.empty(0)
         if step == 0:
             return self._gamma_data
         return self._gamma_data[step:-step] - (self._gamma_data[2 * step:] + self._gamma_data[:-2 * step]) / 2.
+
+    @property
+    def frequency_span(self) -> float:
+        if not self._frequency_data.size:
+            return 0.
+        if np.isnan(self._jump):
+            return self._frequency_data[-1] - self._frequency_data[0]
+        step: int = int(round(self._jump /
+                              ((self._frequency_data[-1] - self._frequency_data[0])
+                               / (self._frequency_data.size - 1))))
+        if 2 * step >= self._frequency_data.size:
+            return 0.0
+        return self._frequency_data[-step - 1] - self._frequency_data[step]
+
+    @property
+    def frequency_step(self) -> float:
+        if not self._frequency_data.size:
+            return np.nan
+        return (self._frequency_data[-1] - self._frequency_data[0]) / (self._frequency_data.size - 1)
 
     @property
     def jump(self) -> float:
