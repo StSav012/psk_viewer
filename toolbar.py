@@ -8,6 +8,8 @@ from PySide6.QtWidgets import QToolBar, QWidget, QApplication
 
 from utils import load_icon, mix_colors
 
+__all__ = ['NavigationToolbar']
+
 
 class NavigationToolbar(QToolBar):
     def __init__(self, parent: QWidget, *,
