@@ -66,7 +66,7 @@ if __name__ == '__main__':
             break
     my_translator: QTranslator = QTranslator()
     for language in languages:
-        if my_translator.load(QLocale.system().bcp47Name(), resource_path('translations')):
+        if my_translator.load(language, resource_path('translations')):
             app.installTranslator(my_translator)
             break
 
