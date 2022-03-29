@@ -20,12 +20,13 @@ if __name__ == '__main__':
             pass
 
     if not hasattr(sys, '_MEIPASS'):  # if not embedded into an executable
-        import importlib
+        import platform
 
+        _PYSIDE6_RELEASE_PAGE: Final[str] = 'https://download.qt.io/official_releases/QtForPython/pyside6/'
         pip_updated: bool = False
         for package in REQUIREMENTS:
             try:
-                importlib.import_module(package)
+                __import__(package)
             except (ImportError, ModuleNotFoundError) as ex:
                 if str(ex).startswith('libOpenGL.so.0'):
                     print('Ensure that `libopengl0` is installed')
@@ -37,6 +38,11 @@ if __name__ == '__main__':
                     if subprocess.check_call((sys.executable, '-m', 'pip', 'install', '-U', 'pip')):
                         raise ex
                     pip_updated = True
+                if package == 'PySide6' and platform.win32_ver()[0] and int(platform.win32_ver()[0]) < 10:
+                    package = _PYSIDE6_RELEASE_PAGE + 'shiboken6-6.1.3-6.1.3-cp36.cp37.cp38.cp39-none-win_amd64.whl'
+                    if subprocess.check_call((sys.executable, '-m', 'pip', 'install', package)):
+                        raise ex
+                    package = _PYSIDE6_RELEASE_PAGE + 'PySide6-6.1.3-6.1.3-cp36.cp37.cp38.cp39-none-win_amd64.whl'
                 if subprocess.check_call((sys.executable, '-m', 'pip', 'install', package)):
                     raise ex
 
