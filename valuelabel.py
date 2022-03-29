@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import math
+import time
 from typing import Optional, List, Union, Tuple
 
 from PySide6.QtGui import QPaintEvent
 from PySide6.QtWidgets import QLabel, QWidget
 from pyqtgraph import functions as fn  # type: ignore
-from pyqtgraph import time
 
 __all__ = ['ValueLabel']
 
@@ -56,7 +56,7 @@ class ValueLabel(QLabel):
             self.formatStr = formatStr
 
     def setValue(self, value: Union[int, float]) -> None:
-        now: float = time()
+        now: float = time.monotonic()
         self.values.append((now, value))
         cutoff: float = now - self.averageTime
         while len(self.values) > 0 and self.values[0][0] < cutoff:
