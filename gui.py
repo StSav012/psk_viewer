@@ -2,11 +2,11 @@
 
 import os
 import re
-from typing import Any, Tuple, Type, cast
+from typing import Any, List, Optional, Tuple, Type, cast
 
 import numpy as np
 import pyqtgraph as pg  # type: ignore
-from PySide6.QtCore import QCoreApplication, Qt
+from PySide6.QtCore import QCoreApplication, QModelIndex, Qt
 from PySide6.QtGui import QKeySequence, QKeyEvent
 from PySide6.QtWidgets import QAbstractItemView, QCheckBox, QDockWidget, QFileDialog, QFormLayout, \
     QGridLayout, QMainWindow, QPushButton, QStatusBar, QTableView, QVBoxLayout, QWidget
@@ -23,14 +23,71 @@ _translate = QCoreApplication.translate
 
 
 class TableView(QTableView):
+    def __init__(self, settings: Settings, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
+        self.settings: Settings = settings
+
+    def stringify_table_plain_text(self, whole_table: bool = True) -> str:
+        """
+        Convert selected cells to string for copying as plain text
+        :return: the plain text representation of the selected table lines
+        """
+        model: FoundLinesModel = cast(FoundLinesModel, self.model())
+        text_matrix: List[List[str]]
+        if whole_table:
+            text_matrix = [[model.formatted_item(row, column)
+                            for column in range(model.columnCount())
+                            if not self.isColumnHidden(column)]
+                           for row in range(model.rowCount(available_count=True))]
+        else:
+            si: QModelIndex
+            rows: List[int] = sorted(list(set(si.row() for si in self.selectedIndexes())))
+            cols: List[int] = sorted(list(set(si.column() for si in self.selectedIndexes())))
+            text_matrix = [['' for _ in range(len(cols))]
+                           for _ in range(len(rows))]
+            for si in self.selectedIndexes():
+                text_matrix[rows.index(si.row())][cols.index(si.column())] = \
+                    model.formatted_item(si.row(), si.column())
+        row_texts: List[str]
+        text: List[str] = [self.settings.csv_separator.join(row_texts) for row_texts in text_matrix]
+        return self.settings.line_end.join(text)
+
+    def stringify_table_html(self, whole_table: bool = True) -> str:
+        """
+        Convert selected cells to string for copying as rich text
+        :return: the rich text representation of the selected table lines
+        """
+        model: FoundLinesModel = cast(FoundLinesModel, self.model())
+        text_matrix: List[List[str]]
+        if whole_table:
+            text_matrix = [[('<td>' + model.formatted_item(row, column) + '</td>')
+                            for column in range(model.columnCount())
+                            if not self.isColumnHidden(column)]
+                           for row in range(model.rowCount(available_count=True))]
+        else:
+            si: QModelIndex
+            rows: List[int] = sorted(list(set(si.row() for si in self.selectedIndexes())))
+            cols: List[int] = sorted(list(set(si.column() for si in self.selectedIndexes())))
+            text_matrix = [['' for _ in range(len(cols))]
+                           for _ in range(len(rows))]
+            for si in self.selectedIndexes():
+                text_matrix[rows.index(si.row())][cols.index(si.column())] = \
+                    '<td>' + model.formatted_item(si.row(), si.column()) + '</td>'
+        row_texts: List[str]
+        text: List[str] = [('<tr>' + self.settings.csv_separator.join(row_texts) + '</tr>')
+                           for row_texts in text_matrix]
+        text.insert(0, '<table>')
+        text.append('</table>')
+        return self.settings.line_end.join(text)
+
     def keyPressEvent(self, e: QKeyEvent) -> None:
         if e.matches(QKeySequence.StandardKey.Copy):
-            copy_to_clipboard(self.parent().parent().stringify_table_plain_text(False),
-                              self.parent().parent().stringify_table_html(False),
+            copy_to_clipboard(self.stringify_table_plain_text(False),
+                              self.stringify_table_html(False),
                               Qt.TextFormat.RichText)
             e.accept()
         elif e.matches(QKeySequence.StandardKey.SelectAll):
-            self.parent().parent().table_found_lines.selectAll()
+            self.selectAll()
             e.accept()
 
 
@@ -112,7 +169,7 @@ class GUI(QMainWindow):
         # Found Lines table
         self.box_found_lines: QDockWidget = QDockWidget(self.central_widget)
         self.box_found_lines.setObjectName('box_found_lines')
-        self.table_found_lines: TableView = TableView(self.box_found_lines)
+        self.table_found_lines: TableView = TableView(self.settings, self.box_found_lines)
         self.model_found_lines: FoundLinesModel = FoundLinesModel(self)
 
         self.status_bar: QStatusBar = QStatusBar()
@@ -190,27 +247,19 @@ class GUI(QMainWindow):
 
         # TODO: adjust size when undocked
         self.box_frequency.setWidget(self.group_frequency)
-        self.box_frequency.setFeatures(cast(QDockWidget.DockWidgetFeatures,
-                                            cast(int, self.box_frequency.features())
-                                            & ~self.box_frequency.DockWidgetClosable))
+        self.box_frequency.setFeatures(self.box_frequency.features() & ~self.box_frequency.DockWidgetClosable)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.box_frequency)
 
         self.box_voltage.setWidget(self.group_voltage)
-        self.box_voltage.setFeatures(cast(QDockWidget.DockWidgetFeatures,
-                                          cast(int, self.box_voltage.features())
-                                          & ~self.box_voltage.DockWidgetClosable))
+        self.box_voltage.setFeatures(self.box_voltage.features() & ~self.box_voltage.DockWidgetClosable)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.box_voltage)
 
         self.box_find_lines.setWidget(self.group_find_lines)
-        self.box_find_lines.setFeatures(cast(QDockWidget.DockWidgetFeatures,
-                                             cast(int, self.box_find_lines.features())
-                                             & ~self.box_find_lines.DockWidgetClosable))
+        self.box_find_lines.setFeatures(self.box_find_lines.features() & ~self.box_find_lines.DockWidgetClosable)
         self.addDockWidget(Qt.LeftDockWidgetArea, self.box_find_lines)
 
         self.box_found_lines.setWidget(self.table_found_lines)
-        self.box_found_lines.setFeatures(cast(QDockWidget.DockWidgetFeatures,
-                                              cast(int, self.box_found_lines.features())
-                                              & ~self.box_found_lines.DockWidgetClosable))
+        self.box_found_lines.setFeatures(self.box_found_lines.features() & ~self.box_found_lines.DockWidgetClosable)
         self.addDockWidget(Qt.RightDockWidgetArea, self.box_found_lines)
 
         self.grid_layout.addWidget(self.figure)
@@ -262,7 +311,7 @@ class GUI(QMainWindow):
         self.table_found_lines.setModel(self.model_found_lines)
         self.table_found_lines.setMouseTracking(True)
         self.table_found_lines.setContextMenuPolicy(Qt.ActionsContextMenu)
-        self.table_found_lines.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table_found_lines.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table_found_lines.setDropIndicatorShown(False)
         self.table_found_lines.setDragDropOverwriteMode(False)
         self.table_found_lines.setCornerButtonEnabled(False)

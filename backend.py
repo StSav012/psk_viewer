@@ -217,10 +217,9 @@ class App(GUI):
         close.setIcon(QMessageBox.Icon.Question)
         close.setWindowIcon(self.windowIcon())
         close.setWindowTitle(_translate('main window', 'Spectrometer Data Viewer'))
-        close.setStandardButtons(cast(QMessageBox.StandardButtons,
-                                      QMessageBox.StandardButton.Yes
-                                      | QMessageBox.StandardButton.No
-                                      | QMessageBox.StandardButton.Cancel))
+        close.setStandardButtons(QMessageBox.StandardButton.Yes
+                                 | QMessageBox.StandardButton.No
+                                 | QMessageBox.StandardButton.Cancel)
         close_code: QMessageBox.StandardButton = (QMessageBox.StandardButton.No
                                                   if self._plot_data.frequency_span > 0.0
                                                   else QMessageBox.StandardButton.Yes)
@@ -366,7 +365,7 @@ class App(GUI):
             return
 
         point: pg.SpotItem
-        if ev.modifiers() == Qt.Modifier.ShiftModifier:
+        if ev.modifiers() == Qt.Modifier.SHIFT:
             items: np.ndarray = item.scatter.data['item']
             index: np.ndarray = np.full(items.shape, True, np.bool_)
             for point in points:
@@ -497,8 +496,7 @@ class App(GUI):
         row: int
         for row in rows:
             index: QModelIndex = self.model_found_lines.index(row, 0)
-            sm.select(index,
-                      cast(QItemSelectionModel.SelectionFlags, QItemSelectionModel.Select | QItemSelectionModel.Rows))
+            sm.select(index, QItemSelectionModel.Select | QItemSelectionModel.Rows)
             self.table_found_lines.scrollTo(index)
 
     def spin_frequency_min_changed(self, new_value: float) -> None:
@@ -653,7 +651,7 @@ class App(GUI):
 
     @property
     def label(self) -> Optional[str]:
-        return cast(str, self._plot_line.name())
+        return self._plot_line.name()
 
     def set_frequency_range(self, lower_value: float, upper_value: float) -> None:
         self.figure.plotItem.setXRange(lower_value, upper_value, padding=0.0)
@@ -736,7 +734,7 @@ class App(GUI):
 
         self._ignore_scale_change = False
 
-        return cast(int, found_lines.size)
+        return found_lines.size
 
     def prev_found_line(self) -> None:
         if self.model_signal.size < 2:
@@ -786,59 +784,10 @@ class App(GUI):
             maximum: float = np.max(visible_points)
             self.set_voltage_range(min(y.range), maximum + 0.05 * (maximum - min(y.range)))
 
-    def stringify_table_plain_text(self, whole_table: bool = True) -> str:
-        """
-        Convert selected cells to string for copying as plain text
-        :return: the plain text representation of the selected table lines
-        """
-        text_matrix: List[List[str]]
-        if whole_table:
-            text_matrix = [[self.model_found_lines.formatted_item(row, column)
-                            for column in range(self.model_found_lines.columnCount())
-                            if not self.table_found_lines.isColumnHidden(column)]
-                           for row in range(self.model_found_lines.rowCount(available_count=True))]
-        else:
-            si: QModelIndex
-            rows: List[int] = sorted(list(set(si.row() for si in self.table_found_lines.selectedIndexes())))
-            cols: List[int] = sorted(list(set(si.column() for si in self.table_found_lines.selectedIndexes())))
-            text_matrix = [['' for _ in range(len(cols))]
-                           for _ in range(len(rows))]
-            for si in self.table_found_lines.selectedIndexes():
-                text_matrix[rows.index(si.row())][cols.index(si.column())] = \
-                    self.model_found_lines.formatted_item(si.row(), si.column())
-        row_texts: List[str]
-        text: List[str] = [self.settings.csv_separator.join(row_texts) for row_texts in text_matrix]
-        return self.settings.line_end.join(text)
-
-    def stringify_table_html(self, whole_table: bool = True) -> str:
-        """
-        Convert selected cells to string for copying as rich text
-        :return: the rich text representation of the selected table lines
-        """
-        text_matrix: List[List[str]]
-        if whole_table:
-            text_matrix = [[('<td>' + self.model_found_lines.formatted_item(row, column) + '</td>')
-                            for column in range(self.model_found_lines.columnCount())
-                            if not self.table_found_lines.isColumnHidden(column)]
-                           for row in range(self.model_found_lines.rowCount(available_count=True))]
-        else:
-            si: QModelIndex
-            rows: List[int] = sorted(list(set(si.row() for si in self.table_found_lines.selectedIndexes())))
-            cols: List[int] = sorted(list(set(si.column() for si in self.table_found_lines.selectedIndexes())))
-            text_matrix = [['' for _ in range(len(cols))]
-                           for _ in range(len(rows))]
-            for si in self.table_found_lines.selectedIndexes():
-                text_matrix[rows.index(si.row())][cols.index(si.column())] = \
-                    '<td>' + self.model_found_lines.formatted_item(si.row(), si.column()) + '</td>'
-        row_texts: List[str]
-        text: List[str] = [('<tr>' + self.settings.csv_separator.join(row_texts) + '</tr>')
-                           for row_texts in text_matrix]
-        text.insert(0, '<table>')
-        text.append('</table>')
-        return self.settings.line_end.join(text)
-
     def copy_found_lines(self) -> None:
-        copy_to_clipboard(self.stringify_table_plain_text(), self.stringify_table_html(), Qt.RichText)
+        copy_to_clipboard(self.table_found_lines.stringify_table_plain_text(),
+                          self.table_found_lines.stringify_table_html(),
+                          Qt.RichText)
 
     def save_found_lines(self) -> None:
         filename, _filter = self.save_file_dialog(_filter='CSV (*.csv);;XLSX (*.xlsx)')
@@ -908,8 +857,7 @@ class App(GUI):
         close.setIcon(QMessageBox.Icon.Question)
         close.setWindowIcon(self.windowIcon())
         close.setWindowTitle(_translate('main window', 'Spectrometer Data Viewer'))
-        close.setStandardButtons(cast(QMessageBox.StandardButtons,
-                                      QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel))
+        close.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel)
         if close.exec() != QMessageBox.StandardButton.Yes:
             return
 
