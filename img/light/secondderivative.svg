@@ -1,1 +1,12 @@
-<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><g fill="none" stroke="#4d4d4d" stroke-width="1px"><g id="c" transform="translate(3.62 1.85)"><path d="m6 4.2v8.78"/><ellipse cx="3.75" cy="10" rx="2.25" ry="2.5"/></g><path id="b" d="m11.8 5.75c-0.0034-1.98 3.75-1.23 0.525 2.28h1.89"/><path d="m23.6 4.63-18.7 22.9"/><path id="a" d="m20.7 21.8 2.85 5.78"/><g height="100%" width="100%"><use transform="translate(8.22 13)" xlink:href="#c"/><use transform="translate(13.3 14.9)" xlink:href="#b"/><use transform="matrix(-1 0 0 1 44.2 0)" xlink:href="#a"/></g></g></svg>
+<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" fill="none" stroke="#4d4d4d" stroke-width="1px">
+    <g id="d">
+        <path d="m9.5 4.5v10.5"/>
+        <ellipse cx="7.25" cy="12" rx="2.25" ry="2.5"/>
+    </g>
+    <path id="2" d="m11.75 6c-0-2 3.75-1.25 0.5 2.25h1.8"/>
+    <path d="m23.5 4.5-18.75 23"/>
+    <path id="x" d="m20 22 3 5.75"/>
+    <use transform="translate(8.25 13)" xlink:href="#d"/>
+    <use transform="translate(13 13)" xlink:href="#2"/>
+    <use transform="matrix(-1 0 0 1 43 0)" xlink:href="#x"/>
+</svg>
