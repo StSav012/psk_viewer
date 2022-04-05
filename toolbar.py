@@ -140,12 +140,12 @@ class NavigationToolbar(QToolBar):
         self.addAction(about_qt_action)
 
     def add_shortcuts_to_tooltips(self) -> None:
-        a: QAction
         tooltip_text_color: QColor = self.palette().color(QPalette.ToolTipText)
         tooltip_base_color: QColor = self.palette().color(QPalette.ToolTipBase)
         shortcut_color: QColor = mix_colors(tooltip_text_color, tooltip_base_color)
+        a: QAction
         for a in self.actions():
-            if a.shortcut():
+            if not a.shortcut().isEmpty() and a.toolTip():
                 a.setToolTip(f'<p style="white-space:pre">{a.toolTip()}&nbsp;&nbsp;'
                              f'<code style="color:{shortcut_color.name()};font-size:small">'
                              f'{a.shortcut().toString(QKeySequence.NativeText)}</code></p>')
