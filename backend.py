@@ -9,7 +9,7 @@ import pyqtgraph as pg  # type: ignore
 import pyqtgraph.exporters  # type: ignore
 from PySide6.QtCore import QByteArray, QCoreApplication, QItemSelectionModel, QModelIndex, \
     QPoint, QPointF, QRect, QRectF, Qt
-from PySide6.QtGui import QAction, QBrush, QPalette, QPen, QScreen, QCloseEvent
+from PySide6.QtGui import QAction, QBrush, QCloseEvent, QPalette, QPen, QScreen
 from PySide6.QtWidgets import QHeaderView, QMessageBox
 from pyqtgraph import PlotWidget
 from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent  # type: ignore
@@ -74,12 +74,14 @@ class App(GUI):
         self._is_dark: bool = self.palette().color(QPalette.Window).lightness() < 128
 
         self.toolbar: NavigationToolbar = NavigationToolbar(self, parameters_icon='configure')
-        self.addToolBar(Qt.TopToolBarArea, self.toolbar)
+        self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.toolbar)
 
         self._canvas: pg.PlotItem = self.figure.getPlotItem()
         self._view_all_action: QAction = QAction()
 
+        self._ghost_line: pg.PlotDataItem = self.figure.plot(np.empty(0), name='')
         self._plot_line: pg.PlotDataItem = self.figure.plot(np.empty(0), name='')
+        self._ghost_data: PlotDataItem = PlotDataItem()
         self._plot_data: PlotDataItem = PlotDataItem()
 
         self._ignore_scale_change: bool = False
@@ -172,6 +174,11 @@ class App(GUI):
         self.toolbar.open_action.setToolTip(_translate("plot toolbar action", "Load spectrometer data"))
         self.toolbar.clear_action.setIconText(_translate("plot toolbar action", "Clear"))
         self.toolbar.clear_action.setToolTip(_translate("plot toolbar action", "Clear lines and markers"))
+        self.toolbar.open_ghost_action.setIconText(_translate("plot toolbar action", "Open Ghost"))
+        self.toolbar.open_ghost_action.setToolTip(_translate("plot toolbar action",
+                                                             "Load spectrometer data as a background curve"))
+        self.toolbar.clear_ghost_action.setIconText(_translate("plot toolbar action", "Clear Ghost"))
+        self.toolbar.clear_ghost_action.setToolTip(_translate("plot toolbar action", "Clear the background curve"))
         self.toolbar.differentiate_action.setIconText(_translate("plot toolbar action",
                                                                  "Calculate second derivative"))
         self.toolbar.differentiate_action.setToolTip(_translate("plot toolbar action",
@@ -264,6 +271,8 @@ class App(GUI):
     def setup_ui_actions(self) -> None:
         self.toolbar.open_action.triggered.connect(lambda: cast(None, self.load_data()))
         self.toolbar.clear_action.triggered.connect(self.clear)
+        self.toolbar.open_ghost_action.triggered.connect(lambda: cast(None, self.load_ghost_data()))
+        self.toolbar.clear_ghost_action.triggered.connect(self.clear_ghost)
         self.toolbar.differentiate_action.toggled.connect(self.calculate_second_derivative)
         self.toolbar.save_data_action.triggered.connect(self.save_data)
         self.toolbar.copy_figure_action.triggered.connect(self.copy_figure)
@@ -661,6 +670,7 @@ class App(GUI):
 
     def set_plot_line_appearance(self) -> None:
         self._plot_line.setPen(pg.mkPen(self.settings.line_color, width=0.5 * self.settings.line_thickness))
+        self._ghost_line.setPen(pg.mkPen(self.settings.ghost_line_color, width=0.5 * self.settings.line_thickness))
         self._canvas.replot()
 
     def set_marks_appearance(self) -> None:
@@ -861,11 +871,15 @@ class App(GUI):
         if close.exec() != QMessageBox.StandardButton.Yes:
             return
 
+        self._ghost_line.clear()
         self._plot_line.clear()
+        self._ghost_data.clear()
         self._plot_data.clear()
         self.clear_found_lines()
         self.toolbar.trace_action.setChecked(False)
         self.toolbar.clear_action.setEnabled(False)
+        self.toolbar.open_ghost_action.setEnabled(False)
+        self.toolbar.clear_ghost_action.setEnabled(False)
         self.toolbar.differentiate_action.setEnabled(False)
         self.toolbar.save_data_action.setEnabled(False)
         self.toolbar.copy_figure_action.setEnabled(False)
@@ -884,7 +898,15 @@ class App(GUI):
         self.status_bar.clearMessage()
         self.setWindowTitle(_translate('main window', 'Spectrometer Data Viewer'))
 
+    def clear_ghost(self) -> None:
+        self._ghost_line.clear()
+        self._ghost_data.clear()
+        self.toolbar.clear_ghost_action.setEnabled(False)
+        self._canvas.replot()
+
     def load_data(self, filename: str = '') -> bool:
+        self.clear_ghost()
+
         if not filename:
             _filter: str
             _formats: List[str] = [
@@ -970,6 +992,66 @@ class App(GUI):
 
         self.setWindowTitle(_translate('main window', '%s — Spectrometer Data Viewer') % filename)
 
+        self.toolbar.open_ghost_action.setEnabled(True)
+
+        return True
+
+    def load_ghost_data(self, filename: str = '') -> bool:
+        if not filename:
+            _filter: str
+            _formats: List[str] = [
+                'PSK Spectrometer (*.conf *.scandat)',
+                'Fast Sweep Spectrometer (*.fmd)',
+            ]
+            filename, _filter = self.open_file_dialog(_filter=';;'.join(_formats))
+        v: np.ndarray
+        f: np.ndarray
+        g: np.ndarray = np.empty(0)
+        jump: float
+        fn: str
+        if filename.casefold().endswith('.scandat'):
+            fn = os.path.splitext(filename)[0]
+            f, v, g, jump = load_data_scandat(filename, self)
+            if f.size and v.size:
+                if jump > 0.0:
+                    if self._data_mode != self.PSK_WITH_JUMP_DATA_MODE:
+                        return False
+                else:
+                    if self._data_mode != self.PSK_DATA_MODE:
+                        return False
+        elif filename.casefold().endswith(('.csv', '.conf')):
+            fn = os.path.splitext(filename)[0]
+            f, v, g, jump = load_data_csv(filename)
+            if f.size and v.size:
+                if jump > 0.0:
+                    if self._data_mode != self.PSK_WITH_JUMP_DATA_MODE:
+                        return False
+                else:
+                    if self._data_mode != self.PSK_DATA_MODE:
+                        return False
+        elif filename.casefold().endswith(('.fmd', '.frd')):
+            fn = os.path.splitext(filename)[0]
+            f, v = load_data_fs(filename)
+            if f.size and v.size:
+                if self._data_mode != self.FS_DATA_MODE:
+                    return False
+        else:
+            return False
+
+        if not (f.size and v.size):
+            return False
+
+        new_label: str = os.path.split(fn)[-1]
+
+        self._ghost_line.setData(f,
+                                 (g if self.switch_data_action.isChecked() else v),
+                                 name=new_label)
+        self._ghost_data.set_data(frequency_data=f, gamma_data=g, voltage_data=v)
+
+        self.toolbar.clear_ghost_action.setEnabled(True)
+
+        self.display_gamma_or_voltage()
+
         return True
 
     @property
@@ -985,6 +1067,7 @@ class App(GUI):
 
     def on_switch_data_action_toggled(self, new_state: bool) -> None:
         self._plot_data.data_type = PlotDataItem.GAMMA_DATA if new_state else PlotDataItem.VOLTAGE_DATA
+        self._ghost_data.data_type = PlotDataItem.GAMMA_DATA if new_state else PlotDataItem.VOLTAGE_DATA
         self.set_config_value('display', 'unit', self._plot_data.data_type)
         self.display_gamma_or_voltage(new_state)
 
@@ -994,8 +1077,10 @@ class App(GUI):
 
         if self.toolbar.differentiate_action.isChecked():
             self._plot_data.jump = self.settings.jump
+            self._ghost_data.jump = self.settings.jump
         else:
             self._plot_data.jump = np.nan
+            self._ghost_data.jump = np.nan
 
         if display_gamma:
             self.box_voltage.setWindowTitle(_translate('main window', 'Absorption'))
@@ -1014,6 +1099,9 @@ class App(GUI):
             self.spin_voltage_min.setMaximum(max(max_y, self.spin_voltage_min.value()))
             self.spin_voltage_max.setMinimum(min(min_y, self.spin_voltage_max.value()))
             self._loading = False
+
+        if self._ghost_data:  # something is loaded
+            self._ghost_line.setData(self._ghost_data.x_data, self._ghost_data.y_data)
 
         if self.automatically_found_lines_data.size:  # something is marked
             self.automatically_found_lines.setData(

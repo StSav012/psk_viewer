@@ -66,6 +66,7 @@ class Settings(QSettings):
             },
             _translate('preferences', 'Line'): {
                 _translate('preferences', 'Color:'): ('line_color',),
+                _translate('preferences', 'Ghost Color:'): ('ghost_line_color',),
                 _translate('preferences', 'Thickness:'): (line_opts, 'line_thickness',)
             },
             _translate('preferences', 'Marks'): {
@@ -120,6 +121,19 @@ class Settings(QSettings):
     @line_color.setter
     def line_color(self, new_value: QColor) -> None:
         self.beginGroup('plotLine')
+        self.setValue('color', new_value)
+        self.endGroup()
+
+    @property
+    def ghost_line_color(self) -> QColor:
+        self.beginGroup('ghostLine')
+        v: QColor = cast(QColor, self.value('color', pg.mkColor('#888')))
+        self.endGroup()
+        return v
+
+    @ghost_line_color.setter
+    def ghost_line_color(self, new_value: QColor) -> None:
+        self.beginGroup('ghostLine')
         self.setValue('color', new_value)
         self.endGroup()
 

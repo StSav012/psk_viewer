@@ -4,7 +4,7 @@ from typing import Iterable, Optional, Union
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QColor, QIcon, QKeySequence, QPalette
-from PySide6.QtWidgets import QToolBar, QWidget, QApplication
+from PySide6.QtWidgets import QApplication, QToolBar, QWidget
 
 from utils import load_icon, mix_colors
 
@@ -18,13 +18,15 @@ class NavigationToolbar(QToolBar):
         super().__init__('Navigation Toolbar', parent)
         self.setObjectName('NavigationToolbar')
 
-        self.setAllowedAreas(Qt.AllToolBarAreas)
+        self.setAllowedAreas(Qt.ToolBarArea.AllToolBarAreas)
 
         self.parameters_title: str = parameters_title
         self.parameters_icon: Optional[QIcon] = (load_icon(parameters_icon) if isinstance(parameters_icon, str)
                                                  else parameters_icon)
 
         self.open_action: QAction = QAction(self)
+        self.open_ghost_action: QAction = QAction(self)
+        self.clear_ghost_action: QAction = QAction(self)
         self.clear_action: QAction = QAction(self)
         self.differentiate_action: QAction = QAction(self)
         self.save_data_action: QAction = QAction(self)
@@ -36,12 +38,13 @@ class NavigationToolbar(QToolBar):
         self.clear_trace_action: QAction = QAction(self)
         self.configure_action: QAction = QAction(self)
 
-        # TODO: add keyboard shortcuts
         a: QAction
         i: str
         for a, i in zip([
             self.open_action,
             self.clear_action,
+            self.open_ghost_action,
+            self.clear_ghost_action,
             self.differentiate_action,
             self.save_data_action,
             self.copy_figure_action,
@@ -53,6 +56,7 @@ class NavigationToolbar(QToolBar):
             self.configure_action
         ], [
             'open', 'delete',
+            'openGhost', 'deleteGhost',
             'secondDerivative',
             'saveTable',
             'copyImage',
@@ -65,6 +69,8 @@ class NavigationToolbar(QToolBar):
         for a, i in zip([
             self.open_action,
             self.clear_action,
+            self.open_ghost_action,
+            self.clear_ghost_action,
             self.differentiate_action,
             self.save_data_action,
             self.copy_figure_action,
@@ -77,6 +83,8 @@ class NavigationToolbar(QToolBar):
         ], [
             'Ctrl+O',
             'Ctrl+W',
+            '',
+            '',
             'Ctrl+/',
             '',
             '', '',
@@ -92,6 +100,9 @@ class NavigationToolbar(QToolBar):
         self.addAction(self.open_action)
         self.addAction(self.clear_action)
         self.addSeparator()
+        self.addAction(self.open_ghost_action)
+        self.addAction(self.clear_ghost_action)
+        self.addSeparator()
         self.addAction(self.differentiate_action)
         self.addSeparator()
         self.addAction(self.save_data_action)
@@ -106,6 +117,8 @@ class NavigationToolbar(QToolBar):
         self.addAction(self.configure_action)
 
         self.clear_action.setEnabled(False)
+        self.open_ghost_action.setEnabled(False)
+        self.clear_ghost_action.setEnabled(False)
         self.differentiate_action.setEnabled(False)
         self.save_data_action.setEnabled(False)
         self.copy_figure_action.setEnabled(False)
