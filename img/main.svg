@@ -7,9 +7,8 @@
         </linearGradient>
     </defs>
     <rect width="64" height="64" fill="url(#g)"/>
-    <g fill="none" stroke-width="1px">
-        <path d="M32 0v64" stroke="#fff"/>
-        <path d="M0 42.4h64" stroke="#fff"/>
-        <path d="m.4 42.4c31.6 43.7 22.4-35.9 31.5-35.9 9.31 1e-7.1 79.6 31.7 35.9" stroke="#000"/>
+    <g fill="none" stroke-width="1">
+        <path d="M32 0v64M0 42.4h64" stroke="foreground"/>
+        <path d="m.4 42.4c31.6 43.7 22.4-35.9 31.5-35.9 9.31 1e-7.1 79.6 31.7 35.9" stroke="background"/>
     </g>
 </svg>

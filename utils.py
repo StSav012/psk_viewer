@@ -2,11 +2,11 @@
 
 import os
 import sys
-from typing import Final, Union, Tuple, List
+from typing import Final, List, Tuple, Union
 
 import numpy as np  # type: ignore
-from PySide6.QtCore import Qt, QCoreApplication
-from PySide6.QtGui import QIcon, QPalette, QPixmap, QColor
+from PySide6.QtCore import QCoreApplication, Qt
+from PySide6.QtGui import QColor, QIcon, QPalette, QPixmap
 from PySide6.QtWidgets import QInputDialog, QWidget
 
 _translate = QCoreApplication.translate
@@ -26,10 +26,15 @@ IMAGE_EXT: str = '.svg'
 
 def load_icon(filename: str) -> QIcon:
     is_dark: bool = QPalette().color(QPalette.Window).lightness() < 128
-    icon: QIcon = QIcon()
-    icon.addPixmap(QPixmap(resource_path(os.path.join('img', 'dark' if is_dark else 'light', filename + IMAGE_EXT))),
-                   QIcon.Normal, QIcon.Off)
-    return icon
+    pixmap: QPixmap = QPixmap()
+    with open(resource_path(os.path.join('img', filename + IMAGE_EXT)), 'rb') as f_in:
+        data: bytes = (f_in.read()
+                       .replace(b'"grey"', b'"#b2b2b2"' if is_dark else b'"#4d4d4d"')
+                       .replace(b'"background"', b'"#000"' if is_dark else b'"#fff"')
+                       .replace(b'"foreground"', b'"#fff"' if is_dark else b'"#000"')
+                       )
+        pixmap.loadFromData(data)
+    return QIcon(pixmap)
 
 
 def mix_colors(color_1: QColor, color_2: QColor, ratio_1: float = 0.5) -> QColor:

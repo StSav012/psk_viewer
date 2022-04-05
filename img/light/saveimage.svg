@@ -1,7 +1,0 @@
-<svg version="1.1" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#4d4d4d">
-    <path d="m4 4v1 15h1 7.8v-1h-4.8v-6h4.8v-0.6h4.2v-0.4h-1-8-1v7h-2v-14h3v4 1h8v-1-4h0.3l2.71 2.71v0.3 4.4h1v-4.4-0.7h-0l0-0-3.3-3.3-0 0v-0h-0.7-12zm5 1h3.9v4h-3.9v-4z"/>
-    <g transform="matrix(.6 0 0 .6 12.74 12.36)">
-        <path d="M0 0L16 0L16 16L0 16zM1 1v14 l5-5 1 1 4-4 4 4 v-10h-14"/>
-        <circle cx="4" cy="4" r="2"/>
-    </g>
-</svg>
