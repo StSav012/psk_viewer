@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-
-from typing import Dict, List, Optional, Tuple, Union
+from __future__ import annotations
 
 import pyqtgraph as pg  # type: ignore
-from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QGroupBox, \
-    QVBoxLayout, QWidget
+from qtpy.QtGui import QColor
+from qtpy.QtWidgets import (QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QGroupBox,
+                            QVBoxLayout, QWidget)
 
 from colorselector import ColorSelector
 from settings import Settings
@@ -16,7 +15,7 @@ __all__ = ['Preferences']
 class Preferences(QDialog):
     """ GUI preferences dialog """
 
-    def __init__(self, settings: Settings, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, settings: Settings, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
         self.settings: Settings = settings
@@ -32,22 +31,16 @@ class Preferences(QDialog):
 
         layout: QVBoxLayout = QVBoxLayout(self)
         key: str
-        value: Dict[str, Union[
-            Tuple[str],
-            Tuple[Dict[str, Union[bool, int, float, str]], str],
-            Tuple[List[str], List[str], str],
-        ]]
+        value: dict[str, (tuple[str]
+                          | tuple[dict[str, bool | int | float | str], str]
+                          | tuple[list[str], list[str], str])]
         for key, value in self.settings.dialog.items():
             if not (isinstance(value, dict) and value):
                 continue
             box: QGroupBox = QGroupBox(key, self)
             box_layout: QFormLayout = QFormLayout(box)
             key2: str
-            value2: Union[
-                Tuple[str],
-                Tuple[Dict[str, Union[bool, int, float, str]], str],
-                Tuple[List[str], List[str], str],
-            ]
+            value2: tuple[str] | tuple[dict[str, bool | int | float | str], str] | tuple[list[str], list[str], str]
             for key2, value2 in value.items():
                 if not (isinstance(value2, tuple) and isinstance(value2[-1], str) and value2[-1]):
                     continue  # a callback name should be the last in the tuple
@@ -66,7 +59,7 @@ class Preferences(QDialog):
                         box_layout.addRow(key2, color_selector)
                     # no else
                 elif len(value2) == 2:
-                    value3: Dict[str, Union[bool, int, float, str]]
+                    value3: dict[str, bool | int | float | str]
                     value3 = value2[0]
                     if isinstance(getattr(self.settings, value2[-1]), float) and isinstance(value3, dict):
                         spin_box = pg.SpinBox(box, getattr(self.settings, value2[-1]))
@@ -76,8 +69,8 @@ class Preferences(QDialog):
                         box_layout.addRow(key2, spin_box)
                     # no else
                 elif len(value2) == 3:
-                    value3a: List[str]
-                    value3b: List[str]
+                    value3a: list[str]
+                    value3b: list[str]
                     value3a = value2[0]
                     value3b = value2[1]
                     if isinstance(value3a, (list, tuple)) and isinstance(value3b, (list, tuple)):
@@ -92,12 +85,12 @@ class Preferences(QDialog):
                     # no else
                 # no else
             layout.addWidget(box)
-        buttons: QDialogButtonBox = QDialogButtonBox(QDialogButtonBox.Close, self)
+        buttons: QDialogButtonBox = QDialogButtonBox(QDialogButtonBox.StandardButton.Close, self)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
 
     # https://forum.qt.io/post/671245
-    def _on_event(self, x: Union[bool, float, QColor], sender: QWidget) -> None:
+    def _on_event(self, x: bool | float | QColor, sender: QWidget) -> None:
         setattr(self.settings, getattr(sender, 'callback'), x)
 
     def _on_combo_box_current_index_changed(self, _: int, sender: QComboBox) -> None:

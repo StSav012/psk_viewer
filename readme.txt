@@ -1,18 +1,14 @@
 IPM RAS PSK and FS spectrometer files viewer
 
 Required packages:
-  • et-xmlfile
-  • numpy
-  • openpyxl
-  • pandas
-  • pyqtgraph
-  • PySide6
-  • python-dateutil
-  • pytz
-  • scipy
-  • shiboken6
-  • six
+  • pandas,
+  • pyqtgraph,
+  • QtPy,
+  • scipy,
+  • any of PyQt6, PySide6, PyQt5, PySide2, whichever compatible with the Python and the OS.
 
+Optional packages:
+  • openpyxl.
 
 Required Python: >= 3.8
 

@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+from __future__ import annotations
 
 from typing import Final
 
 import numpy as np
+from numpy.typing import NDArray
 
 __all__ = ['PlotDataItem']
 
@@ -15,15 +17,15 @@ class PlotDataItem:
     _data_type: str = VOLTAGE_DATA
 
     def __init__(self) -> None:
-        self._frequency_data: np.ndarray = np.empty(0)
-        self._voltage_data: np.ndarray = np.empty(0)
-        self._gamma_data: np.ndarray = np.empty(0)
+        self._frequency_data: NDArray[np.float64] = np.empty(0)
+        self._voltage_data: NDArray[np.float64] = np.empty(0)
+        self._gamma_data: NDArray[np.float64] = np.empty(0)
 
     def __bool__(self) -> bool:
         return bool(self._frequency_data.size and (self._voltage_data.size or self._gamma_data.size))
 
-    def set_data(self, frequency_data: np.ndarray, voltage_data: np.ndarray,
-                 gamma_data: np.ndarray = np.empty(0)) -> None:
+    def set_data(self, frequency_data: NDArray[np.float64], voltage_data: NDArray[np.float64],
+                 gamma_data: NDArray[np.float64] = np.empty(0)) -> None:
         if frequency_data.size != voltage_data.size:
             raise ValueError('Frequency and voltage data must be of the same size, but the sizes are '
                              f'{frequency_data.size} and {voltage_data.size}')
@@ -36,7 +38,7 @@ class PlotDataItem:
             raise ValueError(f'Voltage data must be a 1D array, but it is {voltage_data.ndim}D')
         if gamma_data.size != 0 and gamma_data.ndim != 1:
             raise ValueError(f'Absorption data must be a 1D array, but it is {gamma_data.ndim}D')
-        sorting_indices: np.ndarray = np.argsort(frequency_data)
+        sorting_indices: NDArray[np.float64] = np.argsort(frequency_data)
         self._frequency_data = frequency_data[sorting_indices]
         self._voltage_data = voltage_data[sorting_indices]
         self._gamma_data = gamma_data[sorting_indices]
@@ -48,7 +50,7 @@ class PlotDataItem:
         self.jump = np.nan
 
     @property
-    def frequency_data(self) -> np.ndarray:
+    def frequency_data(self) -> NDArray[np.float64]:
         if np.isnan(self._jump):
             return self._frequency_data
         step: int = int(round(self._jump / self.frequency_step))
@@ -59,7 +61,7 @@ class PlotDataItem:
         return self._frequency_data[step:-step]
 
     @property
-    def voltage_data(self) -> np.ndarray:
+    def voltage_data(self) -> NDArray[np.float64]:
         if np.isnan(self._jump):
             return self._voltage_data
         step: int = int(round(self._jump / self.frequency_step))
@@ -70,7 +72,7 @@ class PlotDataItem:
         return self._voltage_data[step:-step] - (self._voltage_data[2 * step:] + self._voltage_data[:-2 * step]) / 2.
 
     @property
-    def gamma_data(self) -> np.ndarray:
+    def gamma_data(self) -> NDArray[np.float64]:
         if np.isnan(self._jump):
             return self._gamma_data
         step: int = int(round(self._jump / self.frequency_step))
@@ -120,11 +122,11 @@ class PlotDataItem:
         PlotDataItem._data_type = new_value
 
     @property
-    def x_data(self) -> np.ndarray:
+    def x_data(self) -> NDArray[np.float64]:
         return self.frequency_data
 
     @property
-    def y_data(self) -> np.ndarray:
+    def y_data(self) -> NDArray[np.float64]:
         if self.data_type == PlotDataItem.VOLTAGE_DATA:
             return self.voltage_data
         elif self.data_type == PlotDataItem.GAMMA_DATA:

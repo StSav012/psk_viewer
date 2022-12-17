@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
+from __future__ import annotations
 
 import os
 import sys
-from typing import Final, List, Tuple, Union
+from typing import Final
 
-import numpy as np  # type: ignore
-from PySide6.QtCore import QCoreApplication, Qt
-from PySide6.QtGui import QColor, QIcon, QPalette, QPixmap
-from PySide6.QtWidgets import QInputDialog, QWidget
+import numpy as np
+from numpy.typing import NDArray
+from qtpy.QtCore import QCoreApplication, Qt
+from qtpy.QtGui import QColor, QIcon, QPalette, QPixmap
+from qtpy.QtWidgets import QInputDialog, QWidget
 
 _translate = QCoreApplication.translate
 
@@ -25,7 +27,7 @@ IMAGE_EXT: str = '.svg'
 
 
 def load_icon(filename: str) -> QIcon:
-    is_dark: bool = QPalette().color(QPalette.Window).lightness() < 128
+    is_dark: bool = QPalette().color(QPalette.ColorRole.Window).lightness() < 128
     pixmap: QPixmap = QPixmap()
     with open(resource_path(os.path.join('img', filename + IMAGE_EXT)), 'rb') as f_in:
         data: bytes = (f_in.read()
@@ -81,25 +83,25 @@ def superscript_tag(html: str) -> str:
     return text
 
 
-def copy_to_clipboard(plain_text: str, rich_text: str = '', text_type: Union[Qt.TextFormat, str] = Qt.PlainText) \
-        -> None:
-    from PySide6.QtGui import QClipboard
-    from PySide6.QtCore import QMimeData
-    from PySide6.QtWidgets import QApplication
+def copy_to_clipboard(plain_text: str, rich_text: str = '',
+                      text_type: Qt.TextFormat | str = Qt.TextFormat.PlainText) -> None:
+    from qtpy.QtGui import QClipboard
+    from qtpy.QtCore import QMimeData
+    from qtpy.QtWidgets import QApplication
 
     clipboard: QClipboard = QApplication.clipboard()
     mime_data: QMimeData = QMimeData()
     if isinstance(text_type, str):
         mime_data.setData(text_type, plain_text.encode())
-    elif text_type == Qt.RichText:
+    elif text_type == Qt.TextFormat.RichText:
         mime_data.setHtml(rich_text)
         mime_data.setText(plain_text)
     else:
         mime_data.setText(plain_text)
-    clipboard.setMimeData(mime_data, QClipboard.Clipboard)
+    clipboard.setMimeData(mime_data, QClipboard.Mode.Clipboard)
 
 
-def load_data_fs(filename: str) -> Tuple[np.ndarray, np.ndarray]:
+def load_data_fs(filename: str) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     fn: str
     if filename.casefold().endswith(('.fmd', '.frd')):
         fn = os.path.splitext(filename)[0]
@@ -121,25 +123,25 @@ def load_data_fs(filename: str) -> Tuple[np.ndarray, np.ndarray]:
     else:
         return np.empty(0), np.empty(0)
     if not np.isnan(min_frequency) and not np.isnan(max_frequency) and os.path.exists(fn + '.frd'):
-        y: np.ndarray = np.loadtxt(fn + '.frd', usecols=(0,))
-        x: np.ndarray = np.linspace(min_frequency, max_frequency,
-                                    num=y.size, endpoint=False)
+        y: NDArray[np.float64] = np.loadtxt(fn + '.frd', usecols=(0,))
+        x: NDArray[np.float64] = np.linspace(min_frequency, max_frequency,
+                                             num=y.size, endpoint=False)
         return x, y
     return np.empty(0), np.empty(0)
 
 
 def load_data_scandat(filename: str, parent: QWidget) \
-        -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
+        -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64], float]:
     with open(filename, 'rt') as f_in:
-        lines: List[str] = f_in.readlines()
+        lines: list[str] = f_in.readlines()
 
     min_frequency: float
     frequency_step: float
     frequency_jump: float
-    x: np.ndarray
-    y: np.ndarray
+    x: NDArray[np.float64]
+    y: NDArray[np.float64]
     bias_offset: float
-    bias: np.ndarray
+    bias: NDArray[np.float64]
     cell_length: float
 
     if lines[0].startswith('*****'):
@@ -199,13 +201,13 @@ def load_data_scandat(filename: str, parent: QWidget) \
                                                  0.1,
                                                  1000.0,
                                                  1,
-                                                 Qt.WindowFlags(),
+                                                 Qt.WindowType.Dialog,
                                                  0.1
                                                  )
     return x, y, y / bias / cell_length / VOLTAGE_GAIN, frequency_jump
 
 
-def load_data_csv(filename: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray, float]:
+def load_data_csv(filename: str) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64], float]:
     fn: str
     if filename.casefold().endswith(('.csv', '.conf')):
         fn = os.path.splitext(filename)[0]
@@ -213,10 +215,10 @@ def load_data_csv(filename: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray, fl
         fn = filename
     if os.path.exists(fn + '.csv') and os.path.exists(fn + '.conf'):
         with open(fn + '.csv', 'rt') as f_in:
-            lines: List[str] = list(filter(lambda line: line[0].isdigit(), f_in.readlines()))
-        x: np.ndarray = np.array([float(line.split()[1]) for line in lines]) * 1e6
-        y: np.ndarray = np.array([float(line.split()[2]) for line in lines]) * 1e-3
-        g: np.ndarray = np.array([float(line.split()[4]) for line in lines])
+            lines: list[str] = list(filter(lambda line: line[0].isdigit(), f_in.readlines()))
+        x: NDArray[np.float64] = np.array([float(line.split()[1]) for line in lines]) * 1e6
+        y: NDArray[np.float64] = np.array([float(line.split()[2]) for line in lines]) * 1e-3
+        g: NDArray[np.float64] = np.array([float(line.split()[4]) for line in lines])
         with open(fn + '.conf', 'rt') as f_in:
             frequency_jump: float = float(next(
                 filter(lambda line: line.startswith('F(jump) [MHz]:'), f_in.readlines())

@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+from __future__ import annotations
 
-from typing import Final, Iterable, List, Optional, Tuple, Union, cast
+from typing import Final, Iterable, cast
 
 import numpy as np
-from PySide6.QtCore import QAbstractTableModel, QModelIndex, QObject, Qt
+from numpy.typing import NDArray
+from qtpy.QtCore import QAbstractTableModel, QModelIndex, QObject, Qt
 
 from utils import superscript_tag
 
@@ -13,18 +15,18 @@ __all__ = ('DataModel',)
 class DataModel(QAbstractTableModel):
     ROW_BATCH_COUNT: Final[int] = 5
 
-    def __init__(self, parent: Optional[QObject] = None) -> None:
+    def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        self._data: np.ndarray = np.empty((0, 0))
+        self._data: NDArray[np.float64] = np.empty((0, 0))
         self._rows_loaded: int = self.ROW_BATCH_COUNT
 
-        self._header: List[str] = []
-        self._format: List[Tuple[int, float, bool]] = []
+        self._header: list[str] = []
+        self._format: list[tuple[int, float, bool]] = []
         self._sort_column: int = 0
         self._sort_order: Qt.SortOrder = Qt.SortOrder.AscendingOrder
 
     @property
-    def header(self) -> List[str]:
+    def header(self) -> list[str]:
         return self._header
 
     @header.setter
@@ -32,19 +34,19 @@ class DataModel(QAbstractTableModel):
         self._header = list(map(str, new_header))
 
     @property
-    def all_data(self) -> np.ndarray:
+    def all_data(self) -> NDArray[np.float64]:
         return self._data
 
     @property
     def is_empty(self) -> bool:
         return bool(self._data.size == 0)
 
-    def rowCount(self, parent: Optional[QModelIndex] = None, *, available_count: bool = False) -> int:
+    def rowCount(self, parent: QModelIndex | None = None, *, available_count: bool = False) -> int:
         if available_count:
             return cast(int, self._data.shape[0])
         return min(cast(int, self._data.shape[0]), self._rows_loaded)
 
-    def columnCount(self, parent: Optional[QModelIndex] = None) -> int:
+    def columnCount(self, parent: QModelIndex | None = None) -> int:
         return cast(int, self._data.shape[1])
 
     def formatted_item(self, row: int, column: int, replace_hyphen: bool = False) -> str:
@@ -81,7 +83,7 @@ class DataModel(QAbstractTableModel):
             return f'{value * scale:.{precision}f}'.replace('-', '−')
         return f'{value * scale:.{precision}f}'
 
-    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Optional[str]:
+    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> str | None:
         if index.isValid() and role == Qt.DisplayRole:
             return self.formatted_item(index.row(), index.column(), replace_hyphen=True)
         return None
@@ -92,7 +94,7 @@ class DataModel(QAbstractTableModel):
         else:
             return cast(float, np.nan)
 
-    def headerData(self, col: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> Optional[str]:
+    def headerData(self, col: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> str | None:
         if orientation == Qt.Horizontal and role == Qt.DisplayRole and 0 <= col < len(self._header):
             return self._header[col]
         return None
@@ -103,29 +105,29 @@ class DataModel(QAbstractTableModel):
             return True
         return False
 
-    def set_format(self, new_format: List[Tuple[int, float]]) -> None:
+    def set_format(self, new_format: list[tuple[int, float]]) -> None:
         self.beginResetModel()
-        f: Union[Tuple[int, float, bool], Tuple[int, float]]
+        f: tuple[int, float, bool] | tuple[int, float]
         self._format = [(int(round(f[0])), float(f[1]), bool(f[2]) if len(f) > 2 else False) for f in new_format]
         self.endResetModel()
 
-    def set_data(self, new_data: Union[List[List[float]], np.ndarray]) -> None:
+    def set_data(self, new_data: list[list[float]] | NDArray[np.float64]) -> None:
         self.beginResetModel()
         self._data = np.array(new_data)
         self._rows_loaded = self.ROW_BATCH_COUNT
         if self._sort_column < self._data.shape[1]:
-            sort_indices: np.ndarray = np.argsort(self._data[:, self._sort_column], kind='heapsort')
+            sort_indices: NDArray[np.float64] = np.argsort(self._data[:, self._sort_column], kind='heapsort')
             if self._sort_order == Qt.SortOrder.DescendingOrder:
                 sort_indices = sort_indices[::-1]
             self._data = self._data[sort_indices]
         self.endResetModel()
 
-    def append_data(self, new_data_line: Union[List[float], np.ndarray]) -> None:
+    def append_data(self, new_data_line: list[float] | NDArray[np.float64]) -> None:
         self.beginResetModel()
         if self._data.shape[1] == len(new_data_line):
             self._data = np.row_stack((self._data, new_data_line))
             if self._sort_column < self._data.shape[1]:
-                sort_indices: np.ndarray = np.argsort(self._data[:, self._sort_column], kind='heapsort')
+                sort_indices: NDArray[np.float64] = np.argsort(self._data[:, self._sort_column], kind='heapsort')
                 if self._sort_order == Qt.SortOrder.DescendingOrder:
                     sort_indices = sort_indices[::-1]
                 self._data = self._data[sort_indices]
@@ -133,13 +135,13 @@ class DataModel(QAbstractTableModel):
             self._data = np.array([new_data_line])
         self.endResetModel()
 
-    def extend_data(self, new_data_lines: Union[List[List[float]], np.ndarray]) -> None:
+    def extend_data(self, new_data_lines: list[list[float]] | NDArray[np.float64]) -> None:
         self.beginResetModel()
         for new_data_line in new_data_lines:
             if self._data.shape[1] == len(new_data_line):
                 self._data = np.row_stack((self._data, new_data_line))
         if self._sort_column < self._data.shape[1]:
-            sort_indices: np.ndarray = np.argsort(self._data[:, self._sort_column], kind='heapsort')
+            sort_indices: NDArray[np.float64] = np.argsort(self._data[:, self._sort_column], kind='heapsort')
             if self._sort_order == Qt.SortOrder.DescendingOrder:
                 sort_indices = sort_indices[::-1]
             self._data = self._data[sort_indices]
@@ -154,7 +156,7 @@ class DataModel(QAbstractTableModel):
     def sort(self, column: int, order: Qt.SortOrder = Qt.SortOrder.AscendingOrder) -> None:
         if column >= self._data.shape[1]:
             return
-        sort_indices: np.ndarray = np.argsort(self._data[:, column], kind='heapsort')
+        sort_indices: NDArray[np.float64] = np.argsort(self._data[:, column], kind='heapsort')
         if order == Qt.SortOrder.DescendingOrder:
             sort_indices = sort_indices[::-1]
         self._sort_column = column

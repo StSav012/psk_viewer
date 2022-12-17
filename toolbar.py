@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
+from __future__ import annotations
 
-from typing import Iterable, Optional, Union
+from typing import Iterable
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction, QColor, QIcon, QKeySequence, QPalette
-from PySide6.QtWidgets import QApplication, QToolBar, QWidget
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QColor, QIcon, QKeySequence, QPalette
+from qtpy.QtWidgets import QAction, QApplication, QToolBar, QWidget
 
 from utils import load_icon, mix_colors
 
@@ -14,15 +15,16 @@ __all__ = ['NavigationToolbar']
 class NavigationToolbar(QToolBar):
     def __init__(self, parent: QWidget, *,
                  parameters_title: str = 'Figure options',
-                 parameters_icon: Optional[Union[QIcon, str]] = None):
+                 parameters_icon: QIcon | str | None = None):
         super().__init__('Navigation Toolbar', parent)
         self.setObjectName('NavigationToolbar')
 
         self.setAllowedAreas(Qt.ToolBarArea.AllToolBarAreas)
 
         self.parameters_title: str = parameters_title
-        self.parameters_icon: Optional[QIcon] = (load_icon(parameters_icon) if isinstance(parameters_icon, str)
-                                                 else parameters_icon)
+        self.parameters_icon: QIcon | None = (load_icon(parameters_icon)
+                                              if isinstance(parameters_icon, str)
+                                              else parameters_icon)
 
         self.open_action: QAction = QAction(self)
         self.open_ghost_action: QAction = QAction(self)
@@ -140,12 +142,12 @@ class NavigationToolbar(QToolBar):
         self.addAction(about_qt_action)
 
     def add_shortcuts_to_tooltips(self) -> None:
-        tooltip_text_color: QColor = self.palette().color(QPalette.ToolTipText)
-        tooltip_base_color: QColor = self.palette().color(QPalette.ToolTipBase)
+        tooltip_text_color: QColor = self.palette().color(QPalette.ColorRole.ToolTipText)
+        tooltip_base_color: QColor = self.palette().color(QPalette.ColorRole.ToolTipBase)
         shortcut_color: QColor = mix_colors(tooltip_text_color, tooltip_base_color)
         a: QAction
         for a in self.actions():
             if not a.shortcut().isEmpty() and a.toolTip():
                 a.setToolTip(f'<p style="white-space:pre">{a.toolTip()}&nbsp;&nbsp;'
                              f'<code style="color:{shortcut_color.name()};font-size:small">'
-                             f'{a.shortcut().toString(QKeySequence.NativeText)}</code></p>')
+                             f'{a.shortcut().toString(QKeySequence.SequenceFormat.NativeText)}</code></p>')

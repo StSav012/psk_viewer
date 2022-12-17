@@ -1,23 +1,23 @@
 # IPM RAS PSK and FS spectrometer files viewer
 
 **Required packages:**
-  - `et-xmlfile`
-  - `numpy`
-  - `openpyxl`
-  - `pandas`
-  - `pyqtgraph`
-  - `PySide6`
-  - `python-dateutil`
-  - `pytz`
-  - `scipy`
-  - `shiboken6`
-  - `six`
+  - `pandas`,
+  - `pyqtgraph`,
+  - `qtpy`,
+  - `scipy`,
+  - any of `PyQt6`, `PySide6`, `PyQt5`, `PySide2`.
+
+**Optional packages:**
+  - `openpyxl`.
 
 They should install at the first application start automatically.
 
 **Required Python:** >= 3.8
 
-Note: only Python <= 3.8 is available for MS Windows 7, so, there is not much choice for those who use it.
+**Notes:** 
+  - only Python <= 3.8 is available for MS Windows 7, so, there is not much choice for those who use it;
+  - `PySide2` requires Python < 3.11;
+  - `PyQt6` and `PySide6` require pretty modern OS, e.g., 64-bit MS Windows 10 21H2 or later.
 
 ### Getting Python
 Python might already been installed on your system.

@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
+from __future__ import annotations
 
-from PySide6.QtCore import Signal
-from PySide6.QtGui import QColor, QPalette
-from PySide6.QtWidgets import QColorDialog, QPushButton, QWidget
+from qtpy.QtCore import Signal
+from qtpy.QtGui import QColor, QPalette
+from qtpy.QtWidgets import QColorDialog, QPushButton, QWidget
 
 __all__ = ['ColorSelector']
 
@@ -37,7 +38,7 @@ class ColorSelector(QPushButton):
 
     def paint_button(self) -> None:
         pal: QPalette = self.palette()
-        pal.setColor(QPalette.Button, self.color)
-        pal.setColor(QPalette.ButtonText, QColor('white' if self.color.lightnessF() < 0.5 else 'black'))
+        pal.setColor(QPalette.ColorRole.Button, self.color)
+        pal.setColor(QPalette.ColorRole.ButtonText, QColor('white' if self.color.lightnessF() < 0.5 else 'black'))
         self.setPalette(pal)
         self.update()

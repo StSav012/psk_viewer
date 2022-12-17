@@ -1,26 +1,28 @@
 ﻿# -*- coding: utf-8 -*-
+from __future__ import annotations
 
 import os
-from typing import Final, Iterable, List, Optional, Tuple, cast
+from typing import Final, Iterable, cast
 
 import numpy as np
 import pandas as pd  # type: ignore
 import pyqtgraph as pg  # type: ignore
 import pyqtgraph.exporters  # type: ignore
-from PySide6.QtCore import QByteArray, QCoreApplication, QItemSelectionModel, QModelIndex, \
-    QPoint, QPointF, QRect, QRectF, Qt
-from PySide6.QtGui import QAction, QBrush, QCloseEvent, QPalette, QPen, QScreen
-from PySide6.QtWidgets import QHeaderView, QMessageBox
+from numpy.typing import NDArray
 from pyqtgraph import PlotWidget
 from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent  # type: ignore
+from qtpy.QtCore import (QByteArray, QCoreApplication, QItemSelectionModel, QModelIndex,
+                         QPoint, QPointF, QRect, QRectF, Qt)
+from qtpy.QtGui import QBrush, QCloseEvent, QPalette, QPen
+from qtpy.QtWidgets import QAction, QHeaderView, QMessageBox, QWidget
 
 import detection
 from gui import GUI
 from plot_data_item import PlotDataItem
 from preferences import Preferences
 from toolbar import NavigationToolbar
-from utils import copy_to_clipboard, load_data_csv, load_data_fs, load_data_scandat, resource_path, \
-    superscript_number
+from utils import (copy_to_clipboard, load_data_csv, load_data_fs, load_data_scandat, resource_path,
+                   superscript_number)
 
 __all__ = ['App']
 
@@ -29,14 +31,14 @@ _translate = QCoreApplication.translate
 pg.ViewBox.suggestPadding = lambda *_: 0.0
 
 
-def tick_strings(self: pg.AxisItem, values: Iterable[float], scale: float, spacing: float) -> List[str]:
+def tick_strings(self: pg.AxisItem, values: Iterable[float], scale: float, spacing: float) -> list[str]:
     """ improve formatting of `AxisItem.tickStrings` """
 
     if self.logMode:
-        return cast(List[str], self.logTickStrings(values, scale, spacing))
+        return cast(list[str], self.logTickStrings(values, scale, spacing))
 
     places: int = max(0, int(np.ceil(-np.log10(spacing * scale))))
-    strings: List[str] = []
+    strings: list[str] = []
     v: float
     for v in values:
         vs: float = v * scale
@@ -66,12 +68,13 @@ class App(GUI):
     PSK_WITH_JUMP_DATA_MODE: Final[int] = 2
     FS_DATA_MODE: Final[int] = -1
 
-    def __init__(self, filename: str = '', flags: Qt.WindowFlags = Qt.WindowFlags()) -> None:
-        super().__init__(flags=flags)
+    def __init__(self, filename: str = '',
+                 parent: QWidget | None = None, flags: Qt.WindowType = Qt.WindowType.Window) -> None:
+        super().__init__(parent, flags)
 
         self._data_mode: int = 0
 
-        self._is_dark: bool = self.palette().color(QPalette.Window).lightness() < 128
+        self._is_dark: bool = self.palette().color(QPalette.ColorRole.Window).lightness() < 128
 
         self.toolbar: NavigationToolbar = NavigationToolbar(self, parameters_icon='configure')
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.toolbar)
@@ -86,7 +89,7 @@ class App(GUI):
 
         self._ignore_scale_change: bool = False
 
-        self.model_signal: np.ndarray
+        self.model_signal: NDArray[np.float64]
         try:
             self.model_signal = pd.read_csv(resource_path('averaged fs signal filtered.csv')).values.ravel()
         except (OSError, BlockingIOError):
@@ -95,8 +98,8 @@ class App(GUI):
         self.box_find_lines.setDisabled(True)
         self.user_found_lines: pg.PlotDataItem = self._canvas.scatterPlot(np.empty(0), symbol='o', pxMode=True)
         self.automatically_found_lines: pg.PlotDataItem = self._canvas.scatterPlot(np.empty(0), symbol='o', pxMode=True)
-        self.user_found_lines_data: np.ndarray = np.empty(0)
-        self.automatically_found_lines_data: np.ndarray = np.empty(0)
+        self.user_found_lines_data: NDArray[np.float64] = np.empty(0)
+        self.automatically_found_lines_data: NDArray[np.float64] = np.empty(0)
 
         # cross-hair
         self._crosshair_v_line: pg.InfiniteLine = pg.InfiniteLine(angle=90, movable=False)
@@ -145,7 +148,7 @@ class App(GUI):
         self.set_crosshair_lines_appearance()
 
         # customize menu
-        titles_to_leave: List[str] = [
+        titles_to_leave: list[str] = [
             self._canvas.ctrl.alphaGroup.parent().title(),
             self._canvas.ctrl.gridGroup.parent().title(),
         ]
@@ -248,7 +251,8 @@ class App(GUI):
             self.restoreGeometry(cast(QByteArray, self.settings.value('windowGeometry', QByteArray())))
         else:
             window_frame: QRect = self.frameGeometry()
-            desktop_center: QPoint = QScreen().availableGeometry().center()
+            app: QCoreApplication = QCoreApplication.instance()
+            desktop_center: QPoint = app.primaryScreen().availableGeometry().center()
             window_frame.moveCenter(desktop_center)
             self.move(window_frame.topLeft())
         self.restoreState(cast(QByteArray, self.settings.value('windowState', QByteArray())))
@@ -331,7 +335,7 @@ class App(GUI):
                  * (self.table_found_lines.horizontalHeader().count() // 2))
         )
         for i in range(self.table_found_lines.horizontalHeader().count()):
-            self.table_found_lines.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
+            self.table_found_lines.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
 
         # change visibility of the found lines' table columns
         if self.switch_data_action.isChecked():
@@ -375,8 +379,8 @@ class App(GUI):
 
         point: pg.SpotItem
         if ev.modifiers() == Qt.Modifier.SHIFT:
-            items: np.ndarray = item.scatter.data['item']
-            index: np.ndarray = np.full(items.shape, True, np.bool_)
+            items: NDArray[np.float64] = item.scatter.data['item']
+            index: NDArray[np.float64] = np.full(items.shape, True, np.bool_)
             for point in points:
                 index &= (items != point)
                 self.automatically_found_lines_data \
@@ -397,15 +401,15 @@ class App(GUI):
             self.toolbar.clear_trace_action.setEnabled(not self.model_found_lines.is_empty)
 
         elif ev.modifiers() == Qt.NoModifier:
-            found_lines_frequencies: np.ndarray = self.model_found_lines.all_data[:, 0]
-            selected_points: List[int] = [cast(int, np.argmin(np.abs(point.pos().x() - found_lines_frequencies)))
+            found_lines_frequencies: NDArray[np.float64] = self.model_found_lines.all_data[:, 0]
+            selected_points: list[int] = [cast(int, np.argmin(np.abs(point.pos().x() - found_lines_frequencies)))
                                           for point in points]
             self.on_points_selected(selected_points)
 
     def on_button_find_lines_clicked(self) -> None:
         self.status_bar.showMessage(f'Found {self.find_lines(self.spin_threshold.value())} lines')
 
-    def on_mouse_moved(self, event: Tuple[QPointF]) -> None:
+    def on_mouse_moved(self, event: tuple[QPointF]) -> None:
         if self._plot_line.xData is None and self._plot_line.yData is None:
             return
         pos: QPointF = event[0]
@@ -453,7 +457,7 @@ class App(GUI):
         point: QPointF = self._canvas.vb.mapSceneToView(pos)
         if self._plot_line.xData is None or not self._plot_line.xData.size:
             return
-        distance: np.ndarray = np.min(np.hypot((self._plot_line.xData - point.x()) / x_span,
+        distance: NDArray[np.float64] = np.min(np.hypot((self._plot_line.xData - point.x()) / x_span,
                                                (self._plot_line.yData - point.y()) / y_span))
         if distance > 0.01:
             return
@@ -487,25 +491,25 @@ class App(GUI):
         self.toolbar.save_trace_action.setEnabled(True)
         self.toolbar.clear_trace_action.setEnabled(True)
 
-    def on_lim_changed(self, arg: Tuple[PlotWidget, List[List[float]]]) -> None:
+    def on_lim_changed(self, arg: tuple[PlotWidget, list[list[float]]]) -> None:
         if self._ignore_scale_change:
             return
-        rect: List[List[float]] = arg[1]
-        xlim: List[float]
-        ylim: List[float]
+        rect: list[list[float]] = arg[1]
+        xlim: list[float]
+        ylim: list[float]
         xlim, ylim = rect
         self._ignore_scale_change = True
         self.on_xlim_changed(xlim)
         self.on_ylim_changed(ylim)
         self._ignore_scale_change = False
 
-    def on_points_selected(self, rows: List[int]) -> None:
+    def on_points_selected(self, rows: list[int]) -> None:
         self.table_found_lines.clearSelection()
         sm: QItemSelectionModel = self.table_found_lines.selectionModel()
         row: int
         for row in rows:
             index: QModelIndex = self.model_found_lines.index(row, 0)
-            sm.select(index, QItemSelectionModel.Select | QItemSelectionModel.Rows)
+            sm.select(index, QItemSelectionModel.SelectionFlag.Select | QItemSelectionModel.SelectionFlag.Rows)
             self.table_found_lines.scrollTo(index)
 
     def spin_frequency_min_changed(self, new_value: float) -> None:
@@ -659,7 +663,7 @@ class App(GUI):
         return self._plot_line
 
     @property
-    def label(self) -> Optional[str]:
+    def label(self) -> str | None:
         return self._plot_line.name()
 
     def set_frequency_range(self, lower_value: float, upper_value: float) -> None:
@@ -696,19 +700,19 @@ class App(GUI):
 
         from scipy import interpolate  # type: ignore
 
-        x: Final[np.ndarray] = self._plot_line.xData
-        y: Final[np.ndarray] = self._plot_line.yData
+        x: Final[NDArray[np.float64]] = self._plot_line.xData
+        y: Final[NDArray[np.float64]] = self._plot_line.yData
         if x.size < 2 or y.size < 2:
             return 0
 
-        found_lines: np.ndarray
+        found_lines: NDArray[np.float64]
         if self._data_mode == self.FS_DATA_MODE:
             # re-scale the signal to the actual frequency mesh
-            x_model: np.ndarray = np.arange(self.model_signal.size, dtype=x.dtype) * 0.1
+            x_model: NDArray[np.float64] = np.arange(self.model_signal.size, dtype=x.dtype) * 0.1
             interpol = interpolate.interp1d(x_model, self.model_signal, kind=2)
-            x_model_new: np.ndarray = np.arange(x_model[0], x_model[-1],
-                                                x[1] - x[0])
-            y_model_new: np.ndarray = interpol(x_model_new)
+            x_model_new: NDArray[np.float64] = np.arange(x_model[0], x_model[-1],
+                                                         x[1] - x[0])
+            y_model_new: NDArray[np.float64] = interpol(x_model_new)
             found_lines = detection.peaks_positions(x,
                                                     detection.correlation(y_model_new,
                                                                           x,
@@ -752,7 +756,7 @@ class App(GUI):
 
         init_frequency: float = self.spin_frequency_center.value()
 
-        line_data: np.ndarray = self.automatically_found_lines.xData
+        line_data: NDArray[np.float64] = self.automatically_found_lines.xData
         if line_data is None or not line_data.size:
             return
         i: int = cast(int, np.searchsorted(line_data, init_frequency, side='right') - 2)
@@ -766,7 +770,7 @@ class App(GUI):
 
         init_frequency: float = self.spin_frequency_center.value()
 
-        line_data: np.ndarray = self.automatically_found_lines.xData
+        line_data: NDArray[np.float64] = self.automatically_found_lines.xData
         if line_data is None or not line_data.size:
             return
         i: int = cast(int, np.searchsorted(line_data, init_frequency, side='left') + 1)
@@ -785,7 +789,7 @@ class App(GUI):
             return
         x: pg.AxisItem = self._canvas.getAxis('bottom')
         y: pg.AxisItem = self._canvas.getAxis('left')
-        visible_points: np.ndarray \
+        visible_points: NDArray[np.float64] \
             = self._plot_line.yData[(self._plot_line.xData >= min(x.range)) & (self._plot_line.xData <= max(x.range))]
         if np.any(visible_points < min(y.range)):
             minimum: float = np.min(visible_points)
@@ -797,18 +801,18 @@ class App(GUI):
     def copy_found_lines(self) -> None:
         copy_to_clipboard(self.table_found_lines.stringify_table_plain_text(),
                           self.table_found_lines.stringify_table_html(),
-                          Qt.RichText)
+                          Qt.TextFormat.RichText)
 
     def save_found_lines(self) -> None:
         filename, _filter = self.save_file_dialog(_filter='CSV (*.csv);;XLSX (*.xlsx)')
         if not filename:
             return
 
-        filename_parts: Tuple[str, str] = os.path.splitext(filename)
-        f: np.ndarray = self.model_found_lines.all_data[:, 0] * 1e-6
-        v: np.ndarray = self.model_found_lines.all_data[:, 1] * 1e3
-        g: np.ndarray = self.model_found_lines.all_data[:, 2]
-        data: np.ndarray = np.vstack((f, v, g)).transpose()
+        filename_parts: tuple[str, str] = os.path.splitext(filename)
+        f: NDArray[np.float64] = self.model_found_lines.all_data[:, 0] * 1e-6
+        v: NDArray[np.float64] = self.model_found_lines.all_data[:, 1] * 1e3
+        g: NDArray[np.float64] = self.model_found_lines.all_data[:, 2]
+        data: NDArray[np.float64] = np.vstack((f, v, g)).transpose()
         if 'CSV' in _filter:
             if filename_parts[1] != '.csv':
                 filename += '.csv'
@@ -909,14 +913,14 @@ class App(GUI):
 
         if not filename:
             _filter: str
-            _formats: List[str] = [
+            _formats: list[str] = [
                 'PSK Spectrometer (*.conf *.scandat)',
                 'Fast Sweep Spectrometer (*.fmd)',
             ]
             filename, _filter = self.open_file_dialog(_filter=';;'.join(_formats))
-        v: np.ndarray
-        f: np.ndarray
-        g: np.ndarray = np.empty(0)
+        v: NDArray[np.float64]
+        f: NDArray[np.float64]
+        g: NDArray[np.float64] = np.empty(0)
         jump: float
         fn: str
         if filename.casefold().endswith('.scandat'):
@@ -999,14 +1003,14 @@ class App(GUI):
     def load_ghost_data(self, filename: str = '') -> bool:
         if not filename:
             _filter: str
-            _formats: List[str] = [
+            _formats: list[str] = [
                 'PSK Spectrometer (*.conf *.scandat)',
                 'Fast Sweep Spectrometer (*.fmd)',
             ]
             filename, _filter = self.open_file_dialog(_filter=';;'.join(_formats))
-        v: np.ndarray
-        f: np.ndarray
-        g: np.ndarray = np.empty(0)
+        v: NDArray[np.float64]
+        f: NDArray[np.float64]
+        g: NDArray[np.float64] = np.empty(0)
         jump: float
         fn: str
         if filename.casefold().endswith('.scandat'):
@@ -1071,7 +1075,7 @@ class App(GUI):
         self.set_config_value('display', 'unit', self._plot_data.data_type)
         self.display_gamma_or_voltage(new_state)
 
-    def display_gamma_or_voltage(self, display_gamma: Optional[bool] = None) -> None:
+    def display_gamma_or_voltage(self, display_gamma: bool | None = None) -> None:
         if display_gamma is None:
             display_gamma = self.switch_data_action.isChecked()
 
@@ -1091,7 +1095,7 @@ class App(GUI):
             self._plot_line.setData(self._plot_data.x_data, self._plot_data.y_data)
 
             self._loading = True
-            y_data: np.ndarray = self._plot_data.y_data
+            y_data: NDArray[np.float64] = self._plot_data.y_data
             min_y: float = np.min(y_data)
             max_y: float = np.max(y_data)
             if not self.check_voltage_persists.isChecked():
@@ -1169,17 +1173,17 @@ class App(GUI):
         filename, _filter = self.save_file_dialog(_filter='CSV (*.csv);;XLSX (*.xlsx)')
         if not filename:
             return
-        filename_parts: Tuple[str, str] = os.path.splitext(filename)
-        x: np.ndarray = self._plot_line.xData
-        y: np.ndarray = self._plot_line.yData
+        filename_parts: tuple[str, str] = os.path.splitext(filename)
+        x: NDArray[np.float64] = self._plot_line.xData
+        y: NDArray[np.float64] = self._plot_line.yData
         max_mark: float
         min_mark: float
         min_mark, max_mark = self._canvas.axes['bottom']['item'].range
-        good: np.ndarray = (min_mark <= x) & (x <= max_mark)
+        good: NDArray[np.float64] = (min_mark <= x) & (x <= max_mark)
         x = x[good]
         y = y[good]
         del good
-        data: np.ndarray
+        data: NDArray[np.float64]
         if 'CSV' in _filter:
             if filename_parts[1] != '.csv':
                 filename += '.csv'

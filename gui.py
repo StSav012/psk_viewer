@@ -1,20 +1,22 @@
 # -*- coding: utf-8 -*-
+from __future__ import annotations
 
 import os
 import re
-from typing import Any, List, Optional, Tuple, Type, cast
+from typing import Any, Type, cast
 
 import numpy as np
 import pyqtgraph as pg  # type: ignore
-from PySide6.QtCore import QCoreApplication, QModelIndex, Qt
-from PySide6.QtGui import QKeySequence, QKeyEvent
-from PySide6.QtWidgets import QAbstractItemView, QCheckBox, QDockWidget, QFileDialog, QFormLayout, \
-    QGridLayout, QMainWindow, QPushButton, QStatusBar, QTableView, QVBoxLayout, QWidget
 from pyqtgraph import functions as fn
+from qtpy.QtCore import QCoreApplication, QModelIndex, Qt
+from qtpy.QtGui import QKeyEvent, QKeySequence
+from qtpy.QtWidgets import (QAbstractItemView, QCheckBox, QDockWidget, QFormLayout,
+                            QGridLayout, QMainWindow, QPushButton, QStatusBar, QTableView, QVBoxLayout, QWidget)
+from qtpy.compat import getopenfilename, getsavefilename
 
 from found_lines_model import FoundLinesModel
 from settings import Settings
-from utils import load_icon, copy_to_clipboard
+from utils import copy_to_clipboard, load_icon
 from valuelabel import ValueLabel
 
 __all__ = ['GUI', 'TableView']
@@ -23,7 +25,7 @@ _translate = QCoreApplication.translate
 
 
 class TableView(QTableView):
-    def __init__(self, settings: Settings, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, settings: Settings, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.settings: Settings = settings
 
@@ -33,7 +35,7 @@ class TableView(QTableView):
         :return: the plain text representation of the selected table lines
         """
         model: FoundLinesModel = cast(FoundLinesModel, self.model())
-        text_matrix: List[List[str]]
+        text_matrix: list[list[str]]
         if whole_table:
             text_matrix = [[model.formatted_item(row, column)
                             for column in range(model.columnCount())
@@ -41,15 +43,15 @@ class TableView(QTableView):
                            for row in range(model.rowCount(available_count=True))]
         else:
             si: QModelIndex
-            rows: List[int] = sorted(list(set(si.row() for si in self.selectedIndexes())))
-            cols: List[int] = sorted(list(set(si.column() for si in self.selectedIndexes())))
+            rows: list[int] = sorted(set(si.row() for si in self.selectedIndexes()))
+            cols: list[int] = sorted(set(si.column() for si in self.selectedIndexes()))
             text_matrix = [['' for _ in range(len(cols))]
                            for _ in range(len(rows))]
             for si in self.selectedIndexes():
                 text_matrix[rows.index(si.row())][cols.index(si.column())] = \
                     model.formatted_item(si.row(), si.column())
-        row_texts: List[str]
-        text: List[str] = [self.settings.csv_separator.join(row_texts) for row_texts in text_matrix]
+        row_texts: list[str]
+        text: list[str] = [self.settings.csv_separator.join(row_texts) for row_texts in text_matrix]
         return self.settings.line_end.join(text)
 
     def stringify_table_html(self, whole_table: bool = True) -> str:
@@ -58,7 +60,7 @@ class TableView(QTableView):
         :return: the rich text representation of the selected table lines
         """
         model: FoundLinesModel = cast(FoundLinesModel, self.model())
-        text_matrix: List[List[str]]
+        text_matrix: list[list[str]]
         if whole_table:
             text_matrix = [[('<td>' + model.formatted_item(row, column) + '</td>')
                             for column in range(model.columnCount())
@@ -66,15 +68,15 @@ class TableView(QTableView):
                            for row in range(model.rowCount(available_count=True))]
         else:
             si: QModelIndex
-            rows: List[int] = sorted(list(set(si.row() for si in self.selectedIndexes())))
-            cols: List[int] = sorted(list(set(si.column() for si in self.selectedIndexes())))
+            rows: list[int] = sorted(set(si.row() for si in self.selectedIndexes()))
+            cols: list[int] = sorted(set(si.column() for si in self.selectedIndexes()))
             text_matrix = [['' for _ in range(len(cols))]
                            for _ in range(len(rows))]
             for si in self.selectedIndexes():
                 text_matrix[rows.index(si.row())][cols.index(si.column())] = \
                     '<td>' + model.formatted_item(si.row(), si.column()) + '</td>'
-        row_texts: List[str]
-        text: List[str] = [('<tr>' + self.settings.csv_separator.join(row_texts) + '</tr>')
+        row_texts: list[str]
+        text: list[str] = [('<tr>' + self.settings.csv_separator.join(row_texts) + '</tr>')
                            for row_texts in text_matrix]
         text.insert(0, '<table>')
         text.append('</table>')
@@ -92,8 +94,8 @@ class TableView(QTableView):
 
 
 class GUI(QMainWindow):
-    def __init__(self, flags: Qt.WindowFlags = Qt.WindowFlags()) -> None:
-        super().__init__(flags=flags)
+    def __init__(self, parent: QWidget | None = None, flags: Qt.WindowType = Qt.WindowType.Window) -> None:
+        super().__init__(parent, flags)
         self.settings: Settings = Settings("SavSoft", "Spectrometer Viewer", self)
 
         # prevent config from being re-written while loading
@@ -247,20 +249,24 @@ class GUI(QMainWindow):
 
         # TODO: adjust size when undocked
         self.box_frequency.setWidget(self.group_frequency)
-        self.box_frequency.setFeatures(self.box_frequency.features() & ~self.box_frequency.DockWidgetClosable)
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.box_frequency)
+        self.box_frequency.setFeatures(self.box_frequency.features()
+                                       & ~QDockWidget.DockWidgetFeature.DockWidgetClosable)
+        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.box_frequency)
 
         self.box_voltage.setWidget(self.group_voltage)
-        self.box_voltage.setFeatures(self.box_voltage.features() & ~self.box_voltage.DockWidgetClosable)
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.box_voltage)
+        self.box_voltage.setFeatures(self.box_voltage.features()
+                                     & ~QDockWidget.DockWidgetFeature.DockWidgetClosable)
+        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.box_voltage)
 
         self.box_find_lines.setWidget(self.group_find_lines)
-        self.box_find_lines.setFeatures(self.box_find_lines.features() & ~self.box_find_lines.DockWidgetClosable)
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.box_find_lines)
+        self.box_find_lines.setFeatures(self.box_find_lines.features()
+                                        & ~QDockWidget.DockWidgetFeature.DockWidgetClosable)
+        self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.box_find_lines)
 
         self.box_found_lines.setWidget(self.table_found_lines)
-        self.box_found_lines.setFeatures(self.box_found_lines.features() & ~self.box_found_lines.DockWidgetClosable)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.box_found_lines)
+        self.box_found_lines.setFeatures(self.box_found_lines.features()
+                                         & ~QDockWidget.DockWidgetFeature.DockWidgetClosable)
+        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.box_found_lines)
 
         self.grid_layout.addWidget(self.figure)
 
@@ -310,7 +316,7 @@ class GUI(QMainWindow):
         self.model_found_lines.set_format([(3, 1e-6), (4, 1e3), (4, np.nan, self.settings.fancy_table_numbers)])
         self.table_found_lines.setModel(self.model_found_lines)
         self.table_found_lines.setMouseTracking(True)
-        self.table_found_lines.setContextMenuPolicy(Qt.ActionsContextMenu)
+        self.table_found_lines.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
         self.table_found_lines.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table_found_lines.setDropIndicatorShown(False)
         self.table_found_lines.setDragDropOverwriteMode(False)
@@ -373,29 +379,23 @@ class GUI(QMainWindow):
         self.settings.setValue(key, value)
         self.settings.endGroup()
 
-    def open_file_dialog(self, _filter: str = '') -> Tuple[str, str]:
+    def open_file_dialog(self, _filter: str = '') -> tuple[str, str]:
         directory = self.get_config_value('open', 'location', '', str)
-        # native dialog misbehaves when running inside snap but Qt dialog is tortoise-like in NT
-        options: QFileDialog.Options = QFileDialog.DontUseNativeDialog if os.name != 'nt' else QFileDialog.Options()
-        filename, _filter = QFileDialog.getOpenFileName(self,
-                                                        filter=_filter,
-                                                        dir=directory,
-                                                        options=options)
+        filename, _filter = getopenfilename(self,
+                                            filters=_filter,
+                                            basedir=directory)
         if filename:
             self.set_config_value('open', 'location', os.path.split(filename)[0])
         return filename, _filter
 
-    def save_file_dialog(self, _filter: str = '') -> Tuple[str, str]:
+    def save_file_dialog(self, _filter: str = '') -> tuple[str, str]:
         directory: str = self.get_config_value('save', 'location', '', str)
         initial_filter: str = self.get_config_value('save', 'filter', '', str)
-        # native dialog misbehaves when running inside snap but Qt dialog is tortoise-like in NT
-        options: QFileDialog.Options = QFileDialog.DontUseNativeDialog if os.name != 'nt' else QFileDialog.Options()
         filename: str
-        filename, _filter = QFileDialog.getSaveFileName(self,
-                                                        filter=_filter,
-                                                        dir=directory,
-                                                        selectedFilter=initial_filter,
-                                                        options=options)
+        filename, _filter = getsavefilename(self,
+                                            filters=_filter,
+                                            basedir=directory,
+                                            selectedfilter=initial_filter)
         if os.path.split(filename)[0]:
             self.set_config_value('save', 'location', os.path.split(filename)[0])
         self.set_config_value('save', 'filter', _filter)

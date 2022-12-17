@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import annotations
 
 import http.client
 import io
@@ -6,7 +7,7 @@ import json
 import urllib.request
 import zipfile
 from pathlib import Path
-from typing import BinaryIO, Dict, Final, List, TextIO
+from typing import BinaryIO, Final, TextIO
 
 
 def update(user: str, repo_name: str, branch: str = 'master') -> None:
@@ -19,7 +20,7 @@ def update(user: str, repo_name: str, branch: str = 'master') -> None:
     content: bytes = r.read()
     if not content:
         return
-    d: List[Dict[str, Dict[str, Dict[str, str]]]] = json.loads(content)
+    d: list[dict[str, dict[str, dict[str, str]]]] = json.loads(content)
     if not isinstance(d, list) or not len(d):
         return
     date: Final[str] = d[0].get('commit', dict()).get('author', dict()).get('date', '')
