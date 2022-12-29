@@ -178,7 +178,7 @@ class GUI(QMainWindow):
 
         # plot
         self.figure: pg.PlotWidget = pg.PlotWidget(self.central_widget)
-        self.figure.setFocusPolicy(Qt.ClickFocus)
+        self.figure.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         self._cursor_x: ValueLabel = ValueLabel(self.status_bar, siPrefix=True, decimals=6)
         self._cursor_y: ValueLabel = ValueLabel(self.status_bar, siPrefix=True, decimals=3)
 

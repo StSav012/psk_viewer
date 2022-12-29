@@ -83,8 +83,8 @@ class DataModel(QAbstractTableModel):
             return f'{value * scale:.{precision}f}'.replace('-', '−')
         return f'{value * scale:.{precision}f}'
 
-    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> str | None:
-        if index.isValid() and role == Qt.DisplayRole:
+    def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> str | None:
+        if index.isValid() and role == Qt.ItemDataRole.DisplayRole:
             return self.formatted_item(index.row(), index.column(), replace_hyphen=True)
         return None
 
@@ -94,13 +94,16 @@ class DataModel(QAbstractTableModel):
         else:
             return cast(float, np.nan)
 
-    def headerData(self, col: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> str | None:
-        if orientation == Qt.Horizontal and role == Qt.DisplayRole and 0 <= col < len(self._header):
+    def headerData(self, col: int, orientation: Qt.Orientation, role: int = Qt.ItemDataRole.DisplayRole) -> str | None:
+        if (orientation == Qt.Orientation.Horizontal
+                and role == Qt.ItemDataRole.DisplayRole and 0 <= col < len(self._header)):
             return self._header[col]
         return None
 
-    def setHeaderData(self, section: int, orientation: Qt.Orientation, value: str, role: int = Qt.DisplayRole) -> bool:
-        if orientation == Qt.Horizontal and role == Qt.DisplayRole and 0 <= section < len(self._header):
+    def setHeaderData(self, section: int, orientation: Qt.Orientation, value: str,
+                      role: int = Qt.ItemDataRole.DisplayRole) -> bool:
+        if (orientation == Qt.Orientation.Horizontal
+                and role == Qt.ItemDataRole.DisplayRole and 0 <= section < len(self._header)):
             self._header[section] = value
             return True
         return False
