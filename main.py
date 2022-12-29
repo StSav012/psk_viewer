@@ -6,7 +6,7 @@ import platform
 import sys
 from contextlib import suppress
 from pathlib import Path
-from typing import Final, List, Sequence, Set
+from typing import Final, Sequence
 
 __author__: Final[str] = 'StSav012'
 __original_name__: Final[str] = 'psk_viewer'
@@ -87,7 +87,7 @@ if __name__ == '__main__':
     def make_old_qt_compatible_again() -> None:
         from qtpy import QT6, PYQT5
         from qtpy.QtCore import QLibraryInfo, Qt
-        from qtpy.QtWidgets import QApplication, QDialog
+        from qtpy.QtWidgets import QAbstractSpinBox, QApplication, QDialog
 
         if not QT6 and not PYQT5:
             QApplication.exec = QApplication.exec_
@@ -98,6 +98,13 @@ if __name__ == '__main__':
         else:
             QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
             QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
+
+        from pyqtgraph import __version__
+
+        if _version_tuple(__version__) < _version_tuple('0.13.2'):
+            import pyqtgraph as pg
+
+            pg.SpinBox.setMaximumHeight = lambda self, max_h: QAbstractSpinBox.setMaximumHeight(self, round(max_h))
 
 
     if not hasattr(sys, '_MEI''PASS') and not Path('.git').exists():
@@ -119,7 +126,7 @@ if __name__ == '__main__':
 
     app: QApplication = QApplication(sys.argv)
 
-    languages: Set[str] = set(QLocale().uiLanguages() + [QLocale().bcp47Name(), QLocale().name()])
+    languages: set[str] = set(QLocale().uiLanguages() + [QLocale().bcp47Name(), QLocale().name()])
     language: str
     qt_translator: QTranslator = QTranslator()
     for language in languages:
@@ -139,7 +146,7 @@ if __name__ == '__main__':
             app.installTranslator(my_translator)
             break
 
-    windows: List[App] = []
+    windows: list[App] = []
     for a in sys.argv[1:] or ['']:
         window: App = App(a)
         window.show()
