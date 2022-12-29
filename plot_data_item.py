@@ -118,7 +118,7 @@ class PlotDataItem:
     @data_type.setter
     def data_type(self, new_value: str) -> None:
         if new_value not in (PlotDataItem.VOLTAGE_DATA, PlotDataItem.GAMMA_DATA):
-            raise ValueError(f'Unknow data type: {new_value}')
+            raise ValueError(f'Unknown data type: {new_value}')
         PlotDataItem._data_type = new_value
 
     @property
@@ -132,4 +132,4 @@ class PlotDataItem:
         elif self.data_type == PlotDataItem.GAMMA_DATA:
             return self.gamma_data
         else:
-            raise ValueError(f'Unknow data type: {self.data_type}')
+            raise ValueError(f'Unknown data type: {self.data_type}')
