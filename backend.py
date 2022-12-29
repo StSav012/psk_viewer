@@ -374,11 +374,11 @@ class App(GUI):
             return
         if not self.trace_mode:
             return
-        if ev.button() != Qt.LeftButton:
+        if ev.button() != Qt.MouseButton.LeftButton:
             return
 
         point: pg.SpotItem
-        if ev.modifiers() == Qt.Modifier.SHIFT:
+        if ev.modifiers() == Qt.KeyboardModifier.ShiftModifier:
             items: NDArray[np.float64] = item.scatter.data['item']
             index: NDArray[np.float64] = np.full(items.shape, True, np.bool_)
             for point in points:
@@ -400,7 +400,7 @@ class App(GUI):
             self.toolbar.save_trace_action.setEnabled(not self.model_found_lines.is_empty)
             self.toolbar.clear_trace_action.setEnabled(not self.model_found_lines.is_empty)
 
-        elif ev.modifiers() == Qt.NoModifier:
+        elif ev.modifiers() == Qt.KeyboardModifier.NoModifier:
             found_lines_frequencies: NDArray[np.float64] = self.model_found_lines.all_data[:, 0]
             selected_points: list[int] = [cast(int, np.argmin(np.abs(point.pos().x() - found_lines_frequencies)))
                                           for point in points]
@@ -448,7 +448,7 @@ class App(GUI):
         pos: QPointF = event.scenePos()
         if not self.trace_mode:
             return
-        if event.modifiers() != Qt.NoModifier or event.button() != Qt.LeftButton:
+        if event.modifiers() != Qt.KeyboardModifier.NoModifier or event.button() != Qt.MouseButton.LeftButton:
             return
         if not self.figure.sceneBoundingRect().contains(pos):
             return
