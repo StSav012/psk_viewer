@@ -380,7 +380,8 @@ class GUI(QMainWindow):
         self.settings.endGroup()
 
     def open_file_dialog(self, _filter: str = '') -> tuple[str, str]:
-        directory = self.get_config_value('open', 'location', '', str)
+        directory: str = self.get_config_value('open', 'location', '', str)
+        filename: str
         filename, _filter = getopenfilename(self,
                                             filters=_filter,
                                             basedir=directory)
