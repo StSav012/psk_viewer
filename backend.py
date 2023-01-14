@@ -13,7 +13,7 @@ from pyqtgraph import PlotWidget
 from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent  # type: ignore
 from qtpy.QtCore import (QByteArray, QCoreApplication, QItemSelectionModel, QModelIndex,
                          QPoint, QPointF, QRect, QRectF, Qt)
-from qtpy.QtGui import QBrush, QCloseEvent, QPalette, QPen
+from qtpy.QtGui import QBrush, QCloseEvent, QGuiApplication, QPalette, QPen
 from qtpy.QtWidgets import QAction, QHeaderView, QMessageBox, QWidget
 
 import detection
@@ -250,11 +250,12 @@ class App(GUI):
         if self.settings.contains('windowGeometry'):
             self.restoreGeometry(cast(QByteArray, self.settings.value('windowGeometry', QByteArray())))
         else:
-            window_frame: QRect = self.frameGeometry()
-            app: QCoreApplication = QCoreApplication.instance()
-            desktop_center: QPoint = app.primaryScreen().availableGeometry().center()
-            window_frame.moveCenter(desktop_center)
-            self.move(window_frame.topLeft())
+            app: QCoreApplication | None = QCoreApplication.instance()
+            if isinstance(app, QGuiApplication):
+                window_frame: QRect = self.frameGeometry()
+                desktop_center: QPoint = app.primaryScreen().availableGeometry().center()
+                window_frame.moveCenter(desktop_center)
+                self.move(window_frame.topLeft())
         self.restoreState(cast(QByteArray, self.settings.value('windowState', QByteArray())))
 
         self.check_frequency_persists.setChecked(self.get_config_value('frequency', 'persists', False, bool))
