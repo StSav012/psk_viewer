@@ -25,6 +25,12 @@ class FoundLinesModel(DataModel):
         self._frequencies = np.append(self._frequencies, frequency)
         self.refresh(plot_data)
 
+    def add_lines(self, plot_data: PlotDataItem, frequency_values: Iterable[float]) -> None:
+        self._frequencies = np.concatenate((self._frequencies, frequency_values))
+        # avoid duplicates
+        self._frequencies = self._frequencies[np.unique(self._frequencies, return_index=True)[1]]
+        self.refresh(plot_data)
+
     def set_lines(self, plot_data: PlotDataItem,
                   frequencies: NDArray[np.float64] | Iterable[NDArray[np.float64]]) -> None:
         if isinstance(frequencies, np.ndarray):
