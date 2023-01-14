@@ -35,6 +35,7 @@ class NavigationToolbar(QToolBar):
         self.copy_figure_action: QAction = QAction(self)
         self.save_figure_action: QAction = QAction(self)
         self.trace_action: QAction = QAction(self)
+        self.load_trace_action: QAction = QAction(self)
         self.copy_trace_action: QAction = QAction(self)
         self.save_trace_action: QAction = QAction(self)
         self.clear_trace_action: QAction = QAction(self)
@@ -52,6 +53,7 @@ class NavigationToolbar(QToolBar):
             self.copy_figure_action,
             self.save_figure_action,
             self.trace_action,
+            self.load_trace_action,
             self.copy_trace_action,
             self.save_trace_action,
             self.clear_trace_action,
@@ -64,7 +66,7 @@ class NavigationToolbar(QToolBar):
             'copyImage',
             'saveImage',
             'selectObject',
-            'copySelected', 'saveSelected', 'clearSelected',
+            'openSelected', 'copySelected', 'saveSelected', 'clearSelected',
             'configure'
         ]):
             a.setIcon(load_icon(i.lower()))
@@ -78,6 +80,7 @@ class NavigationToolbar(QToolBar):
             self.copy_figure_action,
             self.save_figure_action,
             self.trace_action,
+            self.load_trace_action,
             self.copy_trace_action,
             self.save_trace_action,
             self.clear_trace_action,
@@ -91,7 +94,7 @@ class NavigationToolbar(QToolBar):
             '',
             '', '',
             'Ctrl+*',
-            'Ctrl+Shift+C', 'Ctrl+Shift+S', 'Ctrl+Shift+W',
+            'Ctrl+Shift+O', 'Ctrl+Shift+C', 'Ctrl+Shift+S', 'Ctrl+Shift+W',
             'Ctrl+,'
         ]):
             if isinstance(i, str) and i:
@@ -112,6 +115,7 @@ class NavigationToolbar(QToolBar):
         self.addAction(self.save_figure_action)
         self.addSeparator()
         self.addAction(self.trace_action)
+        self.addAction(self.load_trace_action)
         self.addAction(self.copy_trace_action)
         self.addAction(self.save_trace_action)
         self.addAction(self.clear_trace_action)
@@ -126,6 +130,7 @@ class NavigationToolbar(QToolBar):
         self.copy_figure_action.setEnabled(False)
         self.save_figure_action.setEnabled(False)
         self.trace_action.setEnabled(False)
+        self.load_trace_action.setEnabled(False)
         self.copy_trace_action.setEnabled(False)
         self.save_trace_action.setEnabled(False)
         self.clear_trace_action.setEnabled(False)

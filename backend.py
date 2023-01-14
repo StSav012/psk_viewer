@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 import os
-from typing import Callable, Final, Iterable, cast
+from numbers import Number
+from typing import Any, Callable, Final, Iterable, Sequence, cast
 
 import numpy as np
 import pandas as pd  # type: ignore
@@ -120,7 +121,9 @@ class App(GUI):
         self.setup_ui_actions()
 
         if filename and os.path.exists(filename):
-            if self.load_data(filename):
+            loaded: bool = self.load_data(filename)
+            self.toolbar.load_trace_action.setEnabled(loaded)
+            if loaded:
                 self.set_config_value('open', 'location', os.path.split(filename)[0])
 
     def setup_ui(self) -> None:
@@ -195,6 +198,9 @@ class App(GUI):
         self.toolbar.trace_action.setIconText(_translate("plot toolbar action", "Mark"))
         self.toolbar.trace_action.setToolTip(_translate("plot toolbar action",
                                                         "Mark data points (hold Shift to delete)"))
+        self.toolbar.load_trace_action.setIconText(_translate("plot toolbar action", "Load Marks"))
+        self.toolbar.load_trace_action.setToolTip(_translate("plot toolbar action",
+                                                             "Load marked points values from a file"))
         self.toolbar.copy_trace_action.setIconText(_translate("plot toolbar action", "Copy Marked"))
         self.toolbar.copy_trace_action.setToolTip(_translate("plot toolbar action",
                                                              "Copy marked points values into clipboard"))
@@ -274,7 +280,7 @@ class App(GUI):
         return
 
     def setup_ui_actions(self) -> None:
-        self.toolbar.open_action.triggered.connect(lambda: cast(None, self.load_data()))
+        self.toolbar.open_action.triggered.connect(self.on_open_action_clicked)
         self.toolbar.clear_action.triggered.connect(self.clear)
         self.toolbar.open_ghost_action.triggered.connect(lambda: cast(None, self.load_ghost_data()))
         self.toolbar.clear_ghost_action.triggered.connect(self.clear_ghost)
@@ -282,6 +288,7 @@ class App(GUI):
         self.toolbar.save_data_action.triggered.connect(self.save_data)
         self.toolbar.copy_figure_action.triggered.connect(self.copy_figure)
         self.toolbar.save_figure_action.triggered.connect(self.save_figure)
+        self.toolbar.load_trace_action.triggered.connect(self.load_found_lines)
         self.toolbar.copy_trace_action.triggered.connect(self.copy_found_lines)
         self.toolbar.save_trace_action.triggered.connect(self.save_found_lines)
         self.toolbar.clear_trace_action.triggered.connect(self.clear_found_lines)
@@ -658,6 +665,10 @@ class App(GUI):
         self._cursor_y.setVisible(False)
         self._cursor_balloon.setVisible(False)
 
+    def on_open_action_clicked(self) -> None:
+        loaded: bool = self.load_data()
+        self.toolbar.load_trace_action.setEnabled(loaded or self.toolbar.load_trace_action.isEnabled())
+
     @property
     def line(self) -> PlotDataItem:
         return self._plot_line
@@ -798,6 +809,83 @@ class App(GUI):
             maximum: float = np.max(visible_points)
             self.set_voltage_range(min(y.range), maximum + 0.05 * (maximum - min(y.range)))
 
+    def load_found_lines(self) -> None:
+        def load_csv(fn: str) -> Sequence[float]:
+            sep: str = self.settings.csv_separator
+            data: NDArray[np.float64] = np.loadtxt(fn, delimiter=sep, usecols=(0,), encoding='utf-8') * 1e6
+            data = data[(data >= self._plot_data.min_frequency) & (data <= self._plot_data.max_frequency)]
+            return data
+
+        def load_xlsx(fn: str) -> Sequence[float]:
+            from openpyxl.reader.excel import load_workbook
+            from openpyxl.workbook.workbook import Workbook
+            from openpyxl.worksheet.worksheet import Worksheet
+
+            workbook: Workbook = load_workbook(fn, read_only=True, keep_vba=False, data_only=True)
+            if len(workbook.sheetnames) != 1:
+                return []
+            sheet: Worksheet | None = workbook.active
+            if sheet is None:
+                return []
+
+            data: list[float] = []
+            reading_title: bool = True
+            row: tuple[Any, ...]
+            for row in sheet.values:
+                if reading_title and isinstance(row[0], Number):
+                    reading_title = False
+                if not reading_title and not isinstance(row[0], Number):
+                    break
+                if not reading_title and isinstance(row[0], Number):
+                    data.append(float(row[0]))
+            if not data:
+                return []
+
+            data_: NDArray[np.float64] = np.array(data, dtype=np.float64) * 1e6
+            data_ = data_[(data_ >= self._plot_data.min_frequency) & (data_ <= self._plot_data.max_frequency)]
+            return data_
+
+        import importlib.util
+
+        supported_formats: dict[str, str] = {'.csv': _translate('file type', 'Text with separators') + '(*.csv)'}
+        supported_formats_callbacks: dict[str, Callable[[str], Sequence[float]]] = {'.csv': load_csv}
+        if importlib.util.find_spec('openpyxl') is not None:
+            supported_formats['.xlsx'] = _translate('file type', 'Microsoft Excel') + '(*.xlsx)'
+            supported_formats_callbacks['.xlsx'] = load_xlsx
+
+        filename, _filter = self.open_file_dialog(_filter=';;'.join(supported_formats.values()))
+        if not filename:
+            return
+
+        filename_ext: str = os.path.splitext(filename)[1]
+        # set the extension from the format picked (if any)
+        e: str
+        for e in supported_formats:
+            if _filter == supported_formats[e]:
+                filename_ext = e
+                filename = ensure_extension(filename, filename_ext)
+                break
+        if filename_ext not in supported_formats_callbacks:
+            return
+        new_lines: Sequence[float] = supported_formats_callbacks[filename_ext](filename)
+        if not len(new_lines):
+            return
+        self.model_found_lines.add_lines(self._plot_data, new_lines)
+        # add the new lines to the marked ones
+        self.user_found_lines_data = np.concatenate((self.user_found_lines_data, new_lines))
+        # avoid duplicates
+        self.user_found_lines_data = \
+            self.user_found_lines_data[np.unique(self.user_found_lines_data, return_index=True)[1]]
+        # plot the data
+        self.user_found_lines.setData(
+            self.user_found_lines_data,
+            self._plot_line.yData[self.model_found_lines.frequency_indices(self._plot_data,
+                                                                           self.user_found_lines_data)]
+        )
+        self.toolbar.copy_trace_action.setEnabled(True)
+        self.toolbar.save_trace_action.setEnabled(True)
+        self.toolbar.clear_trace_action.setEnabled(True)
+
     def copy_found_lines(self) -> None:
         copy_to_clipboard(self.table_found_lines.stringify_table_plain_text(),
                           self.table_found_lines.stringify_table_html(),
@@ -828,10 +916,10 @@ class App(GUI):
 
         import importlib.util
 
-        supported_formats: dict[str, str] = {'.csv': f'{self.tr("Text with separators")}(*.csv)'}
+        supported_formats: dict[str, str] = {'.csv': _translate('file type', 'Text with separators') + '(*.csv)'}
         supported_formats_callbacks: dict[str, Callable[[str], None]] = {'.csv': save_csv}
         if importlib.util.find_spec('openpyxl') is not None:
-            supported_formats['.xlsx'] = f'{self.tr("Microsoft Excel")}(*.xlsx)'
+            supported_formats['.xlsx'] = _translate('file type', 'Microsoft Excel') + '(*.xlsx)'
             supported_formats_callbacks['.xlsx'] = save_xlsx
 
         filename, _filter = self.save_file_dialog(_filter=';;'.join(supported_formats.values()))
@@ -905,6 +993,7 @@ class App(GUI):
         self.toolbar.copy_figure_action.setEnabled(False)
         self.toolbar.save_figure_action.setEnabled(False)
         self.toolbar.trace_action.setEnabled(False)
+        self.toolbar.load_trace_action.setEnabled(False)
         self.toolbar.copy_trace_action.setEnabled(False)
         self.toolbar.save_trace_action.setEnabled(False)
         self.toolbar.clear_trace_action.setEnabled(False)
@@ -930,8 +1019,8 @@ class App(GUI):
         if not filename:
             _filter: str
             _formats: list[str] = [
-                'PSK Spectrometer (*.conf *.scandat)',
-                'Fast Sweep Spectrometer (*.fmd)',
+                _translate('file type', 'PSK Spectrometer') + '(*.conf *.scandat)',
+                _translate('file type', 'Fast Sweep Spectrometer') + '(*.fmd)',
             ]
             filename, _filter = self.open_file_dialog(_filter=';;'.join(_formats))
         v: NDArray[np.float64]
@@ -1231,10 +1320,10 @@ class App(GUI):
 
         import importlib.util
 
-        supported_formats: dict[str, str] = {'.csv': f'{self.tr("Text with separators")}(*.csv)'}
+        supported_formats: dict[str, str] = {'.csv': _translate('file type', 'Text with separators') + '(*.csv)'}
         supported_formats_callbacks: dict[str, Callable[[str], None]] = {'.csv': save_csv}
         if importlib.util.find_spec('openpyxl') is not None:
-            supported_formats['.xlsx'] = f'{self.tr("Microsoft Excel")}(*.xlsx)'
+            supported_formats['.xlsx'] = _translate('file type', 'Microsoft Excel') + '(*.xlsx)'
             supported_formats_callbacks['.xlsx'] = save_xlsx
 
         filename, _filter = self.save_file_dialog(_filter=';;'.join(supported_formats.values()))
