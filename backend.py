@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import os
-from typing import Final, Iterable, cast
+from typing import Callable, Final, Iterable, cast
 
 import numpy as np
 import pandas as pd  # type: ignore
@@ -21,7 +21,7 @@ from gui import GUI
 from plot_data_item import PlotDataItem
 from preferences import Preferences
 from toolbar import NavigationToolbar
-from utils import (copy_to_clipboard, load_data_csv, load_data_fs, load_data_scandat, resource_path,
+from utils import (copy_to_clipboard, ensure_extension, load_data_csv, load_data_fs, load_data_scandat, resource_path,
                    superscript_number)
 
 __all__ = ['App']
@@ -803,21 +803,10 @@ class App(GUI):
                           Qt.TextFormat.RichText)
 
     def save_found_lines(self) -> None:
-        filename, _filter = self.save_file_dialog(_filter='CSV (*.csv);;XLSX (*.xlsx)')
-        if not filename:
-            return
-
-        filename_parts: tuple[str, str] = os.path.splitext(filename)
-        f: NDArray[np.float64] = self.model_found_lines.all_data[:, 0] * 1e-6
-        v: NDArray[np.float64] = self.model_found_lines.all_data[:, 1] * 1e3
-        g: NDArray[np.float64] = self.model_found_lines.all_data[:, 2]
-        data: NDArray[np.float64] = np.vstack((f, v, g)).transpose()
-        if 'CSV' in _filter:
-            if filename_parts[1] != '.csv':
-                filename += '.csv'
+        def save_csv(fn: str) -> None:
             sep: str = self.settings.csv_separator
             # noinspection PyTypeChecker
-            np.savetxt(filename, data,
+            np.savetxt(fn, data,
                        delimiter=sep,
                        header=(sep.join((_translate("plot axes labels", 'Frequency'),
                                          _translate("plot axes labels", 'Voltage'),
@@ -826,16 +815,43 @@ class App(GUI):
                                            pg.siScale(1e-3)[1] + _translate('unit', 'V'),
                                            _translate('unit', 'cm⁻¹')))),
                        fmt=('%.3f', '%.6f', '%.6e'), encoding='utf-8')
-        elif 'XLSX' in _filter:
-            if filename_parts[1] != '.xlsx':
-                filename += '.xlsx'
-            with pd.ExcelWriter(filename) as writer:
+
+        def save_xlsx(fn: str) -> None:
+            with pd.ExcelWriter(fn) as writer:
                 df: pd.DataFrame = pd.DataFrame(data)
                 df.to_excel(writer, index=False,
                             header=[_translate('main window', 'Frequency [MHz]'),
                                     _translate('main window', 'Voltage [mV]'),
                                     _translate('main window', 'Absorption [cm⁻¹]')],
                             sheet_name=self._plot_line.name() or _translate('workbook', 'Sheet1'))
+
+        import importlib.util
+
+        supported_formats: dict[str, str] = {'.csv': f'{self.tr("Text with separators")}(*.csv)'}
+        supported_formats_callbacks: dict[str, Callable[[str], None]] = {'.csv': save_csv}
+        if importlib.util.find_spec('openpyxl') is not None:
+            supported_formats['.xlsx'] = f'{self.tr("Microsoft Excel")}(*.xlsx)'
+            supported_formats_callbacks['.xlsx'] = save_xlsx
+
+        filename, _filter = self.save_file_dialog(_filter=';;'.join(supported_formats.values()))
+        if not filename:
+            return
+
+        f: NDArray[np.float64] = self.model_found_lines.all_data[:, 0] * 1e-6
+        v: NDArray[np.float64] = self.model_found_lines.all_data[:, 1] * 1e3
+        g: NDArray[np.float64] = self.model_found_lines.all_data[:, 2]
+        data: NDArray[np.float64] = np.vstack((f, v, g)).transpose()
+
+        filename_ext: str = os.path.splitext(filename)[1]
+        # set the extension from the format picked (if any)
+        e: str
+        for e in supported_formats:
+            if _filter == supported_formats[e]:
+                filename_ext = e
+                filename = ensure_extension(filename, filename_ext)
+                break
+        if filename_ext in supported_formats_callbacks:
+            supported_formats_callbacks[filename_ext](filename)
 
     def clear_automatically_found_lines(self) -> None:
         self.automatically_found_lines.clear()
@@ -1169,28 +1185,13 @@ class App(GUI):
         if self._plot_line.yData is None:
             return
 
-        filename, _filter = self.save_file_dialog(_filter='CSV (*.csv);;XLSX (*.xlsx)')
-        if not filename:
-            return
-        filename_parts: tuple[str, str] = os.path.splitext(filename)
-        x: NDArray[np.float64] = self._plot_line.xData
-        y: NDArray[np.float64] = self._plot_line.yData
-        max_mark: float
-        min_mark: float
-        min_mark, max_mark = self._canvas.axes['bottom']['item'].range
-        good: NDArray[np.float64] = (min_mark <= x) & (x <= max_mark)
-        x = x[good]
-        y = y[good]
-        del good
-        data: NDArray[np.float64]
-        if 'CSV' in _filter:
-            if filename_parts[1] != '.csv':
-                filename += '.csv'
+        def save_csv(fn: str) -> None:
+            data: NDArray[np.float64]
             sep: str = self.settings.csv_separator
             if self.switch_data_action.isChecked():
                 data = np.vstack((x * 1e-6, y)).transpose()
                 # noinspection PyTypeChecker
-                np.savetxt(filename, data,
+                np.savetxt(fn, data,
                            delimiter=sep,
                            header=(sep.join((_translate("plot axes labels", 'Frequency'),
                                              _translate("plot axes labels", 'Absorption')))
@@ -1209,10 +1210,10 @@ class App(GUI):
                                    + sep.join((pg.siScale(1e6)[1] + _translate('unit', 'Hz'),
                                                pg.siScale(1e-3)[1] + _translate('unit', 'V')))),
                            fmt=('%.3f', '%.6f'), encoding='utf-8')
-        elif 'XLSX' in _filter:
-            if filename_parts[1] != '.xlsx':
-                filename += '.xlsx'
-            with pd.ExcelWriter(filename) as writer:
+
+        def save_xlsx(fn: str) -> None:
+            data: NDArray[np.float64]
+            with pd.ExcelWriter(fn) as writer:
                 df: pd.DataFrame
                 if self.switch_data_action.isChecked():
                     data = np.vstack((x * 1e-6, y)).transpose()
@@ -1226,6 +1227,38 @@ class App(GUI):
                     df.to_excel(writer, index=False, header=[_translate('main window', 'Frequency [MHz]'),
                                                              _translate('main window', 'Voltage [mV]')],
                                 sheet_name=self._plot_line.name() or _translate('workbook', 'Sheet1'))
+
+        import importlib.util
+
+        supported_formats: dict[str, str] = {'.csv': f'{self.tr("Text with separators")}(*.csv)'}
+        supported_formats_callbacks: dict[str, Callable[[str], None]] = {'.csv': save_csv}
+        if importlib.util.find_spec('openpyxl') is not None:
+            supported_formats['.xlsx'] = f'{self.tr("Microsoft Excel")}(*.xlsx)'
+            supported_formats_callbacks['.xlsx'] = save_xlsx
+
+        filename, _filter = self.save_file_dialog(_filter=';;'.join(supported_formats.values()))
+        if not filename:
+            return
+        x: NDArray[np.float64] = self._plot_line.xData
+        y: NDArray[np.float64] = self._plot_line.yData
+        max_mark: float
+        min_mark: float
+        min_mark, max_mark = self._canvas.axes['bottom']['item'].range
+        good: NDArray[np.float64] = (min_mark <= x) & (x <= max_mark)
+        x = x[good]
+        y = y[good]
+        del good
+
+        filename_ext: str = os.path.splitext(filename)[1]
+        # set the extension from the format picked (if any)
+        e: str
+        for e in supported_formats:
+            if _filter == supported_formats[e]:
+                filename_ext = e
+                filename = ensure_extension(filename, filename_ext)
+                break
+        if filename_ext in supported_formats_callbacks:
+            supported_formats_callbacks[filename_ext](filename)
 
     def copy_figure(self) -> None:
         exporter = pg.exporters.ImageExporter(self._canvas)

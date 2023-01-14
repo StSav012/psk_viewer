@@ -225,3 +225,10 @@ def load_data_csv(filename: str) -> tuple[NDArray[np.float64], NDArray[np.float6
             ).split()[-1]) * 1e3
         return x, y, g, frequency_jump
     return np.empty(0), np.empty(0), np.empty(0), np.nan
+
+
+def ensure_extension(fn: str, ext: str) -> str:
+    filename_parts: tuple[str, str] = os.path.splitext(fn)
+    if filename_parts[1].casefold() != ext:
+        fn += ext
+    return fn
