@@ -29,7 +29,10 @@ IMAGE_EXT: str = '.svg'
 def load_icon(filename: str) -> QIcon:
     is_dark: bool = QPalette().color(QPalette.ColorRole.Window).lightness() < 128
     pixmap: QPixmap = QPixmap()
-    with open(resource_path(os.path.join('img', filename + IMAGE_EXT)), 'rb') as f_in:
+    file_path: str = resource_path(os.path.join('img', filename + IMAGE_EXT))
+    if not os.path.exists(file_path):
+        return QIcon()
+    with open(file_path, 'rb') as f_in:
         data: bytes = (f_in.read()
                        .replace(b'"grey"', b'"#b2b2b2"' if is_dark else b'"#4d4d4d"')
                        .replace(b'"background"', b'"#000"' if is_dark else b'"#fff"')
