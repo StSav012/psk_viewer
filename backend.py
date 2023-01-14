@@ -384,10 +384,9 @@ class App(GUI):
             for point in points:
                 index &= (items != point)
                 self.automatically_found_lines_data \
-                    = self.automatically_found_lines_data[
-                        self.automatically_found_lines_data != point.pos().toQPoint().x()]
+                    = self.automatically_found_lines_data[self.automatically_found_lines_data != point.pos().x()]
                 self.user_found_lines_data = \
-                    self.user_found_lines_data[self.user_found_lines_data != point.pos().toQPoint().x()]
+                    self.user_found_lines_data[self.user_found_lines_data != point.pos().x()]
 
             item.setData(item.xData[index], item.yData[index])
 
