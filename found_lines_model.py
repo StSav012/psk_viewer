@@ -31,6 +31,8 @@ class FoundLinesModel(DataModel):
             self._frequencies = frequencies.ravel()
         else:
             self._frequencies = np.concatenate(frequencies)
+        # avoid duplicates
+        self._frequencies = self._frequencies[np.unique(self._frequencies, return_index=True)[1]]
         self.refresh(plot_data)
 
     def frequency_indices(self, plot_data: PlotDataItem,
