@@ -50,6 +50,24 @@ class PlotDataItem:
         self.jump = np.nan
 
     @property
+    def min_frequency(self) -> np.float64:
+        if np.isnan(self._jump):
+            return self._frequency_data[0]
+        step: int = int(round(self._jump / self.frequency_step))
+        if 2 * step >= self._frequency_data.size:
+            return np.nan
+        return self._frequency_data[step]
+
+    @property
+    def max_frequency(self) -> np.float64:
+        if np.isnan(self._jump):
+            return self._frequency_data[-1]
+        step: int = int(round(self._jump / self.frequency_step))
+        if 2 * step >= self._frequency_data.size:
+            return np.nan
+        return self._frequency_data[-step]
+
+    @property
     def frequency_data(self) -> NDArray[np.float64]:
         if np.isnan(self._jump):
             return self._frequency_data
