@@ -22,7 +22,7 @@ from gui import GUI
 from plot_data_item import PlotDataItem
 from preferences import Preferences
 from toolbar import NavigationToolbar
-from utils import (copy_to_clipboard, ensure_extension, load_data_csv, load_data_fs, load_data_scandat, resource_path,
+from utils import (all_cases, copy_to_clipboard, load_data_csv, load_data_fs, load_data_scandat, resource_path,
                    superscript_number)
 
 __all__ = ['App']
@@ -846,30 +846,40 @@ class App(GUI):
             return data_
 
         import importlib.util
+        import mimetypes
+        from itertools import chain
 
-        supported_formats: dict[str, str] = {'.csv': _translate('file type', 'Text with separators') + '(*.csv)'}
-        supported_formats_callbacks: dict[str, Callable[[str], Sequence[float]]] = {'.csv': load_csv}
+        mimetypes.init()
+
+        supported_formats: dict[tuple[str, ...], str] = {
+            tuple(all_cases('.csv')): _translate('file type', 'Text with separators'),
+            tuple(all_cases('.txt')): _translate('file type', 'Plain text'),
+        }
+        supported_formats_callbacks: dict[str, Callable[[str], Sequence[float]]] = {
+            mimetypes.types_map['.csv']: load_csv,
+            mimetypes.types_map['.txt']: load_csv,
+        }
         if importlib.util.find_spec('openpyxl') is not None:
-            supported_formats['.xlsx'] = _translate('file type', 'Microsoft Excel') + '(*.xlsx)'
-            supported_formats_callbacks['.xlsx'] = load_xlsx
+            supported_formats[tuple(all_cases('.xlsx'))] = _translate('file type', 'Microsoft Excel')
+            supported_formats_callbacks[mimetypes.types_map['.xlsx']] = load_xlsx
 
-        filename, _filter = self.open_file_dialog(_filter=';;'.join(supported_formats.values()))
+        # reorder the dict
+        supported_formats = {
+            tuple(chain.from_iterable(supported_formats.keys())): _translate('file type', 'Supported formats'),
+            **supported_formats,
+            ('.*',): _translate('file type', 'All files')}
+
+        filename, _filter = self.open_file_dialog(formats=supported_formats)
         if not filename:
             return
 
-        filename_ext: str = os.path.splitext(filename)[1]
-        # set the extension from the format picked (if any)
-        e: str
-        for e in supported_formats:
-            if _filter == supported_formats[e]:
-                filename_ext = e
-                filename = ensure_extension(filename, filename_ext)
-                break
-        if filename_ext not in supported_formats_callbacks:
+        file_type: str = mimetypes.guess_type(filename)[0]
+        if file_type not in supported_formats_callbacks:
             return
-        new_lines: Sequence[float] = supported_formats_callbacks[filename_ext](filename)
+        new_lines: Sequence[float] = supported_formats_callbacks[file_type](filename)
         if not len(new_lines):
             return
+
         self.model_found_lines.add_lines(self._plot_data, new_lines)
         # add the new lines to the marked ones
         self.user_found_lines_data = np.concatenate((self.user_found_lines_data, new_lines))
@@ -916,13 +926,15 @@ class App(GUI):
 
         import importlib.util
 
-        supported_formats: dict[str, str] = {'.csv': _translate('file type', 'Text with separators') + '(*.csv)'}
+        supported_formats: dict[tuple[str, ...], str] = {
+            tuple(all_cases('.csv')): _translate('file type', 'Text with separators')
+        }
         supported_formats_callbacks: dict[str, Callable[[str], None]] = {'.csv': save_csv}
         if importlib.util.find_spec('openpyxl') is not None:
-            supported_formats['.xlsx'] = _translate('file type', 'Microsoft Excel') + '(*.xlsx)'
+            supported_formats[tuple(all_cases('.xlsx'))] = _translate('file type', 'Microsoft Excel')
             supported_formats_callbacks['.xlsx'] = save_xlsx
 
-        filename, _filter = self.save_file_dialog(_filter=';;'.join(supported_formats.values()))
+        filename, _filter = self.save_file_dialog(formats=supported_formats)
         if not filename:
             return
 
@@ -931,14 +943,7 @@ class App(GUI):
         g: NDArray[np.float64] = self.model_found_lines.all_data[:, 2]
         data: NDArray[np.float64] = np.vstack((f, v, g)).transpose()
 
-        filename_ext: str = os.path.splitext(filename)[1]
-        # set the extension from the format picked (if any)
-        e: str
-        for e in supported_formats:
-            if _filter == supported_formats[e]:
-                filename_ext = e
-                filename = ensure_extension(filename, filename_ext)
-                break
+        filename_ext: str = os.path.splitext(filename)[1].casefold()
         if filename_ext in supported_formats_callbacks:
             supported_formats_callbacks[filename_ext](filename)
 
@@ -1018,11 +1023,11 @@ class App(GUI):
 
         if not filename:
             _filter: str
-            _formats: list[str] = [
-                _translate('file type', 'PSK Spectrometer') + '(*.conf *.scandat)',
-                _translate('file type', 'Fast Sweep Spectrometer') + '(*.fmd)',
-            ]
-            filename, _filter = self.open_file_dialog(_filter=';;'.join(_formats))
+            _formats: dict[tuple[str, ...], str] = {
+                (*all_cases('.conf'), *all_cases('.scandat')): _translate('file type', 'PSK Spectrometer'),
+                tuple(all_cases('.fmd')): _translate('file type', 'Fast Sweep Spectrometer'),
+            }
+            filename, _filter = self.open_file_dialog(formats=_formats)
         v: NDArray[np.float64]
         f: NDArray[np.float64]
         g: NDArray[np.float64] = np.empty(0)
@@ -1108,11 +1113,11 @@ class App(GUI):
     def load_ghost_data(self, filename: str = '') -> bool:
         if not filename:
             _filter: str
-            _formats: list[str] = [
-                'PSK Spectrometer (*.conf *.scandat)',
-                'Fast Sweep Spectrometer (*.fmd)',
-            ]
-            filename, _filter = self.open_file_dialog(_filter=';;'.join(_formats))
+            _formats: dict[tuple[str, ...], str] = {
+                (*all_cases('.conf'), *all_cases('.scandat')): _translate('file type', 'PSK Spectrometer'),
+                tuple(all_cases('.fmd')): _translate('file type', 'Fast Sweep Spectrometer'),
+            }
+            filename, _filter = self.open_file_dialog(formats=_formats)
         v: NDArray[np.float64]
         f: NDArray[np.float64]
         g: NDArray[np.float64] = np.empty(0)
@@ -1320,13 +1325,15 @@ class App(GUI):
 
         import importlib.util
 
-        supported_formats: dict[str, str] = {'.csv': _translate('file type', 'Text with separators') + '(*.csv)'}
+        supported_formats: dict[tuple[str, ...], str] = {
+            tuple(all_cases('.csv')): _translate('file type', 'Text with separators')
+        }
         supported_formats_callbacks: dict[str, Callable[[str], None]] = {'.csv': save_csv}
         if importlib.util.find_spec('openpyxl') is not None:
-            supported_formats['.xlsx'] = _translate('file type', 'Microsoft Excel') + '(*.xlsx)'
+            supported_formats[tuple(all_cases('.xlsx'))] = _translate('file type', 'Microsoft Excel')
             supported_formats_callbacks['.xlsx'] = save_xlsx
 
-        filename, _filter = self.save_file_dialog(_filter=';;'.join(supported_formats.values()))
+        filename, _filter = self.save_file_dialog(formats=supported_formats)
         if not filename:
             return
         x: NDArray[np.float64] = self._plot_line.xData
@@ -1339,27 +1346,23 @@ class App(GUI):
         y = y[good]
         del good
 
-        filename_ext: str = os.path.splitext(filename)[1]
-        # set the extension from the format picked (if any)
-        e: str
-        for e in supported_formats:
-            if _filter == supported_formats[e]:
-                filename_ext = e
-                filename = ensure_extension(filename, filename_ext)
-                break
+        filename_ext: str = os.path.splitext(filename)[1].casefold()
         if filename_ext in supported_formats_callbacks:
             supported_formats_callbacks[filename_ext](filename)
 
     def copy_figure(self) -> None:
-        exporter = pg.exporters.ImageExporter(self._canvas)
+        exporter: pg.exporters.ImageExporter = pg.exporters.ImageExporter(self._canvas)
         self.hide_cursors()
         exporter.export(copy=True)
 
     def save_figure(self) -> None:
-        exporter = pg.exporters.ImageExporter(self._canvas)
-        _filter: str = \
-            _translate('file dialog', 'Image files') + ' (' + ' '.join(exporter.getSupportedImageFormats()) + ')'
-        filename, _filter = self.save_file_dialog(_filter=_filter)
+        exporter: pg.exporters.ImageExporter = pg.exporters.ImageExporter(self._canvas)
+        formats: dict[tuple[str, ...], str] = {
+            tuple(exporter.getSupportedImageFormats()): _translate('file dialog', 'Image files')
+        }
+        filename: str
+        _filter: str
+        filename, _filter = self.save_file_dialog(formats=formats)
         if not filename:
             return
         self.hide_cursors()

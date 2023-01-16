@@ -16,7 +16,7 @@ from qtpy.compat import getopenfilename, getsavefilename
 
 from found_lines_model import FoundLinesModel
 from settings import Settings
-from utils import copy_to_clipboard, load_icon
+from utils import copy_to_clipboard, ensure_extension, join_file_dialog_formats, load_icon
 from valuelabel import ValueLabel
 
 __all__ = ['GUI', 'TableView']
@@ -379,24 +379,34 @@ class GUI(QMainWindow):
         self.settings.setValue(key, value)
         self.settings.endGroup()
 
-    def open_file_dialog(self, _filter: str = '') -> tuple[str, str]:
+    def open_file_dialog(self, formats: dict[tuple[str, ...], str]) -> tuple[str, str]:
         directory: str = self.get_config_value('open', 'location', '', str)
         filename: str
+        _filter: str
         filename, _filter = getopenfilename(self,
-                                            filters=_filter,
+                                            filters=join_file_dialog_formats(formats),
                                             basedir=directory)
         if filename:
             self.set_config_value('open', 'location', os.path.split(filename)[0])
         return filename, _filter
 
-    def save_file_dialog(self, _filter: str = '') -> tuple[str, str]:
+    def save_file_dialog(self, formats: dict[tuple[str, ...], str]) -> tuple[str, str]:
         directory: str = self.get_config_value('save', 'location', '', str)
         initial_filter: str = self.get_config_value('save', 'filter', '', str)
         filename: str
+        _filter: str
         filename, _filter = getsavefilename(self,
-                                            filters=_filter,
+                                            filters=join_file_dialog_formats(formats),
                                             basedir=directory,
                                             selectedfilter=initial_filter)
+
+        # set the extension from the format picked (if any)
+        e: tuple[str, ...]
+        for e in formats:
+            if _filter == formats[e]:
+                filename = ensure_extension(filename, e[0].casefold())
+                break
+
         if os.path.split(filename)[0]:
             self.set_config_value('save', 'location', os.path.split(filename)[0])
         self.set_config_value('save', 'filter', _filter)

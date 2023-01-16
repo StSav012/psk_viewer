@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import itertools
 import os
 import sys
-from typing import Final
+from typing import Final, Iterator
 
 import numpy as np
 from numpy.typing import NDArray
@@ -235,3 +236,46 @@ def ensure_extension(fn: str, ext: str) -> str:
     if filename_parts[1].casefold() != ext:
         fn += ext
     return fn
+
+
+def ensure_prefix(text: str, prefix: str) -> str:
+    if text.startswith(prefix):
+        return text
+    else:
+        return prefix + text
+
+
+def join_file_dialog_formats(formats: dict[tuple[str, ...], str]) -> str:
+    format_lines: list[str] = []
+    f: tuple[str, ...]
+    n: str
+    for f, n in formats.items():
+        format_lines.append(n + '(' + ' '.join(ensure_prefix(_f, '*') for _f in f) + ')')
+    return ';;'.join(format_lines)
+
+
+def all_cases(text: str) -> Iterator[str]:
+    """ return all cases of the text given """
+
+    cases: list[str] = list({text.lower(), text.upper(), text.capitalize(), text.swapcase(), text.casefold()})
+
+    if len(cases) < 2:
+        # don't bother
+        yield from cases
+        return
+
+    length: int = len(cases[0])
+    c: str
+    if not all(len(c) == length for c in cases):
+        # don't know what to do with cases of different lengths
+        yield from cases
+        return
+    # now, all the cases are of the same length
+
+    # get all possible variants of characters at each position
+    i: int
+    variants: Iterator[list[str]] = (sorted(set(c[i] for c in cases), reverse=True) for i in range(length))
+
+    combination: tuple[str, ...]
+    for combination in itertools.product(*variants):
+        yield ''.join(combination)
