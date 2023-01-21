@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+from typing import cast
+
 import pyqtgraph as pg  # type: ignore
-from qtpy.QtGui import QColor
-from qtpy.QtWidgets import (QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QGroupBox,
+from qtpy.QtCore import QByteArray, Qt
+from qtpy.QtGui import QCloseEvent, QColor
+from qtpy.QtWidgets import (QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QGroupBox, QScrollArea,
                             QVBoxLayout, QWidget)
 
 from colorselector import ColorSelector
@@ -12,24 +15,28 @@ from settings import Settings
 __all__ = ['Preferences']
 
 
-class Preferences(QDialog):
+class PreferencesWidget(QScrollArea):
     """ GUI preferences dialog """
 
     def __init__(self, settings: Settings, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
         self.settings: Settings = settings
-        self.setModal(True)
-        self.setWindowTitle(self.tr('Preferences'))
-        if parent is not None:
-            self.setWindowIcon(parent.windowIcon())
+
+        widget: QWidget = QWidget(self)
+        self.setWidget(widget)
+        self.setWidgetResizable(True)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.setFrameStyle(0)
 
         check_box: QCheckBox
         combo_box: QComboBox
         spin_box: pg.SpinBox
         color_selector: ColorSelector
 
-        layout: QVBoxLayout = QVBoxLayout(self)
+        layout: QVBoxLayout = QVBoxLayout(widget)
+        widget.setLayout(layout)
         key: str
         value: dict[str, (tuple[str]
                           | tuple[dict[str, bool | int | float | str], str]
@@ -85,9 +92,6 @@ class Preferences(QDialog):
                     # no else
                 # no else
             layout.addWidget(box)
-        buttons: QDialogButtonBox = QDialogButtonBox(QDialogButtonBox.StandardButton.Close, self)
-        buttons.rejected.connect(self.reject)
-        layout.addWidget(buttons)
 
     # https://forum.qt.io/post/671245
     def _on_event(self, x: bool | float | QColor, sender: QWidget) -> None:
@@ -95,3 +99,31 @@ class Preferences(QDialog):
 
     def _on_combo_box_current_index_changed(self, _: int, sender: QComboBox) -> None:
         setattr(self.settings, getattr(sender, 'callback'), sender.currentData())
+
+
+class Preferences(QDialog):
+    """ GUI preferences dialog """
+
+    def __init__(self, settings: Settings, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+
+        self.settings: Settings = settings
+        self.setModal(True)
+        self.setWindowTitle(self.tr('Preferences'))
+        if parent is not None:
+            self.setWindowIcon(parent.windowIcon())
+
+        layout: QVBoxLayout = QVBoxLayout(self)
+        layout.addWidget(PreferencesWidget(settings=settings, parent=parent))
+        buttons: QDialogButtonBox = QDialogButtonBox(QDialogButtonBox.StandardButton.Close, self)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+        self.settings.beginGroup('PreferencesDialog')
+        self.restoreGeometry(cast(QByteArray, self.settings.value('windowGeometry', QByteArray())))
+        self.settings.endGroup()
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        self.settings.beginGroup('PreferencesDialog')
+        self.settings.setValue('windowGeometry', self.saveGeometry())
+        self.settings.endGroup()
