@@ -18,9 +18,9 @@ __all__ = ['Preferences']
 class PreferencesPage(QWidget):
     """ A page of the Preferences dialog """
 
-    def __init__(self, value: dict[str, (tuple[str]
-                                         | tuple[dict[str, bool | int | float | str], str]
-                                         | tuple[list[str], list[str], str])],
+    def __init__(self, value: dict[str, (Settings.CallbackOnly
+                                         | Settings.SpinboxAndCallback
+                                         | Settings.ComboboxAndCallback)],
                  settings: Settings, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
@@ -30,46 +30,37 @@ class PreferencesPage(QWidget):
             raise TypeError(f'Invalid type: {type(value)}')
         layout: QFormLayout = QFormLayout(self)
         key2: str
-        value2: tuple[str] | tuple[dict[str, bool | int | float | str], str] | tuple[list[str], list[str], str]
+        value2: Settings.CallbackOnly | Settings.SpinboxAndCallback | Settings.ComboboxAndCallback
         for key2, value2 in value.items():
-            if not (isinstance(value2, tuple) and isinstance(value2[-1], str) and value2[-1]):
-                continue  # a callback name should be the last in the tuple
-            if len(value2) == 1:
-                if isinstance(getattr(self.settings, value2[-1]), bool):
+            if isinstance(value2, Settings.CallbackOnly):
+                if isinstance(getattr(self.settings, value2.callback), bool):
                     check_box = QCheckBox(self.tr(key2), self)
-                    setattr(check_box, 'callback', value2[-1])
-                    check_box.setChecked(getattr(self.settings, value2[-1]))
+                    setattr(check_box, 'callback', value2.callback)
+                    check_box.setChecked(getattr(self.settings, value2.callback))
                     check_box.toggled.connect(lambda *args, sender=check_box: self._on_event(*args, sender))
                     layout.addWidget(check_box)
-                elif isinstance(getattr(self.settings, value2[-1]), QColor):
-                    color_selector = ColorSelector(self, getattr(self.settings, value2[-1]))
-                    setattr(color_selector, 'callback', value2[-1])
+                elif isinstance(getattr(self.settings, value2.callback), QColor):
+                    color_selector = ColorSelector(self, getattr(self.settings, value2.callback))
+                    setattr(color_selector, 'callback', value2.callback)
                     color_selector.colorSelected.connect(
                         lambda *args, sender=color_selector: self._on_event(*args, sender))
                     layout.addRow(key2, color_selector)
                 # no else
-            elif len(value2) == 2:
-                value3: dict[str, bool | int | float | str] = value2[0]
-                if isinstance(getattr(self.settings, value2[-1]), float) and isinstance(value3, dict):
-                    spin_box = pg.SpinBox(self, getattr(self.settings, value2[-1]))
-                    spin_box.setOpts(**value3)
-                    setattr(spin_box, 'callback', value2[-1])
-                    spin_box.valueChanged.connect(lambda *args, sender=spin_box: self._on_event(*args, sender))
-                    layout.addRow(key2, spin_box)
-                # no else
-            elif len(value2) == 3:
-                value3a: list[str] = value2[0]
-                value3b: list[str] = value2[1]
-                if isinstance(value3a, (list, tuple)) and isinstance(value3b, (list, tuple)):
-                    combo_box = QComboBox(self)
-                    setattr(combo_box, 'callback', value2[-1])
-                    for index, item in enumerate(value3a):
-                        combo_box.addItem(self.tr(item), value3b[index])
-                    combo_box.setCurrentIndex(value3b.index(getattr(self.settings, value2[-1])))
-                    combo_box.currentIndexChanged.connect(
-                        lambda *args, sender=combo_box: self._on_combo_box_current_index_changed(*args, sender))
-                    layout.addRow(self.tr(key2), combo_box)
-                # no else
+            elif isinstance(value2, Settings.SpinboxAndCallback):
+                spin_box = pg.SpinBox(self, getattr(self.settings, value2.callback))
+                spin_box.setOpts(**value2.spinbox_opts)
+                setattr(spin_box, 'callback', value2.callback)
+                spin_box.valueChanged.connect(lambda *args, sender=spin_box: self._on_event(*args, sender))
+                layout.addRow(key2, spin_box)
+            elif isinstance(value2, Settings.ComboboxAndCallback):
+                combo_box = QComboBox(self)
+                setattr(combo_box, 'callback', value2.callback)
+                for index, (data, item) in enumerate(value2.combobox_data.items()):
+                    combo_box.addItem(self.tr(item), data)
+                combo_box.setCurrentText(value2.combobox_data[getattr(self.settings, value2.callback)])
+                combo_box.currentIndexChanged.connect(
+                    lambda *args, sender=combo_box: self._on_combo_box_current_index_changed(*args, sender))
+                layout.addRow(self.tr(key2), combo_box)
             # no else
 
     # https://forum.qt.io/post/671245
@@ -104,9 +95,9 @@ class PreferencesBody(QScrollArea):
         content: QListWidget = QListWidget(widget)
         stack: QStackedWidget = QStackedWidget(widget)
         key: str
-        value: dict[str, (tuple[str]
-                          | tuple[dict[str, bool | int | float | str], str]
-                          | tuple[list[str], list[str], str])]
+        value: dict[str, (Settings.CallbackOnly
+                          | Settings.SpinboxAndCallback
+                          | Settings.ComboboxAndCallback)]
         for key, value in self.settings.dialog.items():
             if not (isinstance(value, dict) and value):
                 continue

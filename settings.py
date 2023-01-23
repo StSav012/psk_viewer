@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import os
-from typing import Final, cast
+from typing import Final, NamedTuple, cast
 
 import pyqtgraph as pg  # type: ignore
 from qtpy.QtCore import QCoreApplication, QObject, QSettings
@@ -15,29 +15,39 @@ _translate = QCoreApplication.translate
 
 class Settings(QSettings):
     """ convenient internal representation of the application settings """
-    _LINE_ENDS: Final[list[str]] = ['\n', '\r', '\r\n', '\n\r']
-    _CSV_SEPARATORS: Final[list[str]] = [',', '\t', ';', ' ']
+
+    class CallbackOnly(NamedTuple):
+        callback: str
+
+    class SpinboxAndCallback(NamedTuple):
+        spinbox_opts: dict[str, bool | int | float | str]
+        callback: str
+
+    class ComboboxAndCallback(NamedTuple):
+        combobox_data: dict[str, str]
+        callback: str
 
     def __init__(self, organization: str, application: str, parent: QObject) -> None:
         super().__init__(organization, application, parent)
         self.display_processing: bool = True
-        # for some reason, the lists are not being translated when used as class variables
-        self.LINE_ENDS: Final[list[str]] = [
-            _translate('line end', r'Line Feed (\n)'),
-            _translate('line end', r'Carriage Return (\r)'),
-            _translate('line end', r'CR+LF (\r\n)'),
-            _translate('line end', r'LF+CR (\n\r)')]
-        self.CSV_SEPARATORS: Final[list[str]] = [
-            _translate('csv separator', r'comma (,)'),
-            _translate('csv separator', r'tab (\t)'),
-            _translate('csv separator', r'semicolon (;)'),
-            _translate('csv separator', r'space ( )')
-        ]
+        # for some reason, the dicts are not being translated when used as class variables
+        self.LINE_ENDS: Final[dict[str, str]] = {
+            '\n': _translate('line end', r'Line Feed (\n)'),
+            '\r': _translate('line end', r'Carriage Return (\r)'),
+            '\r\n': _translate('line end', r'CR+LF (\r\n)'),
+            '\n\r': _translate('line end', r'LF+CR (\n\r)')
+        }
+        self.CSV_SEPARATORS: Final[dict[str, str]] = {
+            ',': _translate('csv separator', r'comma (,)'),
+            '\t': _translate('csv separator', r'tab (\t)'),
+            ';': _translate('csv separator', r'semicolon (;)'),
+            ' ': _translate('csv separator', r'space ( )')
+        }
 
     @property
-    def dialog(self) -> dict[str, dict[str, (tuple[str]
-                                             | tuple[dict[str, bool | int | float | str], str]
-                                             | tuple[list[str], list[str], str])]]:
+    def dialog(self) -> dict[str, dict[str, (Settings.CallbackOnly
+                                             | Settings.SpinboxAndCallback
+                                             | Settings.ComboboxAndCallback)]]:
         jump_opts: dict[str, bool | int | str] = {
             'suffix': _translate('unit', 'Hz'),
             'siPrefix': True,
@@ -57,59 +67,70 @@ class Settings(QSettings):
         }
         return {
             _translate('preferences', 'Processing'): {
-                _translate('preferences', 'Jump:'): (jump_opts, 'jump',)
+                _translate('preferences', 'Jump:'): Settings.SpinboxAndCallback(jump_opts, 'jump')
             } if self.display_processing else {},
             _translate('preferences', 'Crosshair'): {
-                _translate('preferences', 'Show crosshair lines'): ('show_crosshair',),
-                _translate('preferences', 'Show coordinates'): ('show_coordinates_at_crosshair',),
-                _translate('preferences', 'Color:'): ('crosshair_lines_color',),
-                _translate('preferences', 'Thickness:'): (line_opts, 'crosshair_lines_thickness',)
+                _translate('preferences', 'Show crosshair lines'): Settings.CallbackOnly('show_crosshair'),
+                _translate('preferences', 'Show coordinates'): Settings.CallbackOnly('show_coordinates_at_crosshair'),
+                _translate('preferences', 'Color:'): Settings.CallbackOnly('crosshair_lines_color'),
+                _translate('preferences', 'Thickness:'):
+                    Settings.SpinboxAndCallback(line_opts, 'crosshair_lines_thickness')
             },
             _translate('preferences', 'Line'): {
-                _translate('preferences', 'Color:'): ('line_color',),
-                _translate('preferences', 'Ghost Color:'): ('ghost_line_color',),
-                _translate('preferences', 'Thickness:'): (line_opts, 'line_thickness',)
+                _translate('preferences', 'Color:'): Settings.CallbackOnly('line_color'),
+                _translate('preferences', 'Ghost Color:'): Settings.CallbackOnly('ghost_line_color'),
+                _translate('preferences', 'Thickness:'): Settings.SpinboxAndCallback(line_opts, 'line_thickness')
             },
             _translate('preferences', 'Marks'): {
-                _translate('preferences', 'Copy frequency to clipboard'): ('copy_frequency',),
-                _translate('preferences', 'Fancy exponents in the table'): ('fancy_table_numbers',),
-                _translate('preferences', 'Fill color:'): ('mark_brush',),
-                _translate('preferences', 'Border color:'): ('mark_pen',),
-                _translate('preferences', 'Size:'): (line_opts, 'mark_size',),
-                _translate('preferences', 'Border thickness:'): (line_opts, 'mark_pen_thickness',)
+                _translate('preferences', 'Copy frequency to clipboard'): Settings.CallbackOnly('copy_frequency'),
+                _translate('preferences', 'Fancy exponents in the table'):
+                    Settings.CallbackOnly('fancy_table_numbers'),
+                _translate('preferences', 'Fill color:'): Settings.CallbackOnly('mark_brush'),
+                _translate('preferences', 'Border color:'): Settings.CallbackOnly('mark_pen'),
+                _translate('preferences', 'Size:'): Settings.SpinboxAndCallback(line_opts, 'mark_size'),
+                _translate('preferences', 'Border thickness:'):
+                    Settings.SpinboxAndCallback(line_opts, 'mark_pen_thickness')
             },
             _translate('preferences', 'Export'): {
                 _translate('preferences', 'Line ending:'):
-                    (self.LINE_ENDS, self._LINE_ENDS, 'line_end'),
+                    Settings.ComboboxAndCallback(self.LINE_ENDS, 'line_end'),
                 _translate('preferences', 'CSV separator:'):
-                    (self.CSV_SEPARATORS, self._CSV_SEPARATORS, 'csv_separator'),
+                    Settings.ComboboxAndCallback(self.CSV_SEPARATORS, 'csv_separator'),
             }
         }
 
     @property
     def line_end(self) -> str:
         self.beginGroup('export')
-        v: int = cast(int, self.value('lineEnd', self._LINE_ENDS.index(os.linesep), int))
+        v: str = cast(str, self.value('lineEnd', os.linesep, str))
         self.endGroup()
-        return self._LINE_ENDS[v]
+        if v not in self.LINE_ENDS:
+            v = os.linesep
+        return v
 
     @line_end.setter
     def line_end(self, new_value: str) -> None:
+        if new_value not in self.LINE_ENDS:
+            return
         self.beginGroup('export')
-        self.setValue('lineEnd', self._LINE_ENDS.index(new_value))
+        self.setValue('lineEnd', new_value)
         self.endGroup()
 
     @property
     def csv_separator(self) -> str:
         self.beginGroup('export')
-        v: int = cast(int, self.value('csvSeparator', self._CSV_SEPARATORS.index('\t'), int))
+        v: str = cast(str, self.value('csvSeparator', '\t', str))
         self.endGroup()
-        return self._CSV_SEPARATORS[v]
+        if v not in self.CSV_SEPARATORS:
+            v = '\t'
+        return v
 
     @csv_separator.setter
     def csv_separator(self, new_value: str) -> None:
+        if new_value not in self.CSV_SEPARATORS:
+            return
         self.beginGroup('export')
-        self.setValue('csvSeparator', self._CSV_SEPARATORS.index(new_value))
+        self.setValue('csvSeparator', new_value)
         self.endGroup()
 
     @property
