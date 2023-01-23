@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
-from typing import Final, Iterable, cast
+from typing import Final, Iterable, NamedTuple, cast
 
 import numpy as np
 from numpy.typing import NDArray
@@ -15,13 +15,18 @@ __all__ = ('DataModel',)
 class DataModel(QAbstractTableModel):
     ROW_BATCH_COUNT: Final[int] = 5
 
+    class Format(NamedTuple):
+        precision: int
+        scale: float
+        fancy: bool
+
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._data: NDArray[np.float64] = np.empty((0, 0))
         self._rows_loaded: int = self.ROW_BATCH_COUNT
 
         self._header: list[str] = []
-        self._format: list[tuple[int, float, bool]] = []
+        self._format: list[DataModel.Format] = []
         self._sort_column: int = 0
         self._sort_order: Qt.SortOrder = Qt.SortOrder.AscendingOrder
 
@@ -108,10 +113,12 @@ class DataModel(QAbstractTableModel):
             return True
         return False
 
-    def set_format(self, new_format: list[tuple[int, float]]) -> None:
+    def set_format(self, new_format: list[tuple[int, float, bool] | tuple[int, float]]) -> None:
         self.beginResetModel()
         f: tuple[int, float, bool] | tuple[int, float]
-        self._format = [(int(round(f[0])), float(f[1]), bool(f[2]) if len(f) > 2 else False) for f in new_format]
+        self._format = [DataModel.Format(precision=int(round(f[0])), scale=float(f[1]),
+                                         fancy=bool(f[2]) if len(f) > 2 else False)
+                        for f in new_format]
         self.endResetModel()
 
     def set_data(self, new_data: list[list[float]] | NDArray[np.float64]) -> None:
