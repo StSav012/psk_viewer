@@ -83,8 +83,8 @@ class Settings(QSettings):
             },
             _translate('preferences', 'Marks'): {
                 _translate('preferences', 'Copy frequency to clipboard'): Settings.CallbackOnly('copy_frequency'),
-                _translate('preferences', 'Fancy exponents in the table'):
-                    Settings.CallbackOnly('fancy_table_numbers'),
+                _translate('preferences', 'Fancy exponents in the table'): Settings.CallbackOnly('fancy_table_numbers'),
+                _translate('preferences', 'Show log₁₀ absorption'): Settings.CallbackOnly('log10_gamma'),
                 _translate('preferences', 'Fill color:'): Settings.CallbackOnly('mark_brush'),
                 _translate('preferences', 'Border color:'): Settings.CallbackOnly('mark_pen'),
                 _translate('preferences', 'Size:'): Settings.SpinboxAndCallback(line_opts, 'mark_size'),
@@ -313,4 +313,17 @@ class Settings(QSettings):
     def fancy_table_numbers(self, new_value: bool) -> None:
         self.beginGroup('marks')
         self.setValue('fancyFormat', new_value)
+        self.endGroup()
+
+    @property
+    def log10_gamma(self) -> bool:
+        self.beginGroup('marks')
+        v: bool = cast(bool, self.value('log10gamma', True, bool))
+        self.endGroup()
+        return v
+
+    @log10_gamma.setter
+    def log10_gamma(self, new_value: bool) -> None:
+        self.beginGroup('marks')
+        self.setValue('log10gamma', new_value)
         self.endGroup()

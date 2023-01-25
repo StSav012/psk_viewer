@@ -150,6 +150,9 @@ class App(GUI):
         self.set_marks_appearance()
         self.set_crosshair_lines_appearance()
 
+        self.model_found_lines.fancy_table_numbers = self.settings.fancy_table_numbers
+        self.model_found_lines.log10_gamma = self.settings.log10_gamma
+
         # customize menu
         titles_to_leave: list[str] = [
             self._canvas.ctrl.alphaGroup.parent().title(),
@@ -337,21 +340,8 @@ class App(GUI):
         self.figure.sceneObj.sigMouseClicked.connect(self.on_plot_clicked)
 
     def adjust_table_columns(self) -> None:
-        self.model_found_lines.header = (
-                [_translate('main window', 'Frequency [MHz]')] +
-                ([_translate('main window', 'Voltage [mV]'), _translate('main window', 'Absorption [cm⁻¹]')]
-                 * (self.table_found_lines.horizontalHeader().count() // 2))
-        )
         for i in range(self.table_found_lines.horizontalHeader().count()):
             self.table_found_lines.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
-
-        # change visibility of the found lines' table columns
-        if self.switch_data_action.isChecked():
-            self.table_found_lines.hideColumn(1)
-            self.table_found_lines.showColumn(2)
-        else:
-            self.table_found_lines.hideColumn(2)
-            self.table_found_lines.showColumn(1)
 
     def on_xlim_changed(self, xlim: Iterable[float]) -> None:
         min_freq, max_freq = min(xlim), max(xlim)
@@ -648,7 +638,8 @@ class App(GUI):
         self.set_plot_line_appearance()
         self.set_marks_appearance()
         self.set_crosshair_lines_appearance()
-        self.model_found_lines.set_format([(3, 1e-6), (4, 1e3), (4, np.nan, self.settings.fancy_table_numbers)])
+        self.model_found_lines.fancy_table_numbers = self.settings.fancy_table_numbers
+        self.model_found_lines.log10_gamma = self.settings.log10_gamma
         if self._data_mode == self.PSK_DATA_MODE and self._plot_data.frequency_span > 0.0:
             jump: float = round(self.settings.jump / self._plot_data.frequency_step) * self._plot_data.frequency_step
             self.toolbar.differentiate_action.setEnabled(0. < jump < 0.25 * self._plot_data.frequency_span)
@@ -907,21 +898,19 @@ class App(GUI):
             # noinspection PyTypeChecker
             np.savetxt(fn, data,
                        delimiter=sep,
-                       header=(sep.join((_translate("plot axes labels", 'Frequency'),
-                                         _translate("plot axes labels", 'Voltage'),
-                                         _translate("plot axes labels", 'Absorption'))) + '\n'
-                               + sep.join((pg.siScale(1e6)[1] + _translate('unit', 'Hz'),
-                                           pg.siScale(1e-3)[1] + _translate('unit', 'V'),
-                                           _translate('unit', 'cm⁻¹')))),
+                       header=(sep.join((self.model_found_lines.header[0].name,
+                                         self.model_found_lines.header[1].name,
+                                         self.model_found_lines.header[2].name)) + '\n'
+                               + sep.join((self.model_found_lines.header[0].unit,
+                                           self.model_found_lines.header[1].unit,
+                                           self.model_found_lines.header[2].unit))),
                        fmt=('%.3f', '%.6f', '%.6e'), encoding='utf-8')
 
         def save_xlsx(fn: str) -> None:
             with pd.ExcelWriter(fn) as writer:
                 df: pd.DataFrame = pd.DataFrame(data)
                 df.to_excel(writer, index=False,
-                            header=[_translate('main window', 'Frequency [MHz]'),
-                                    _translate('main window', 'Voltage [mV]'),
-                                    _translate('main window', 'Absorption [cm⁻¹]')],
+                            header=self.model_found_lines.header,
                             sheet_name=self._plot_line.name() or _translate('workbook', 'Sheet1'))
 
         import importlib.util
@@ -941,7 +930,7 @@ class App(GUI):
         f: NDArray[np.float64] = self.model_found_lines.all_data[:, 0] * 1e-6
         v: NDArray[np.float64] = self.model_found_lines.all_data[:, 1] * 1e3
         g: NDArray[np.float64] = self.model_found_lines.all_data[:, 2]
-        data: NDArray[np.float64] = np.vstack((f, v, g)).transpose()
+        data: NDArray[np.float64] = np.column_stack((f, v, g))
 
         filename_ext: str = os.path.splitext(filename)[1].casefold()
         if filename_ext in supported_formats_callbacks:
@@ -1178,6 +1167,7 @@ class App(GUI):
     def calculate_second_derivative(self) -> None:
         self._data_mode = self.PSK_WITH_JUMP_DATA_MODE
         self.display_gamma_or_voltage()
+        self.model_found_lines.refresh()
 
     def on_switch_data_action_toggled(self, new_state: bool) -> None:
         self._plot_data.data_type = PlotDataItem.GAMMA_DATA if new_state else PlotDataItem.VOLTAGE_DATA
@@ -1268,14 +1258,6 @@ class App(GUI):
 
         self.hide_cursors()
 
-        # change visibility of the found lines' table columns
-        if display_gamma:
-            self.table_found_lines.hideColumn(1)
-            self.table_found_lines.showColumn(2)
-        else:
-            self.table_found_lines.hideColumn(2)
-            self.table_found_lines.showColumn(1)
-
     def save_data(self) -> None:
         if self._plot_line.yData is None:
             return
@@ -1284,26 +1266,26 @@ class App(GUI):
             data: NDArray[np.float64]
             sep: str = self.settings.csv_separator
             if self.switch_data_action.isChecked():
-                data = np.vstack((x * 1e-6, y)).transpose()
+                data = np.column_stack((x * 1e-6, y))
                 # noinspection PyTypeChecker
                 np.savetxt(fn, data,
                            delimiter=sep,
                            header=(sep.join((_translate("plot axes labels", 'Frequency'),
                                              _translate("plot axes labels", 'Absorption')))
                                    + '\n'
-                                   + sep.join((pg.siScale(1e6)[1] + _translate('unit', 'Hz'),
+                                   + sep.join((_translate('unit', 'MHz'),
                                                _translate('unit', 'cm⁻¹')))),
                            fmt=('%.3f', '%.6e'), encoding='utf-8')
             else:
-                data = np.vstack((x * 1e-6, y * 1e3)).transpose()
+                data = np.column_stack((x * 1e-6, y * 1e3))
                 # noinspection PyTypeChecker
                 np.savetxt(filename, data,
                            delimiter=sep,
                            header=(sep.join((_translate("plot axes labels", 'Frequency'),
                                              _translate("plot axes labels", 'Voltage')))
                                    + '\n'
-                                   + sep.join((pg.siScale(1e6)[1] + _translate('unit', 'Hz'),
-                                               pg.siScale(1e-3)[1] + _translate('unit', 'V')))),
+                                   + sep.join((_translate('unit', 'MHz'),
+                                               _translate('unit', 'mV')))),
                            fmt=('%.3f', '%.6f'), encoding='utf-8')
 
         def save_xlsx(fn: str) -> None:
@@ -1311,16 +1293,18 @@ class App(GUI):
             with pd.ExcelWriter(fn) as writer:
                 df: pd.DataFrame
                 if self.switch_data_action.isChecked():
-                    data = np.vstack((x * 1e-6, y)).transpose()
+                    data = np.column_stack((x * 1e-6, y))
                     df = pd.DataFrame(data)
-                    df.to_excel(writer, index=False, header=[_translate('main window', 'Frequency [MHz]'),
-                                                             _translate('main window', 'Absorption [cm⁻¹]')],
+                    df.to_excel(writer, index=False,
+                                header=[self.model_found_lines.header[0],
+                                        self.model_found_lines.header[2]],
                                 sheet_name=self._plot_line.name() or _translate('workbook', 'Sheet1'))
                 else:
-                    data = np.vstack((x * 1e-6, y * 1e3)).transpose()
+                    data = np.column_stack((x * 1e-6, y * 1e3))
                     df = pd.DataFrame(data)
-                    df.to_excel(writer, index=False, header=[_translate('main window', 'Frequency [MHz]'),
-                                                             _translate('main window', 'Voltage [mV]')],
+                    df.to_excel(writer, index=False,
+                                header=[self.model_found_lines.header[0],
+                                        self.model_found_lines.header[1]],
                                 sheet_name=self._plot_line.name() or _translate('workbook', 'Sheet1'))
 
         import importlib.util

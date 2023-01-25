@@ -4,6 +4,7 @@ from __future__ import annotations
 import itertools
 import os
 import sys
+from contextlib import suppress
 from typing import Final, Iterator
 
 import numpy as np
@@ -279,3 +280,44 @@ def all_cases(text: str) -> Iterator[str]:
     combination: tuple[str, ...]
     for combination in itertools.product(*variants):
         yield ''.join(combination)
+
+
+class HeaderWithUnit:
+    def __init__(self, name: str, unit: str, fmt: str = '') -> None:
+        self._name: str = name
+        self._unit: str = unit
+        self._fmt: str = fmt or _translate('header with unit', '{name} [{unit}]')
+        self._str: str = self._fmt.format(name=self._name, unit=self._unit)
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, new_value: str) -> None:
+        with suppress(Exception):
+            self._str = self._fmt.format(name=new_value, unit=self._unit)
+            self._name = new_value
+
+    @property
+    def unit(self) -> str:
+        return self._unit
+
+    @unit.setter
+    def unit(self, new_value: str) -> None:
+        with suppress(Exception):
+            self._str = self._fmt.format(name=self._name, unit=new_value)
+            self._unit = new_value
+
+    @property
+    def format(self) -> str:
+        return self._fmt
+
+    @format.setter
+    def format(self, new_value: str) -> None:
+        with suppress(Exception):
+            self._str = new_value.format(name=self._name, unit=self._unit)
+            self._fmt = new_value
+
+    def __str__(self) -> str:
+        return self._str

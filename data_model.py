@@ -7,7 +7,7 @@ import numpy as np
 from numpy.typing import NDArray
 from qtpy.QtCore import QAbstractTableModel, QModelIndex, QObject, Qt
 
-from utils import superscript_tag
+from utils import HeaderWithUnit, superscript_tag
 
 __all__ = ('DataModel',)
 
@@ -18,25 +18,25 @@ class DataModel(QAbstractTableModel):
     class Format(NamedTuple):
         precision: int
         scale: float
-        fancy: bool
+        fancy: bool = False
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._data: NDArray[np.float64] = np.empty((0, 0))
         self._rows_loaded: int = self.ROW_BATCH_COUNT
 
-        self._header: list[str] = []
+        self._header: list[str | HeaderWithUnit] = []
         self._format: list[DataModel.Format] = []
         self._sort_column: int = 0
         self._sort_order: Qt.SortOrder = Qt.SortOrder.AscendingOrder
 
     @property
-    def header(self) -> list[str]:
+    def header(self) -> list[str | HeaderWithUnit]:
         return self._header
 
     @header.setter
-    def header(self, new_header: Iterable[str]) -> None:
-        self._header = list(map(str, new_header))
+    def header(self, new_header: Iterable[str | HeaderWithUnit]) -> None:
+        self._header = list(new_header)
 
     @property
     def all_data(self) -> NDArray[np.float64]:
@@ -55,9 +55,26 @@ class DataModel(QAbstractTableModel):
         return cast(int, self._data.shape[1])
 
     def formatted_item(self, row: int, column: int, replace_hyphen: bool = False) -> str:
-        value: float = self.item(row, column)
+        def fancy_format(v: float) -> str:
+            s: str = f'{v:.{precision}e}'
+            while 'e+0' in s:
+                s = s.replace('e+0', 'e+')
+            while 'e-0' in s:
+                s = s.replace('e-0', 'e-')
+            if s.endswith('e+') or s.endswith('e-'):
+                s = s[:-2]
+            if 'e' in s:
+                s = s.replace('e+', 'e')
+                s = s.replace('e', '×10<sup>') + '</sup>'
+            if replace_hyphen:
+                s = s.replace('-', '−')
+            return superscript_tag(s)
+
+        value: float | complex = self.item(row, column)
         if np.isnan(value):
             return ''
+        if isinstance(value, complex) and value.imag == 0.0:
+            value = value.real
         if column >= len(self._format):
             if replace_hyphen:
                 return str(value).replace('-', '−')
@@ -68,18 +85,15 @@ class DataModel(QAbstractTableModel):
         precision, scale, fancy = self._format[column]
         if np.isnan(scale):
             if fancy:
-                s: str = f'{value:.{precision}e}'
-                while 'e+0' in s:
-                    s = s.replace('e+0', 'e+')
-                while 'e-0' in s:
-                    s = s.replace('e-0', 'e-')
-                if s.endswith('e+') or s.endswith('e-'):
-                    s = s[:-2]
-                s = s.replace('e+', 'e', 1)
-                if replace_hyphen:
-                    s = s.replace('-', '−')
-                s = s.replace('e', '×10<sup>', 1) + '</sup>'
-                return superscript_tag(s)
+                if isinstance(value, complex):
+                    re_s: str = fancy_format(value.real)
+                    im_s: str = fancy_format(value.imag)
+                    if value.imag < 0:
+                        return re_s + im_s + 'j'
+                    else:
+                        return re_s + '+' + im_s + 'j'
+                else:
+                    return fancy_format(value)
             else:
                 if replace_hyphen:
                     return f'{value:.{precision}e}'.replace('-', '−')
@@ -102,7 +116,7 @@ class DataModel(QAbstractTableModel):
     def headerData(self, col: int, orientation: Qt.Orientation, role: int = Qt.ItemDataRole.DisplayRole) -> str | None:
         if (orientation == Qt.Orientation.Horizontal
                 and role == Qt.ItemDataRole.DisplayRole and 0 <= col < len(self._header)):
-            return self._header[col]
+            return str(self._header[col])
         return None
 
     def setHeaderData(self, section: int, orientation: Qt.Orientation, value: str,
