@@ -30,7 +30,7 @@ Enter a correct value [cm]:</source>
 <context>
     <name>file dialog</name>
     <message>
-        <location filename="../backend.py" line="1347"/>
+        <location filename="../backend.py" line="1341"/>
         <source>Image files</source>
         <translation>Изображения</translation>
     </message>
@@ -38,43 +38,43 @@ Enter a correct value [cm]:</source>
 <context>
     <name>file type</name>
     <message>
-        <location filename="../backend.py" line="846"/>
-        <location filename="../backend.py" line="921"/>
-        <location filename="../backend.py" line="1315"/>
+        <location filename="../backend.py" line="840"/>
+        <location filename="../backend.py" line="915"/>
+        <location filename="../backend.py" line="1309"/>
         <source>Text with separators</source>
         <translation>Текст с разделителями</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="847"/>
+        <location filename="../backend.py" line="841"/>
         <source>Plain text</source>
         <translation>Просто текст</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="855"/>
-        <location filename="../backend.py" line="924"/>
-        <location filename="../backend.py" line="1318"/>
+        <location filename="../backend.py" line="849"/>
+        <location filename="../backend.py" line="918"/>
+        <location filename="../backend.py" line="1312"/>
         <source>Microsoft Excel</source>
         <translation>Microsoft Excel</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="859"/>
+        <location filename="../backend.py" line="853"/>
         <source>Supported formats</source>
         <translation>Поддерживаемые форматы</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="863"/>
+        <location filename="../backend.py" line="857"/>
         <source>All files</source>
         <translation>Все файлы</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="1016"/>
-        <location filename="../backend.py" line="1106"/>
+        <location filename="../backend.py" line="1010"/>
+        <location filename="../backend.py" line="1100"/>
         <source>PSK Spectrometer</source>
         <translation>Спектрометр с фазовой манипуляцией</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="1017"/>
-        <location filename="../backend.py" line="1107"/>
+        <location filename="../backend.py" line="1011"/>
+        <location filename="../backend.py" line="1101"/>
         <source>Fast Sweep Spectrometer</source>
         <translation>Спектрометр с быстрым свипированием частоты</translation>
     </message>
@@ -90,149 +90,149 @@ Enter a correct value [cm]:</source>
 <context>
     <name>main window</name>
     <message>
-        <location filename="../backend.py" line="1096"/>
+        <location filename="../backend.py" line="1090"/>
         <source>%s&#xa0;— Spectrometer Data Viewer</source>
         <translation>%s — Программа просмотра файлов спектрометра</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="1190"/>
+        <location filename="../backend.py" line="1184"/>
         <source>Absorption</source>
         <translation>Поглощение</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="1192"/>
+        <location filename="../backend.py" line="1186"/>
         <source>Voltage</source>
         <translation>Напряжение</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="1223"/>
+        <location filename="../backend.py" line="1217"/>
         <source>Keep absorption range</source>
         <translation>Не менять пределы по поглощению</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="1241"/>
-        <location filename="../gui.py" line="297"/>
+        <location filename="../backend.py" line="1235"/>
+        <location filename="../gui.py" line="228"/>
         <source>Keep voltage range</source>
         <translation>Не менять пределы по напряжению</translation>
     </message>
     <message>
-        <location filename="../gui.py" line="306"/>
+        <location filename="../gui.py" line="237"/>
         <source>Try to detect lines automatically</source>
         <translation>Попробовать обнаружить линии поглощения автоматически</translation>
     </message>
     <message>
         <location filename="../backend.py" line="235"/>
-        <location filename="../backend.py" line="968"/>
+        <location filename="../backend.py" line="962"/>
         <source>Are you sure?</source>
         <translation>Вы уверены?</translation>
     </message>
     <message>
-        <location filename="../gui.py" line="202"/>
-        <location filename="../gui.py" line="221"/>
+        <location filename="../gui.py" line="133"/>
+        <location filename="../gui.py" line="152"/>
         <source>Minimum</source>
         <translation>Минимум</translation>
     </message>
     <message>
-        <location filename="../gui.py" line="203"/>
-        <location filename="../gui.py" line="222"/>
+        <location filename="../gui.py" line="134"/>
+        <location filename="../gui.py" line="153"/>
         <source>Maximum</source>
         <translation>Максимум</translation>
     </message>
     <message>
-        <location filename="../gui.py" line="204"/>
+        <location filename="../gui.py" line="135"/>
         <source>Center</source>
         <translation>Центр</translation>
     </message>
     <message>
-        <location filename="../gui.py" line="205"/>
+        <location filename="../gui.py" line="136"/>
         <source>Span</source>
         <translation>Промежуток</translation>
     </message>
     <message>
-        <location filename="../gui.py" line="234"/>
+        <location filename="../gui.py" line="165"/>
         <source>Show Absorption</source>
         <translation>Показать поглощение</translation>
     </message>
     <message>
-        <location filename="../gui.py" line="236"/>
+        <location filename="../gui.py" line="167"/>
         <source>Switch Y data between absorption and voltage</source>
         <translation>Переключить значения по оси Y между поглощением и напряжением</translation>
     </message>
     <message>
-        <location filename="../gui.py" line="241"/>
+        <location filename="../gui.py" line="172"/>
         <source>Search threshold</source>
         <translation>Порог поиска</translation>
     </message>
     <message>
         <location filename="../backend.py" line="238"/>
-        <location filename="../backend.py" line="971"/>
-        <location filename="../backend.py" line="1002"/>
-        <location filename="../gui.py" line="274"/>
+        <location filename="../backend.py" line="965"/>
+        <location filename="../backend.py" line="996"/>
+        <location filename="../gui.py" line="205"/>
         <source>Spectrometer Data Viewer</source>
         <translation>Программа просмотра файлов спектрометра</translation>
     </message>
     <message>
-        <location filename="../gui.py" line="283"/>
+        <location filename="../gui.py" line="214"/>
         <source>Frequency</source>
         <translation>Частота</translation>
     </message>
     <message>
-        <location filename="../gui.py" line="284"/>
+        <location filename="../gui.py" line="215"/>
         <source>Keep frequency range</source>
         <translation>Не менять пределы по частоте</translation>
     </message>
     <message>
-        <location filename="../gui.py" line="286"/>
-        <location filename="../gui.py" line="299"/>
+        <location filename="../gui.py" line="217"/>
+        <location filename="../gui.py" line="230"/>
         <source>−50%</source>
         <translation>−50%</translation>
     </message>
     <message>
-        <location filename="../gui.py" line="287"/>
-        <location filename="../gui.py" line="300"/>
+        <location filename="../gui.py" line="218"/>
+        <location filename="../gui.py" line="231"/>
         <source>−10%</source>
         <translation>−10%</translation>
     </message>
     <message>
-        <location filename="../gui.py" line="288"/>
-        <location filename="../gui.py" line="301"/>
+        <location filename="../gui.py" line="219"/>
+        <location filename="../gui.py" line="232"/>
         <source>+10%</source>
         <translation>+10%</translation>
     </message>
     <message>
-        <location filename="../gui.py" line="289"/>
-        <location filename="../gui.py" line="302"/>
+        <location filename="../gui.py" line="220"/>
+        <location filename="../gui.py" line="233"/>
         <source>+50%</source>
         <translation>+50%</translation>
     </message>
     <message>
-        <location filename="../gui.py" line="296"/>
+        <location filename="../gui.py" line="227"/>
         <source>Vertical Axis</source>
         <translation>Вертикальная ось</translation>
     </message>
     <message>
-        <location filename="../gui.py" line="304"/>
-        <location filename="../gui.py" line="307"/>
+        <location filename="../gui.py" line="235"/>
+        <location filename="../gui.py" line="238"/>
         <source>Find Lines Automatically</source>
         <translation>Найти линии автоматически</translation>
     </message>
     <message>
-        <location filename="../gui.py" line="308"/>
+        <location filename="../gui.py" line="239"/>
         <source>Clear Automatically Found Lines</source>
         <translation>Стереть автоматически найденные линии</translation>
     </message>
     <message>
-        <location filename="../gui.py" line="309"/>
+        <location filename="../gui.py" line="240"/>
         <source>Previous Line</source>
         <translation>Предыдущая линия</translation>
     </message>
     <message>
-        <location filename="../gui.py" line="310"/>
+        <location filename="../gui.py" line="241"/>
         <source>Next Line</source>
         <translation>Следующая линия</translation>
     </message>
     <message>
-        <location filename="../gui.py" line="315"/>
+        <location filename="../gui.py" line="246"/>
         <source>Found Lines</source>
         <translation>Найденные линии</translation>
     </message>
@@ -249,23 +249,23 @@ Enter a correct value [cm]:</source>
     <name>plot axes labels</name>
     <message>
         <location filename="../backend.py" line="176"/>
-        <location filename="../backend.py" line="1273"/>
-        <location filename="../backend.py" line="1284"/>
+        <location filename="../backend.py" line="1267"/>
+        <location filename="../backend.py" line="1278"/>
         <location filename="../found_lines_model.py" line="28"/>
         <source>Frequency</source>
         <translation>Частота</translation>
     </message>
     <message>
         <location filename="../backend.py" line="179"/>
-        <location filename="../backend.py" line="1244"/>
-        <location filename="../backend.py" line="1285"/>
+        <location filename="../backend.py" line="1238"/>
+        <location filename="../backend.py" line="1279"/>
         <location filename="../found_lines_model.py" line="29"/>
         <source>Voltage</source>
         <translation>Напряжение</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="1226"/>
-        <location filename="../backend.py" line="1274"/>
+        <location filename="../backend.py" line="1220"/>
+        <location filename="../backend.py" line="1268"/>
         <location filename="../found_lines_model.py" line="31"/>
         <location filename="../found_lines_model.py" line="49"/>
         <source>Absorption</source>
@@ -570,7 +570,7 @@ Enter a correct value [cm]:</source>
 <context>
     <name>si prefix alternative micro</name>
     <message>
-        <location filename="../gui.py" line="192"/>
+        <location filename="../gui.py" line="123"/>
         <source>u</source>
         <translation>мк</translation>
     </message>
@@ -578,7 +578,7 @@ Enter a correct value [cm]:</source>
 <context>
     <name>si prefixes</name>
     <message>
-        <location filename="../gui.py" line="188"/>
+        <location filename="../gui.py" line="119"/>
         <source>y,z,a,f,p,n,µ,m, ,k,M,G,T,P,E,Z,Y</source>
         <translation>и,з,а,ф,п,н,мк,м, ,к,М,Г,Т,П,Э,З,И</translation>
     </message>
@@ -587,48 +587,48 @@ Enter a correct value [cm]:</source>
     <name>unit</name>
     <message>
         <location filename="../backend.py" line="177"/>
-        <location filename="../gui.py" line="281"/>
-        <location filename="../gui.py" line="291"/>
-        <location filename="../gui.py" line="292"/>
-        <location filename="../gui.py" line="293"/>
-        <location filename="../gui.py" line="294"/>
-        <location filename="../gui.py" line="334"/>
+        <location filename="../gui.py" line="212"/>
+        <location filename="../gui.py" line="222"/>
+        <location filename="../gui.py" line="223"/>
+        <location filename="../gui.py" line="224"/>
+        <location filename="../gui.py" line="225"/>
+        <location filename="../gui.py" line="265"/>
         <location filename="../settings.py" line="52"/>
         <source>Hz</source>
         <translation>Гц</translation>
     </message>
     <message>
         <location filename="../backend.py" line="180"/>
-        <location filename="../backend.py" line="1245"/>
-        <location filename="../backend.py" line="1249"/>
-        <location filename="../backend.py" line="1252"/>
-        <location filename="../gui.py" line="283"/>
-        <location filename="../gui.py" line="346"/>
+        <location filename="../backend.py" line="1239"/>
+        <location filename="../backend.py" line="1243"/>
+        <location filename="../backend.py" line="1246"/>
+        <location filename="../gui.py" line="214"/>
+        <location filename="../gui.py" line="277"/>
         <source>V</source>
         <translation>В</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="1276"/>
-        <location filename="../backend.py" line="1287"/>
+        <location filename="../backend.py" line="1270"/>
+        <location filename="../backend.py" line="1281"/>
         <location filename="../found_lines_model.py" line="28"/>
         <source>MHz</source>
         <translation>МГц</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="1288"/>
+        <location filename="../backend.py" line="1282"/>
         <location filename="../found_lines_model.py" line="29"/>
         <source>mV</source>
         <translation>мВ</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="1227"/>
-        <location filename="../backend.py" line="1232"/>
+        <location filename="../backend.py" line="1221"/>
+        <location filename="../backend.py" line="1226"/>
         <source>cm&lt;sup&gt;−1&lt;/sup&gt;</source>
         <translation>см&lt;sup&gt;−1&lt;/sup&gt;</translation>
     </message>
     <message>
-        <location filename="../backend.py" line="1235"/>
-        <location filename="../backend.py" line="1277"/>
+        <location filename="../backend.py" line="1229"/>
+        <location filename="../backend.py" line="1271"/>
         <location filename="../found_lines_model.py" line="32"/>
         <location filename="../found_lines_model.py" line="50"/>
         <source>cm⁻¹</source>
@@ -649,9 +649,9 @@ Enter a correct value [cm]:</source>
 <context>
     <name>workbook</name>
     <message>
-        <location filename="../backend.py" line="914"/>
-        <location filename="../backend.py" line="1301"/>
-        <location filename="../backend.py" line="1308"/>
+        <location filename="../backend.py" line="908"/>
+        <location filename="../backend.py" line="1295"/>
+        <location filename="../backend.py" line="1302"/>
         <source>Sheet1</source>
         <translation>Лист1</translation>
     </message>
