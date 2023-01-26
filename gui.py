@@ -3,94 +3,25 @@ from __future__ import annotations
 
 import os
 import re
-from typing import Any, Type, cast
+from typing import Any, Type
 
 import numpy as np
 import pyqtgraph as pg  # type: ignore
 from pyqtgraph import functions as fn
-from qtpy.QtCore import QCoreApplication, QModelIndex, Qt
-from qtpy.QtGui import QKeyEvent, QKeySequence
-from qtpy.QtWidgets import (QAbstractItemView, QCheckBox, QDockWidget, QFormLayout,
-                            QGridLayout, QMainWindow, QPushButton, QStatusBar, QTableView, QVBoxLayout, QWidget)
+from qtpy.QtCore import QCoreApplication, Qt
+from qtpy.QtWidgets import (QAbstractItemView, QCheckBox, QDockWidget, QFormLayout, QGridLayout, QMainWindow,
+                            QPushButton, QStatusBar, QVBoxLayout, QWidget)
 from qtpy.compat import getopenfilename, getsavefilename
 
 from found_lines_model import FoundLinesModel
 from settings import Settings
-from utils import copy_to_clipboard, ensure_extension, join_file_dialog_formats, load_icon
+from table_view import TableView
+from utils import ensure_extension, join_file_dialog_formats, load_icon
 from valuelabel import ValueLabel
 
-__all__ = ['GUI', 'TableView']
+__all__ = ['GUI']
 
 _translate = QCoreApplication.translate
-
-
-class TableView(QTableView):
-    def __init__(self, settings: Settings, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self.settings: Settings = settings
-
-    def stringify_table_plain_text(self, whole_table: bool = True) -> str:
-        """
-        Convert selected cells to string for copying as plain text
-        :return: the plain text representation of the selected table lines
-        """
-        model: FoundLinesModel = cast(FoundLinesModel, self.model())
-        text_matrix: list[list[str]]
-        if whole_table:
-            text_matrix = [[model.formatted_item(row, column)
-                            for column in range(model.columnCount())
-                            if not self.isColumnHidden(column)]
-                           for row in range(model.rowCount(available_count=True))]
-        else:
-            si: QModelIndex
-            rows: list[int] = sorted(set(si.row() for si in self.selectedIndexes()))
-            cols: list[int] = sorted(set(si.column() for si in self.selectedIndexes()))
-            text_matrix = [['' for _ in range(len(cols))]
-                           for _ in range(len(rows))]
-            for si in self.selectedIndexes():
-                text_matrix[rows.index(si.row())][cols.index(si.column())] = \
-                    model.formatted_item(si.row(), si.column())
-        row_texts: list[str]
-        text: list[str] = [self.settings.csv_separator.join(row_texts) for row_texts in text_matrix]
-        return self.settings.line_end.join(text)
-
-    def stringify_table_html(self, whole_table: bool = True) -> str:
-        """
-        Convert selected cells to string for copying as rich text
-        :return: the rich text representation of the selected table lines
-        """
-        model: FoundLinesModel = cast(FoundLinesModel, self.model())
-        text_matrix: list[list[str]]
-        if whole_table:
-            text_matrix = [[('<td>' + model.formatted_item(row, column) + '</td>')
-                            for column in range(model.columnCount())
-                            if not self.isColumnHidden(column)]
-                           for row in range(model.rowCount(available_count=True))]
-        else:
-            si: QModelIndex
-            rows: list[int] = sorted(set(si.row() for si in self.selectedIndexes()))
-            cols: list[int] = sorted(set(si.column() for si in self.selectedIndexes()))
-            text_matrix = [['' for _ in range(len(cols))]
-                           for _ in range(len(rows))]
-            for si in self.selectedIndexes():
-                text_matrix[rows.index(si.row())][cols.index(si.column())] = \
-                    '<td>' + model.formatted_item(si.row(), si.column()) + '</td>'
-        row_texts: list[str]
-        text: list[str] = [('<tr>' + self.settings.csv_separator.join(row_texts) + '</tr>')
-                           for row_texts in text_matrix]
-        text.insert(0, '<table>')
-        text.append('</table>')
-        return self.settings.line_end.join(text)
-
-    def keyPressEvent(self, e: QKeyEvent) -> None:
-        if e.matches(QKeySequence.StandardKey.Copy):
-            copy_to_clipboard(self.stringify_table_plain_text(False),
-                              self.stringify_table_html(False),
-                              Qt.TextFormat.RichText)
-            e.accept()
-        elif e.matches(QKeySequence.StandardKey.SelectAll):
-            self.selectAll()
-            e.accept()
 
 
 class GUI(QMainWindow):
