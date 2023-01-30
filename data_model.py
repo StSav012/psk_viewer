@@ -32,7 +32,7 @@ class DataModel(QAbstractTableModel):
 
     @property
     def header(self) -> list[str | HeaderWithUnit]:
-        return self._header
+        return self._header[:self.columnCount()]
 
     @header.setter
     def header(self, new_header: Iterable[str | HeaderWithUnit]) -> None:
