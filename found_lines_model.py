@@ -24,14 +24,14 @@ class FoundLinesModel(DataModel):
         self._log10_gamma: bool = False
         self._fancy_table_numbers: bool = False
 
-        self.header = ([
+        self._header = [
             HeaderWithUnit(name=_translate("plot axes labels", 'Frequency'), unit=_translate('unit', 'MHz')),
             HeaderWithUnit(name=_translate("plot axes labels", 'Voltage'), unit=_translate('unit', 'mV')),
             HeaderWithUnit(
                 name=_translate("plot axes labels", 'Absorption'),
                 unit=_translate('unit', 'cm⁻¹') if not self._log10_gamma else _translate('unit', 'log₁₀(cm⁻¹)')
             ),
-        ])
+        ]
         self.set_format([DataModel.Format(precision=3, scale=1e-6),
                          DataModel.Format(precision=4, scale=1e3),
                          DataModel.Format(precision=4, scale=np.nan, fancy=self._fancy_table_numbers)])
@@ -45,10 +45,11 @@ class FoundLinesModel(DataModel):
         if bool(new_value) == self._log10_gamma:
             return
         self._log10_gamma = bool(new_value)
-        self.header[2] = HeaderWithUnit(
-            name=_translate("plot axes labels", 'Absorption'),
-            unit=_translate('unit', 'cm⁻¹') if not self._log10_gamma else _translate('unit', 'log₁₀(cm⁻¹)')
-        )
+        if len(self._header) == 3:
+            self._header[2] = HeaderWithUnit(
+                name=_translate("plot axes labels", 'Absorption'),
+                unit=_translate('unit', 'cm⁻¹') if not self._log10_gamma else _translate('unit', 'log₁₀(cm⁻¹)')
+            )
         self.refresh()
 
     @property
