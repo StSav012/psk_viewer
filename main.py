@@ -31,7 +31,7 @@ if ((uname.system == 'Windows'
     qt_list = ('PyQt5',)  # Qt6 does not support the OSes
 else:
     qt_list = ('PyQt6', 'PySide6', 'PyQt5')
-if sys.version_info < (3, 12):  # PySide2 does not support Python 3.11 and newer
+if sys.version_info < (3, 11):  # PySide2 does not support Python 3.11 and newer
     qt_list = *qt_list, 'PySide2'
 
 REQUIREMENTS: Final[list[str | Sequence[str]]] = ['qtpy',
