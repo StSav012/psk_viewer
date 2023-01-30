@@ -58,32 +58,6 @@ if __name__ == '__main__':
         return True
 
 
-    def ensure_package(package_name: str | Sequence[str], upgrade_pip: bool = False) -> bool:
-        """ Install packages if missing """
-
-        if not package_name:
-            raise ValueError('No package name given')
-
-        if isinstance(package_name, str) and is_package_importable(package_name):
-            return True
-
-        if not isinstance(package_name, str) and isinstance(package_name, Sequence):
-            for _package_name in package_name:
-                if is_package_importable(_package_name):
-                    return True
-
-        import subprocess
-
-        if not isinstance(package_name, str) and isinstance(package_name, Sequence):
-            package_name = package_name[0]
-        if upgrade_pip:
-            subprocess.check_call((sys.executable, '-m', 'pip', 'install', '-U', 'pip'))
-        if '.' in package_name:  # take only the root part of the package path
-            package_name = package_name.split('.', maxsplit=1)[0]
-        subprocess.check_call((sys.executable, '-m', 'pip', 'install', package_name))
-        return False
-
-
     def make_old_qt_compatible_again() -> None:
         from qtpy import QT6, PYQT5
         from qtpy.QtCore import QLibraryInfo, Qt
@@ -107,14 +81,53 @@ if __name__ == '__main__':
             pg.SpinBox.setMaximumHeight = lambda self, max_h: QAbstractSpinBox.setMaximumHeight(self, round(max_h))
 
 
-    if not hasattr(sys, '_MEI''PASS') and not Path('.git').exists():
+    if (not hasattr(sys, '_MEI''PASS')   # if not embedded into a PyInstaller executable
+            and not Path('.git').exists()):
         update()
 
-    if not hasattr(sys, '_MEI''PASS'):  # if not embedded into an executable
-        pip_updated: bool = False
+    if not hasattr(sys, '_MEI''PASS'):   # if not embedded into a PyInstaller executable
+        def ensure_package(package_name: str | Sequence[str]) -> bool:
+            """
+            Install packages if missing
+
+            :param package_name: a package name or a sequence of the names of alternative packages;
+                                 if none of the packages installed beforehand, install the first one given
+            :returns bool: True if a package is importable, False when an attempt to install the package made
+            """
+
+            if not package_name:
+                raise ValueError('No package name(s) given')
+
+            if isinstance(package_name, str) and is_package_importable(package_name):
+                return True
+
+            if not isinstance(package_name, str) and isinstance(package_name, Sequence):
+                for _package_name in package_name:
+                    if is_package_importable(_package_name):
+                        return True
+
+            if not sys.executable:
+                # sys.executable can be empty if argv[0] has been changed and Python is
+                # unable to retrieve the real program name
+                return False
+
+            import subprocess
+
+            if not isinstance(package_name, str) and isinstance(package_name, Sequence):
+                package_name = package_name[0]
+            if not getattr(ensure_package, 'pip_updated', False):
+                import ensurepip
+
+                ensurepip.bootstrap(upgrade=True, user=True)
+                ensure_package.pip_updated = True
+            if '.' in package_name:  # take only the root part of the package path
+                package_name = package_name.split('.', maxsplit=1)[0]
+            subprocess.check_call((sys.executable, '-m', 'pip', 'install', package_name))
+            return False
+
 
         for package in REQUIREMENTS:
-            pip_updated = not ensure_package(package, upgrade_pip=not pip_updated)
+            ensure_package(package)
 
     from qtpy.QtCore import QLibraryInfo, QLocale, QTranslator
     from qtpy.QtWidgets import QApplication
