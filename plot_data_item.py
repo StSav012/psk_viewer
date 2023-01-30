@@ -41,7 +41,8 @@ class PlotDataItem:
         sorting_indices: NDArray[np.float64] = np.argsort(frequency_data)
         self._frequency_data = frequency_data[sorting_indices]
         self._voltage_data = voltage_data[sorting_indices]
-        self._gamma_data = gamma_data[sorting_indices]
+        if gamma_data.size:
+            self._gamma_data = gamma_data[sorting_indices]
 
     def clear(self) -> None:
         self._frequency_data = np.empty(0)
