@@ -4,8 +4,8 @@ from __future__ import annotations
 from typing import cast
 
 from qtpy.QtCore import QAbstractItemModel, QModelIndex, QPoint, Qt
-from qtpy.QtGui import QAction, QKeyEvent, QKeySequence
-from qtpy.QtWidgets import QHeaderView, QMenu, QTableView, QWidget
+from qtpy.QtGui import QKeyEvent, QKeySequence
+from qtpy.QtWidgets import QAction, QHeaderView, QMenu, QTableView, QWidget
 
 from found_lines_model import FoundLinesModel
 from settings import Settings
