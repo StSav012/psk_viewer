@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+from functools import partial
 from typing import cast
 
 import pyqtgraph as pg  # type: ignore
@@ -31,35 +32,35 @@ class PreferencesPage(QWidget):
         layout: QFormLayout = QFormLayout(self)
         key2: str
         value2: Settings.CallbackOnly | Settings.SpinboxAndCallback | Settings.ComboboxAndCallback
+
         for key2, value2 in value.items():
             if isinstance(value2, Settings.CallbackOnly):
                 if isinstance(getattr(self.settings, value2.callback), bool):
-                    check_box = QCheckBox(self.tr(key2), self)
+                    check_box: QCheckBox = QCheckBox(self.tr(key2), self)
                     setattr(check_box, 'callback', value2.callback)
                     check_box.setChecked(getattr(self.settings, value2.callback))
-                    check_box.toggled.connect(lambda *args, sender=check_box: self._on_event(*args, sender))
+                    check_box.toggled.connect(partial(self._on_event, sender=check_box))
                     layout.addWidget(check_box)
                 elif isinstance(getattr(self.settings, value2.callback), QColor):
-                    color_selector = ColorSelector(self, getattr(self.settings, value2.callback))
+                    color_selector: ColorSelector = ColorSelector(self, getattr(self.settings, value2.callback))
                     setattr(color_selector, 'callback', value2.callback)
-                    color_selector.colorSelected.connect(
-                        lambda *args, sender=color_selector: self._on_event(*args, sender))
+                    color_selector.colorSelected.connect(partial(self._on_event, sender=color_selector))
                     layout.addRow(key2, color_selector)
                 # no else
             elif isinstance(value2, Settings.SpinboxAndCallback):
-                spin_box = pg.SpinBox(self, getattr(self.settings, value2.callback))
+                spin_box: pg.SpinBox = pg.SpinBox(self, getattr(self.settings, value2.callback))
                 spin_box.setOpts(**value2.spinbox_opts)
                 setattr(spin_box, 'callback', value2.callback)
-                spin_box.valueChanged.connect(lambda *args, sender=spin_box: self._on_event(*args, sender))
+                spin_box.valueChanged.connect(partial(self._on_event, sender=spin_box))
                 layout.addRow(key2, spin_box)
             elif isinstance(value2, Settings.ComboboxAndCallback):
-                combo_box = QComboBox(self)
+                combo_box: QComboBox = QComboBox(self)
                 setattr(combo_box, 'callback', value2.callback)
                 for index, (data, item) in enumerate(value2.combobox_data.items()):
                     combo_box.addItem(self.tr(item), data)
                 combo_box.setCurrentText(value2.combobox_data[getattr(self.settings, value2.callback)])
                 combo_box.currentIndexChanged.connect(
-                    lambda *args, sender=combo_box: self._on_combo_box_current_index_changed(*args, sender))
+                    partial(self._on_combo_box_current_index_changed, sender=combo_box))
                 layout.addRow(self.tr(key2), combo_box)
             # no else
 
@@ -85,11 +86,6 @@ class PreferencesBody(QScrollArea):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.setFrameStyle(0)
-
-        check_box: QCheckBox
-        combo_box: QComboBox
-        spin_box: pg.SpinBox
-        color_selector: ColorSelector
 
         layout: QHBoxLayout = QHBoxLayout(widget)
         content: QListWidget = QListWidget(widget)
