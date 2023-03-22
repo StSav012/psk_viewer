@@ -2,8 +2,8 @@
 
 **Required packages:**
   - `pandas`,
-  - `pyqtgraph`,
-  - `qtpy`,
+  - `pyqtgraph>=0.13.2`,
+  - `qtpy>=2.3.1`,
   - `scipy`,
   - any of `PyQt6`, `PySide6`, `PyQt5`, `PySide2`.
 
