@@ -128,10 +128,10 @@ if __name__ == '__main__':
                 QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
 
             from pyqtgraph import __version__
-            from qtpy.QtWidgets import QAbstractSpinBox
 
             if _version_tuple(__version__) < _version_tuple('0.13.2'):
                 import pyqtgraph as pg
+                from qtpy.QtWidgets import QAbstractSpinBox
 
                 pg.SpinBox.setMaximumHeight = lambda self, max_h: QAbstractSpinBox.setMaximumHeight(self, round(max_h))
 
