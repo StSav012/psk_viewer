@@ -18,7 +18,9 @@ They should install at the first application start automatically.
 
 **Notes:** 
   - only Python <= 3.8 is available for MS Windows 7, so, there is not much choice for those who use it;
-  - `PySide2` requires Python < 3.11;
+  - `PySide2` requires Python < 3.11; 
+    there is [a port](https://anaconda.org/conda-forge/pyside2) of `PySide2` on Python 3.11 by `conda-forge`, 
+    but it's unclear whether it's stable;
   - `PyQt6` and `PySide6` require pretty modern OS, e.g., 64-bit MS Windows 10 21H2 or later.
 
 ### Getting Python
