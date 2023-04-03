@@ -8,7 +8,9 @@
   - any of `PyQt6`, `PySide6`, `PyQt5`, `PySide2`.
 
 **Optional packages:**
-  - `openpyxl`.
+  - `numexpr`: for accelerating certain numerical operations;
+  - `bottleneck`: for accelerating certain types of nan evaluations;
+  - `openpyxl`: for saving MS Excel files.
 
 They should install at the first application start automatically.
 

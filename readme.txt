@@ -8,7 +8,9 @@ Required packages:
   • any of PyQt6, PySide6, PyQt5, PySide2, whichever compatible with the Python and the OS.
 
 Optional packages:
-  • openpyxl.
+  • numexpr: for accelerating certain numerical operations;
+  • bottleneck: for accelerating certain types of nan evaluations;
+  • openpyxl: for saving MS Excel files.
 
 Required Python: >= 3.8
 
