@@ -40,20 +40,25 @@ if __name__ == '__main__':
                     return self.package_name + '>=' + self.min_version
                 return self.package_name
 
-        qt_list: Sequence[str]
+        qt_list: list[PackageRequirement]
         uname: platform.uname_result = platform.uname()
         if ((uname.system == 'Windows'
              and _version_tuple(uname.version) < _version_tuple('10.0.19044'))  # Windows 10 21H2 or later required
                 or uname.machine not in ('x86_64', 'AMD64')):
-            qt_list = ('PyQt5',)  # Qt6 does not support the OSes
+            # Qt6 does not support the OSes
+            qt_list = [PackageRequirement(package_name='PyQt5', import_name='PyQt5.QtCore')]
         else:
-            qt_list = ('PyQt6', 'PySide6', 'PyQt5')
-        if sys.version_info < (3, 11):  # PySide2 does not support Python 3.11 and newer
-            qt_list = *qt_list, 'PySide2'
+            qt_list = [
+                PackageRequirement(package_name='PySide6-Essentials', import_name='PySide6.QtCore'),
+                PackageRequirement(package_name='PyQt6', import_name='PyQt6.QtCore'),
+                PackageRequirement(package_name='PyQt5', import_name='PyQt5.QtCore'),
+            ]
+        if sys.version_info < (3, 11):  # PySide2 from pypi is not available for Python 3.11 and newer
+            qt_list.append(PackageRequirement(package_name='PySide2', import_name='PySide2.QtCore'))
 
         requirements: Final[list[PackageRequirement | Sequence[PackageRequirement]]] = [
             PackageRequirement(package_name='qtpy', import_name='qtpy', min_version='2.3.1'),
-            [PackageRequirement(package_name=qt, import_name=qt + '.QtCore') for qt in qt_list],
+            qt_list,
             PackageRequirement(package_name='pandas', import_name='pandas'),
             PackageRequirement(package_name='pyqtgraph', import_name='pyqtgraph', min_version='0.13.2'),
             PackageRequirement(package_name='scipy', import_name='scipy')
