@@ -17,8 +17,7 @@ if __name__ == '__main__':
         from contextlib import suppress
         from datetime import datetime, timedelta, timezone
         from pathlib import Path
-        from types import ModuleType
-        from typing import Callable, Final, NamedTuple, Sequence
+        from typing import Final, NamedTuple, Sequence
 
         def _version_tuple(version_string: str) -> tuple[int | str, ...]:
             result: tuple[int | str, ...] = tuple()
@@ -34,7 +33,6 @@ if __name__ == '__main__':
             package_name: str
             import_name: str
             min_version: str = ''
-            version_call: Callable[[ModuleType], str] = lambda module: getattr(module, '__version__', '')
 
             def __str__(self) -> str:
                 if self.min_version:
@@ -73,13 +71,15 @@ if __name__ == '__main__':
                 updater.update(__author__, __original_name__)
 
         def is_package_importable(package_requirement: PackageRequirement) -> bool:
+            from importlib.metadata import version
+
             try:
-                module: ModuleType = __import__(package_requirement.import_name, locals=locals(), globals=globals())
+                __import__(package_requirement.import_name, locals=locals(), globals=globals())
             except (ModuleNotFoundError,):
                 return False
             else:
                 if (package_requirement.min_version
-                        and (_version_tuple(package_requirement.version_call(module))
+                        and (_version_tuple(version(package_requirement.package_name))
                              < _version_tuple(package_requirement.min_version))):
                     return False
             return True
