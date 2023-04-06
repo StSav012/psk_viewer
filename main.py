@@ -15,6 +15,7 @@ if __name__ == '__main__':
         import platform
         import sys
         from contextlib import suppress
+        from datetime import datetime, timedelta, timezone
         from pathlib import Path
         from types import ModuleType
         from typing import Callable, Final, NamedTuple, Sequence
@@ -117,8 +118,16 @@ if __name__ == '__main__':
             subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-U', str(package_requirement)])
             return False
 
+        def warn_about_outdated_package(package_name: str, package_version: str, release_time: datetime) -> None:
+            """ Display a warning about an outdated package a year after the package released """
+            if datetime.utcnow().replace(tzinfo=timezone(timedelta())) - release_time > timedelta(days=366):
+                import tkinter.messagebox
+                tkinter.messagebox.showwarning(
+                    title='Package Outdated',
+                    message=f'Please update {package_name} package to {package_version} or newer')
+
         def make_old_qt_compatible_again() -> None:
-            from qtpy import QT6, PYSIDE2, __version__
+            from qtpy import QT6, PYSIDE2
             from qtpy.QtCore import QLibraryInfo, Qt
             from qtpy.QtWidgets import QApplication, QDialog
 
@@ -126,15 +135,24 @@ if __name__ == '__main__':
                 QApplication.exec = QApplication.exec_
                 QDialog.exec = QDialog.exec_
 
-            if _version_tuple(__version__) < _version_tuple('2.3.1') and QT6:
-                QLibraryInfo.LibraryLocation = QLibraryInfo.LibraryPath
             if not QT6:
                 QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
                 QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
 
+            from qtpy import __version__
+
+            if _version_tuple(__version__) < _version_tuple('2.3.1'):
+                warn_about_outdated_package(package_name='QtPy', package_version='2.3.1',
+                                            release_time=datetime.fromisoformat('2023-03-28T23:06:05Z'))
+                if QT6:
+                    QLibraryInfo.LibraryLocation = QLibraryInfo.LibraryPath
+
             from pyqtgraph import __version__
 
             if _version_tuple(__version__) < _version_tuple('0.13.2'):
+                warn_about_outdated_package(package_name='pyqtgraph', package_version='0.13.2',
+                                            release_time=datetime.fromisoformat('2023-03-04T05:08:12Z'))
+
                 import pyqtgraph as pg
                 from qtpy.QtWidgets import QAbstractSpinBox
 
