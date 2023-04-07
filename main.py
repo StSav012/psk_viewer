@@ -147,6 +147,11 @@ if __name__ == '__main__':
                                             release_time=datetime.fromisoformat('2023-03-28T23:06:05Z'))
                 if QT6:
                     QLibraryInfo.LibraryLocation = QLibraryInfo.LibraryPath
+            if _version_tuple(__version__) < _version_tuple('2.4.0'):
+                # 2.4.0 is not released yet, so no warning until there is the release time
+                if not QT6:
+                    QLibraryInfo.path = lambda *args, **kwargs: QLibraryInfo.location(*args, **kwargs)
+                    QLibraryInfo.LibraryPath = QLibraryInfo.LibraryLocation
 
             from pyqtgraph import __version__
 
@@ -226,13 +231,13 @@ if __name__ == '__main__':
             qt_translator: QTranslator = QTranslator()
             for language in languages:
                 if qt_translator.load('qt_' + language,
-                                      QLibraryInfo.location(QLibraryInfo.LibraryLocation.TranslationsPath)):
+                                      QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)):
                     app.installTranslator(qt_translator)
                     break
             qtbase_translator: QTranslator = QTranslator()
             for language in languages:
                 if qtbase_translator.load('qtbase_' + language,
-                                          QLibraryInfo.location(QLibraryInfo.LibraryLocation.TranslationsPath)):
+                                          QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)):
                     app.installTranslator(qtbase_translator)
                     break
             my_translator: QTranslator = QTranslator()
