@@ -71,10 +71,11 @@ if __name__ == '__main__':
                 updater.update(__author__, __original_name__)
 
         def is_package_importable(package_requirement: PackageRequirement) -> bool:
+            from importlib import import_module
             from importlib.metadata import version
 
             try:
-                __import__(package_requirement.import_name, locals=locals(), globals=globals())
+                import_module(package_requirement.import_name)
             except (ModuleNotFoundError,):
                 return False
             else:
