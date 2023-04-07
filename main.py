@@ -17,12 +17,12 @@ if __name__ == '__main__':
         from contextlib import suppress
         from datetime import datetime, timedelta, timezone
         from pathlib import Path
-        from typing import Final, NamedTuple, Sequence
+        from typing import AnyStr, Final, NamedTuple, Sequence
 
-        def _version_tuple(version_string: str) -> tuple[int | str, ...]:
-            result: tuple[int | str, ...] = tuple()
-            part: str
-            for part in version_string.split('.'):
+        def _version_tuple(version_string: AnyStr) -> tuple[int | AnyStr, ...]:
+            result: tuple[int | AnyStr, ...] = tuple()
+            part: AnyStr
+            for part in version_string.split('.' if isinstance(version_string, str) else b'.'):
                 try:
                     result += (int(part),)
                 except ValueError:
@@ -197,11 +197,14 @@ if __name__ == '__main__':
                     pip_updated = not ensure_package(package, upgrade_pip=not pip_updated)
 
         try:
-            from qtpy.QtCore import QLibraryInfo, QLocale, QTranslator
+            from qtpy.QtCore import QLibraryInfo, QLocale, QTranslator, qVersion
             from qtpy.QtWidgets import QApplication
 
             from utils import resource_path
             from backend import App
+
+            if _version_tuple(qVersion()) == _version_tuple('6.5.0'):
+                raise RuntimeWarning('Qt6 6.5.0 breaks the plotting. Install another version of Qt.')
 
         except Exception as ex:
             import tkinter.messagebox
