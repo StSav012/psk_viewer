@@ -5,7 +5,7 @@ Required packages:
   • pyqtgraph>=0.13.2,
   • QtPy>=2.3.1,
   • scipy,
-  • any of PyQt6, PySide6!=6.5.0, PyQt5, PySide2, whichever compatible with the Python and the OS.
+  • any of PyQt6, PySide6<6.5.0, PyQt5, PySide2, whichever compatible with the Python and the OS.
 
 Optional packages:
   • numexpr: for accelerating certain numerical operations;

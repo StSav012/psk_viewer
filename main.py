@@ -163,6 +163,14 @@ if __name__ == '__main__':
                 from qtpy.QtWidgets import QAbstractSpinBox
 
                 pg.SpinBox.setMaximumHeight = lambda self, max_h: QAbstractSpinBox.setMaximumHeight(self, round(max_h))
+            if _version_tuple(__version__) < _version_tuple('0.13.3'):
+                # 0.13.3 is not released yet, so no warning until there is the release time
+
+                from qtpy.QtCore import qVersion
+
+                if _version_tuple(qVersion()) >= _version_tuple('6.5.0'):
+                    raise RuntimeWarning('Qt6 6.5.0 or newer breaks the plotting in PyQtGraph 0.13.2 and older. '
+                                         'Either update PyQtGraph or install an older version of Qt.')
 
         update_by_default: bool = (uname.system == 'Windows'
                                    and not hasattr(sys, '_MEI''PASS')
@@ -197,14 +205,13 @@ if __name__ == '__main__':
                     pip_updated = not ensure_package(package, upgrade_pip=not pip_updated)
 
         try:
-            from qtpy.QtCore import QLibraryInfo, QLocale, QTranslator, qVersion
+            from qtpy.QtCore import QLibraryInfo, QLocale, QTranslator
             from qtpy.QtWidgets import QApplication
 
             from utils import resource_path
             from backend import App
 
-            if _version_tuple(qVersion()) == _version_tuple('6.5.0'):
-                raise RuntimeWarning('Qt6 6.5.0 breaks the plotting. Install another version of Qt.')
+            make_old_qt_compatible_again()
 
         except Exception as ex:
             import tkinter.messagebox
@@ -225,8 +232,6 @@ if __name__ == '__main__':
                 tkinter.messagebox.showerror(title='Error', message=str(ex))
 
         else:
-            make_old_qt_compatible_again()
-
             app: QApplication = QApplication(sys.argv)
 
             languages: set[str] = set(QLocale().uiLanguages() + [QLocale().bcp47Name(), QLocale().name()])
