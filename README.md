@@ -2,10 +2,10 @@
 
 **Required packages:**
   - `pandas`,
-  - `pyqtgraph>=0.13.2`,
+  - `pyqtgraph>=0.13.3`,
   - `qtpy>=2.3.1`,
   - `scipy`,
-  - any of `PyQt6`, `PySide6<6.5.0`, `PyQt5`, `PySide2`.
+  - any of `PyQt6`, `PySide6`, `PyQt5`, `PySide2`.
 
 **Optional packages:**
   - `numexpr`: for accelerating certain numerical operations;
@@ -21,7 +21,8 @@ They should install at the first application start automatically.
   - `PySide2` requires Python < 3.11; 
     there is [a port](https://anaconda.org/conda-forge/pyside2) of `PySide2` on Python 3.11 by `conda-forge`, 
     but it's unclear whether it's stable;
-  - `PyQt6` and `PySide6` require pretty modern OS, e.g., 64-bit MS Windows 10 21H2 or later.
+  - `PyQt6` and `PySide6` require pretty modern OS, e.g., 64-bit MS Windows 10 21H2 or later;
+  - `pyqtgraph<0.13.3` is incompatible with `Qt6>=6.5.0`.
 
 ### Getting Python
 Python might already been installed on your system.

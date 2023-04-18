@@ -59,7 +59,7 @@ if __name__ == '__main__':
             PackageRequirement(package_name='qtpy', import_name='qtpy', min_version='2.3.1'),
             qt_list,
             PackageRequirement(package_name='pandas', import_name='pandas'),
-            PackageRequirement(package_name='pyqtgraph', import_name='pyqtgraph', min_version='0.13.2'),
+            PackageRequirement(package_name='pyqtgraph', import_name='pyqtgraph', min_version='0.13.3'),
             PackageRequirement(package_name='scipy', import_name='scipy')
         ]
 
@@ -164,7 +164,8 @@ if __name__ == '__main__':
 
                 pg.SpinBox.setMaximumHeight = lambda self, max_h: QAbstractSpinBox.setMaximumHeight(self, round(max_h))
             if _version_tuple(__version__) < _version_tuple('0.13.3'):
-                # 0.13.3 is not released yet, so no warning until there is the release time
+                warn_about_outdated_package(package_name='pyqtgraph', package_version='0.13.3',
+                                            release_time=datetime.fromisoformat('2023-04-14T21:24:10Z'))
 
                 from qtpy.QtCore import qVersion
 

@@ -2,10 +2,11 @@ IPM RAS PSK and FS spectrometer files viewer
 
 Required packages:
   • pandas,
-  • pyqtgraph>=0.13.2,
+  • pyqtgraph>=0.13.3,
   • QtPy>=2.3.1,
   • scipy,
-  • any of PyQt6, PySide6<6.5.0, PyQt5, PySide2, whichever compatible with the Python and the OS.
+  • any of PyQt6 (<6.5.0 if pyqtgraph<0.13.3), PySide6 (<6.5.0 if pyqtgraph<0.13.3), PyQt5, PySide2,
+    whichever compatible with the Python and the OS.
 
 Optional packages:
   • numexpr: for accelerating certain numerical operations;
