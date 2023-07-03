@@ -57,6 +57,7 @@ if __name__ == '__main__':
 
         requirements: Final[list[PackageRequirement | Sequence[PackageRequirement]]] = [
             PackageRequirement(package_name='qtpy', import_name='qtpy', min_version='2.3.1'),
+            PackageRequirement(package_name='qtawesome', import_name='qtawesome'),
             qt_list,
             PackageRequirement(package_name='pandas', import_name='pandas'),
             PackageRequirement(package_name='pyqtgraph', import_name='pyqtgraph', min_version='0.13.3'),

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
-from typing import Iterable
+from typing import Sequence
 
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QColor, QIcon, QKeySequence, QPalette
@@ -42,7 +42,7 @@ class NavigationToolbar(QToolBar):
         self.configure_action: QAction = QAction(self)
 
         a: QAction
-        i: str
+        i: str | Sequence[QKeySequence]
         for a, i in zip([
             self.open_action,
             self.clear_action,
@@ -69,7 +69,7 @@ class NavigationToolbar(QToolBar):
             'openSelected', 'copySelected', 'saveSelected', 'clearSelected',
             'configure'
         ]):
-            a.setIcon(load_icon(i.lower()))
+            a.setIcon(load_icon(i))
         for a, i in zip([
             self.open_action,
             self.clear_action,
@@ -99,7 +99,7 @@ class NavigationToolbar(QToolBar):
         ]):
             if isinstance(i, str) and i:
                 a.setShortcut(i)
-            elif not isinstance(i, str) and isinstance(i, Iterable):
+            elif not isinstance(i, str) and isinstance(i, Sequence):
                 a.setShortcuts(i)
 
         self.addAction(self.open_action)

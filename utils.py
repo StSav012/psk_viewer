@@ -5,10 +5,11 @@ import itertools
 import os
 import sys
 from contextlib import suppress
-from typing import Final, Iterator
+from typing import Any, Final, Iterator
 
 import numpy as np
 from numpy.typing import NDArray
+from qtawesome import icon
 from qtpy.QtCore import QCoreApplication, Qt
 from qtpy.QtGui import QColor, QIcon, QPalette, QPixmap
 from qtpy.QtWidgets import QInputDialog, QWidget
@@ -29,19 +30,98 @@ IMAGE_EXT: str = '.svg'
 
 
 def load_icon(filename: str) -> QIcon:
-    is_dark: bool = QPalette().color(QPalette.ColorRole.Window).lightness() < 128
-    pixmap: QPixmap = QPixmap()
+    def icon_from_data(data: bytes) -> QIcon:
+        palette: QPalette = QPalette()
+        pixmap: QPixmap = QPixmap()
+        pixmap.loadFromData(data
+                            .replace(b'"background"', b'"' + palette.window().color().name().encode() + b'"')
+                            .replace(b'"foreground"', b'"' + palette.text().color().name().encode() + b'"')
+                            .strip())
+        return QIcon(pixmap)
+
     file_path: str = resource_path(os.path.join('img', filename + IMAGE_EXT))
     if not os.path.exists(file_path):
-        return QIcon()
-    with open(file_path, 'rb') as f_in:
-        data: bytes = (f_in.read()
-                       .replace(b'"grey"', b'"#b2b2b2"' if is_dark else b'"#4d4d4d"')
-                       .replace(b'"background"', b'"#000"' if is_dark else b'"#fff"')
-                       .replace(b'"foreground"', b'"#fff"' if is_dark else b'"#000"')
-                       )
-        pixmap.loadFromData(data)
-    return QIcon(pixmap)
+        icons: dict[str, bytes | tuple[tuple[str, ...], list[dict[str, Any]]]] = {
+            'open':
+                (('mdi6.folder-open',), []),
+            'delete':
+                (('mdi6.delete-forever',),
+                 [{'color': 'red'}, ]),
+            'openGhost':
+                (('mdi6.folder-open', 'mdi6.ghost'),
+                 [{'disabled': 'mdi6.folder-open-outline'},
+                  {'scale_factor': 0.4, 'offset': (0.05, 0.1), 'color': 'gray'}]),
+            'deleteGhost':
+                (('mdi6.delete', 'mdi6.ghost'),
+                 [{'disabled': 'mdi6.delete-outline', 'color': 'red'},
+                  {'scale_factor': 0.4, 'offset': (0.0, 0.0625), 'color': 'gray'}]),
+            'secondDerivative': b'''\
+                <svg viewBox="0 0 32 32" width="32" height="32" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" fill="none" stroke="foreground" stroke-width="1px">
+                    <g id="d">
+                        <path d="m9.5 4.5v10.5"/>
+                        <ellipse cx="7.25" cy="12" rx="2.25" ry="2.5"/>
+                    </g>
+                    <path id="2" d="m11.75 6c-0-2 3.75-1.25 0.5 2.25h1.8"/>
+                    <path d="m23.5 4.5-18.75 23"/>
+                    <path id="x" d="m20 22 3 5.75"/>
+                    <use transform="translate(8.25 13)" xlink:href="#d"/>
+                    <use transform="translate(13 13)" xlink:href="#2"/>
+                    <use transform="matrix(-1 0 0 1 43 0)" xlink:href="#x"/>
+                </svg>''',
+            'saveTable':
+                (('mdi6.content-save', 'mdi6.table'),
+                 [{'disabled': 'mdi6.content-save-outline'},
+                  {'scale_factor': 0.5, 'offset': (0.2, 0.2), 'color': 'green'}]),
+            'copyImage':
+                (('mdi6.content-copy', 'mdi6.image'),
+                 [{},
+                  {'scale_factor': 0.5, 'offset': (0.2, 0.2), 'color': 'orange'}]),
+            'saveImage':
+                (('mdi6.content-save', 'mdi6.image'),
+                 [{'disabled': 'mdi6.content-save-outline'},
+                  {'scale_factor': 0.5, 'offset': (0.2, 0.2), 'color': 'orange'}]),
+            'selectObject':
+                (('mdi6.marker',),
+                 [{'color': 'blue'}, ]),
+            'openSelected':
+                (('mdi6.folder-open', 'mdi6.marker'),
+                 [{'disabled': 'mdi6.folder-open-outline'},
+                  {'scale_factor': 0.4, 'offset': (0.05, 0.1), 'color': 'blue'}]),
+            'copySelected':
+                (('mdi6.content-copy', 'mdi6.marker'),
+                 [{},
+                  {'scale_factor': 0.5, 'offset': (0.2, 0.2), 'color': 'blue'}]),
+            'saveSelected':
+                (('mdi6.content-save', 'mdi6.marker'),
+                 [{'disabled': 'mdi6.content-save-outline'},
+                  {'scale_factor': 0.5, 'offset': (0.2, 0.2), 'color': 'blue'}]),
+            'clearSelected':
+                (('mdi6.delete', 'mdi6.marker'),
+                 [{'disabled': 'mdi6.delete-outline', 'color': 'red'},
+                  {'scale_factor': 0.4, 'offset': (0.0, 0.0625), 'color': 'blue'}]),
+            'configure':
+                (('mdi6.chart-line',), []),
+            'qt_logo': b'''\
+                <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 158 120" fill="foreground">
+                    <path d="M142.6,0h-5.5H21.9v0L0,21.9V95v6v15.2h15.2h5.5h115.2v0l21.9-21.9V21.1v-6V0H142.6z M84,100.2L73.7,105 l-8.9-14.6c-1.3,0.4-3.3,0.6-6.1,0.6c-10.4,0-17.6-2.8-21.7-8.4c-4.1-5.6-6.1-14.4-6.1-26.5c0-12.1,2.1-21.1,6.2-26.9 c4.2-5.9,11.4-8.8,21.6-8.8c10.3,0,17.4,2.9,21.6,8.7c4.1,5.8,6.2,14.8,6.2,26.9c0,8-0.8,14.5-2.5,19.4c-1.7,4.9-4.5,8.7-8.3,11.3 L84,100.2z M115.2,89.7c-5.7,0-9.5-1.3-11.6-3.9c-2.1-2.6-3.1-7.5-3.1-14.7V48h-7.6v-9.3h7.6V24.2h10.8v14.5H125V48h-13.8v22 c0,4.1,0.3,6.8,0.9,8.1c0.6,1.3,2.1,2,4.6,2l8.2-0.3l0.5,8.7C120.9,89.3,117.5,89.7,115.2,89.7z"/>
+                    <path d="M58.7,30c-6.3,0-10.6,2.1-12.9,6.2C43.5,40.4,42.4,47,42.4,56c0,9.1,1.1,15.5,3.4,19.4c2.3,3.9,6.6,5.8,13,5.8 s10.7-1.9,12.9-5.7c2.2-3.8,3.3-10.3,3.3-19.4c0-9.1-1.1-15.7-3.4-19.9C69.3,32.1,65,30,58.7,30z"/>
+                </svg>''',
+        }
+        with suppress(KeyError):
+            if isinstance(icons[filename], bytes):
+                return icon_from_data(icons[filename])
+            else:
+                args: tuple[str, ...]
+                options: list[dict[str, Any]]
+                args, options = icons[filename]
+                if options:
+                    return icon(*args, options=options)
+                else:
+                    return icon(*args)
+    else:
+        with open(file_path, 'rb') as f_in:
+            return icon_from_data(f_in.read())
+    return QIcon()
 
 
 def mix_colors(color_1: QColor, color_2: QColor, ratio_1: float = 0.5) -> QColor:
