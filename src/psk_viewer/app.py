@@ -77,7 +77,7 @@ class App(GUI):
 
         self._is_dark: bool = self.palette().color(QPalette.ColorRole.Window).lightness() < 128
 
-        self.toolbar: NavigationToolbar = NavigationToolbar(self, parameters_icon='configure')
+        self.toolbar: NavigationToolbar = NavigationToolbar(self)
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.toolbar)
 
         self._canvas: pg.PlotItem = self.figure.getPlotItem()
@@ -178,45 +178,6 @@ class App(GUI):
         self.figure.setLabel('left',
                              text=_translate("plot axes labels", 'Voltage'),
                              units=_translate('unit', 'V'))
-
-        self.toolbar.open_action.setIconText(_translate("plot toolbar action", "Open"))
-        self.toolbar.open_action.setToolTip(_translate("plot toolbar action", "Load spectrometer data"))
-        self.toolbar.clear_action.setIconText(_translate("plot toolbar action", "Clear"))
-        self.toolbar.clear_action.setToolTip(_translate("plot toolbar action", "Clear lines and markers"))
-        self.toolbar.open_ghost_action.setIconText(_translate("plot toolbar action", "Open Ghost"))
-        self.toolbar.open_ghost_action.setToolTip(_translate("plot toolbar action",
-                                                             "Load spectrometer data as a background curve"))
-        self.toolbar.clear_ghost_action.setIconText(_translate("plot toolbar action", "Clear Ghost"))
-        self.toolbar.clear_ghost_action.setToolTip(_translate("plot toolbar action", "Clear the background curve"))
-        self.toolbar.differentiate_action.setIconText(_translate("plot toolbar action",
-                                                                 "Calculate second derivative"))
-        self.toolbar.differentiate_action.setToolTip(_translate("plot toolbar action",
-                                                                "Calculate finite-step second derivative"))
-        self.toolbar.save_data_action.setIconText(_translate("plot toolbar action", "Save Data"))
-        self.toolbar.save_data_action.setToolTip(_translate("plot toolbar action", "Export the visible data"))
-        self.toolbar.copy_figure_action.setIconText(_translate("plot toolbar action", "Copy Figure"))
-        self.toolbar.copy_figure_action.setToolTip(_translate("plot toolbar action", "Copy the plot as an image"))
-        self.toolbar.save_figure_action.setIconText(_translate("plot toolbar action", "Save Figure"))
-        self.toolbar.save_figure_action.setToolTip(_translate("plot toolbar action", "Save the plot as an image"))
-        self.toolbar.trace_action.setIconText(_translate("plot toolbar action", "Mark"))
-        self.toolbar.trace_action.setToolTip(_translate("plot toolbar action",
-                                                        "Mark data points (hold Shift to delete)"))
-        self.toolbar.load_trace_action.setIconText(_translate("plot toolbar action", "Load Marks"))
-        self.toolbar.load_trace_action.setToolTip(_translate("plot toolbar action",
-                                                             "Load marked points values from a file"))
-        self.toolbar.copy_trace_action.setIconText(_translate("plot toolbar action", "Copy Marked"))
-        self.toolbar.copy_trace_action.setToolTip(_translate("plot toolbar action",
-                                                             "Copy marked points values into clipboard"))
-        self.toolbar.save_trace_action.setIconText(_translate("plot toolbar action", "Save Marked"))
-        self.toolbar.save_trace_action.setToolTip(_translate("plot toolbar action", "Save marked points values"))
-        self.toolbar.clear_trace_action.setIconText(_translate("plot toolbar action", "Clear Marked"))
-        self.toolbar.clear_trace_action.setToolTip(_translate("plot toolbar action", "Clear marked points"))
-        self.toolbar.configure_action.setIconText(_translate("plot toolbar action", "Configure"))
-        self.toolbar.configure_action.setToolTip(_translate("plot toolbar action", "Edit parameters"))
-
-        self.toolbar.parameters_title = _translate('plot config window title', 'Figure options')
-
-        self.toolbar.add_shortcuts_to_tooltips()
 
         self._view_all_action.setText(_translate("plot context menu action", "View All"))
         self._canvas.ctrl.alphaGroup.parent().setTitle(_translate("plot context menu action", "Alpha"))
