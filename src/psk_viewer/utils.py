@@ -2,9 +2,9 @@
 from __future__ import annotations
 
 import itertools
-import os
 import sys
 from contextlib import suppress
+from pathlib import Path
 from typing import Any, Final, Iterator
 
 import numpy as np
@@ -20,10 +20,10 @@ VOLTAGE_GAIN: Final[float] = 5.0
 
 
 # https://www.reddit.com/r/learnpython/comments/4kjie3/how_to_include_gui_images_with_pyinstaller/d3gjmom
-def resource_path(relative_path: str) -> str:
+def resource_path(relative_path: str | Path) -> Path:
     if hasattr(sys, '_MEIPASS'):
-        return os.path.join(getattr(sys, '_MEIPASS'), relative_path)
-    return os.path.join(os.path.abspath('.'), relative_path)
+        return Path(getattr(sys, '_MEIPASS')) / relative_path
+    return Path(__file__).parent / relative_path
 
 
 IMAGE_EXT: str = '.svg'
@@ -39,8 +39,8 @@ def load_icon(filename: str) -> QIcon:
                             .strip())
         return QIcon(pixmap)
 
-    file_path: str = resource_path(os.path.join('img', filename + IMAGE_EXT))
-    if not os.path.exists(file_path):
+    filename: Path = resource_path('img') / (icon_name + IMAGE_EXT)
+    if not filename.exists():
         icons: dict[str, bytes | tuple[tuple[str, ...], list[dict[str, Any]]]] = {
             'open':
                 (('mdi6.folder-open',), []),
@@ -108,18 +108,18 @@ def load_icon(filename: str) -> QIcon:
                 </svg>''',
         }
         with suppress(KeyError):
-            if isinstance(icons[filename], bytes):
-                return icon_from_data(icons[filename])
+            if isinstance(icons[icon_name], bytes):
+                return icon_from_data(icons[icon_name])
             else:
                 args: tuple[str, ...]
                 options: list[dict[str, Any]]
-                args, options = icons[filename]
+                args, options = icons[icon_name]
                 if options:
                     return icon(*args, options=options)
                 else:
                     return icon(*args)
     else:
-        with open(file_path, 'rb') as f_in:
+        with open(filename, 'rb') as f_in:
             return icon_from_data(f_in.read())
     return QIcon()
 
@@ -186,16 +186,11 @@ def copy_to_clipboard(plain_text: str, rich_text: str = '',
     clipboard.setMimeData(mime_data, QClipboard.Mode.Clipboard)
 
 
-def load_data_fs(filename: str) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
-    fn: str
-    if filename.casefold().endswith(('.fmd', '.frd')):
-        fn = os.path.splitext(filename)[0]
-    else:
-        fn = filename
+def load_data_fs(filename: Path) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     min_frequency: float = np.nan
     max_frequency: float = np.nan
-    if os.path.exists(fn + '.fmd'):
-        with open(fn + '.fmd', 'rt') as f_in:
+    if (filename_fmd := filename.with_suffix('.fmd')).exists():
+        with open(filename_fmd, 'rt') as f_in:
             line: str
             for line in f_in:
                 if line and not line.startswith('*'):
@@ -207,15 +202,16 @@ def load_data_fs(filename: str) -> tuple[NDArray[np.float64], NDArray[np.float64
                             max_frequency = float(t[1]) * 1e6
     else:
         return np.empty(0), np.empty(0)
-    if not np.isnan(min_frequency) and not np.isnan(max_frequency) and os.path.exists(fn + '.frd'):
-        y: NDArray[np.float64] = np.loadtxt(fn + '.frd', usecols=(0,))
+    if (not np.isnan(min_frequency) and not np.isnan(max_frequency)
+            and (filename_frd := filename.with_suffix('.frd')).exists()):
+        y: NDArray[np.float64] = np.loadtxt(filename_frd, usecols=(0,))
         x: NDArray[np.float64] = np.linspace(min_frequency, max_frequency,
                                              num=y.size, endpoint=False)
         return x, y
     return np.empty(0), np.empty(0)
 
 
-def load_data_scandat(filename: str, parent: QWidget) \
+def load_data_scandat(filename: Path, parent: QWidget) \
         -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64], float]:
     with open(filename, 'rt') as f_in:
         lines: list[str] = f_in.readlines()
@@ -292,19 +288,15 @@ def load_data_scandat(filename: str, parent: QWidget) \
     return x, y, y / bias / cell_length / VOLTAGE_GAIN, frequency_jump
 
 
-def load_data_csv(filename: str) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64], float]:
-    fn: str
-    if filename.casefold().endswith(('.csv', '.conf')):
-        fn = os.path.splitext(filename)[0]
-    else:
-        fn = filename
-    if os.path.exists(fn + '.csv') and os.path.exists(fn + '.conf'):
-        with open(fn + '.csv', 'rt') as f_in:
+def load_data_csv(filename: Path) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64], float]:
+    if ((filename_csv := filename.with_suffix('.csv')).exists()
+            and (filename_conf := filename.with_suffix('.conf')).exists()):
+        with open(filename_csv, 'rt') as f_in:
             lines: list[str] = list(filter(lambda line: line[0].isdigit(), f_in.readlines()))
         x: NDArray[np.float64] = np.array([float(line.split()[1]) for line in lines]) * 1e6
         y: NDArray[np.float64] = np.array([float(line.split()[2]) for line in lines]) * 1e-3
         g: NDArray[np.float64] = np.array([float(line.split()[4]) for line in lines])
-        with open(fn + '.conf', 'rt') as f_in:
+        with open(filename_conf, 'rt') as f_in:
             frequency_jump: float = float(next(
                 filter(lambda line: line.startswith('F(jump) [MHz]:'), f_in.readlines())
             ).split()[-1]) * 1e3
@@ -312,11 +304,8 @@ def load_data_csv(filename: str) -> tuple[NDArray[np.float64], NDArray[np.float6
     return np.empty(0), np.empty(0), np.empty(0), np.nan
 
 
-def ensure_extension(fn: str, ext: str) -> str:
-    filename_parts: tuple[str, str] = os.path.splitext(fn)
-    if filename_parts[1].casefold() != ext:
-        fn += ext
-    return fn
+def ensure_extension(fn: Path, ext: str) -> Path:
+    return fn.with_suffix(ext)
 
 
 def ensure_prefix(text: str, prefix: str) -> str:

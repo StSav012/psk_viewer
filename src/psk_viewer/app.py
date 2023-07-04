@@ -1,8 +1,8 @@
 ﻿# -*- coding: utf-8 -*-
 from __future__ import annotations
 
-import os
 from numbers import Number
+from pathlib import Path
 from typing import Any, Callable, Final, Iterable, Sequence, cast
 
 import numpy as np
@@ -69,7 +69,7 @@ class App(GUI):
     PSK_WITH_JUMP_DATA_MODE: Final[int] = 2
     FS_DATA_MODE: Final[int] = -1
 
-    def __init__(self, filename: str = '',
+    def __init__(self, file_path: Path | None = None,
                  parent: QWidget | None = None, flags: Qt.WindowType = Qt.WindowType.Window) -> None:
         super().__init__(parent, flags)
 
@@ -120,11 +120,11 @@ class App(GUI):
 
         self.setup_ui_actions()
 
-        if filename and os.path.exists(filename):
-            loaded: bool = self.load_data(filename)
+        if file_path is not None and file_path.exists():
+            loaded: bool = self.load_data(file_path)
             self.toolbar.load_trace_action.setEnabled(loaded)
             if loaded:
-                self.set_config_value('open', 'location', os.path.split(filename)[0])
+                self.set_config_value('open', 'location', file_path.parent)
 
     def setup_ui(self) -> None:
         ax: pg.AxisItem
@@ -756,13 +756,13 @@ class App(GUI):
             self.set_voltage_range(min(y.range), maximum + 0.05 * (maximum - min(y.range)))
 
     def load_found_lines(self) -> None:
-        def load_csv(fn: str) -> Sequence[float]:
+        def load_csv(fn: Path) -> Sequence[float]:
             sep: str = self.settings.csv_separator
             data: NDArray[np.float64] = np.loadtxt(fn, delimiter=sep, usecols=(0,), encoding='utf-8') * 1e6
             data = data[(data >= self._plot_data.min_frequency) & (data <= self._plot_data.max_frequency)]
             return data
 
-        def load_xlsx(fn: str) -> Sequence[float]:
+        def load_xlsx(fn: Path) -> Sequence[float]:
             from openpyxl.reader.excel import load_workbook
             from openpyxl.workbook.workbook import Workbook
             from openpyxl.worksheet.worksheet import Worksheet
@@ -801,7 +801,7 @@ class App(GUI):
             tuple(all_cases('.csv')): _translate('file type', 'Text with separators'),
             tuple(all_cases('.txt')): _translate('file type', 'Plain text'),
         }
-        supported_formats_callbacks: dict[str, Callable[[str], Sequence[float]]] = {
+        supported_formats_callbacks: dict[str, Callable[[Path], Sequence[float]]] = {
             mimetypes.types_map['.csv']: load_csv,
             mimetypes.types_map['.txt']: load_csv,
         }
@@ -816,7 +816,7 @@ class App(GUI):
             ('.*',): _translate('file type', 'All files')}
 
         filename, _filter = self.open_file_dialog(formats=supported_formats)
-        if not filename:
+        if filename is None:
             return
 
         file_type: str = mimetypes.guess_type(filename)[0]
@@ -848,7 +848,7 @@ class App(GUI):
                           Qt.TextFormat.RichText)
 
     def save_found_lines(self) -> None:
-        def save_csv(fn: str) -> None:
+        def save_csv(fn: Path) -> None:
             sep: str = self.settings.csv_separator
             # noinspection PyTypeChecker
             np.savetxt(fn, data,
@@ -861,7 +861,7 @@ class App(GUI):
                                            self.model_found_lines.header[2].unit))),
                        fmt=('%.3f', '%.6f', '%.6e'), encoding='utf-8')
 
-        def save_xlsx(fn: str) -> None:
+        def save_xlsx(fn: Path) -> None:
             with pd.ExcelWriter(fn) as writer:
                 df: pd.DataFrame = pd.DataFrame(data)
                 df.to_excel(writer, index=False,
@@ -873,13 +873,15 @@ class App(GUI):
         supported_formats: dict[tuple[str, ...], str] = {
             tuple(all_cases('.csv')): _translate('file type', 'Text with separators')
         }
-        supported_formats_callbacks: dict[str, Callable[[str], None]] = {'.csv': save_csv}
+        supported_formats_callbacks: dict[str, Callable[[Path], None]] = {'.csv': save_csv}
         if importlib.util.find_spec('openpyxl') is not None:
             supported_formats[tuple(all_cases('.xlsx'))] = _translate('file type', 'Microsoft Excel')
             supported_formats_callbacks['.xlsx'] = save_xlsx
 
+        filename: Path | None
+        _filter: str
         filename, _filter = self.save_file_dialog(formats=supported_formats)
-        if not filename:
+        if filename is None:
             return
 
         f: NDArray[np.float64] = self.model_found_lines.all_data[:, 0] * 1e-6
@@ -887,7 +889,7 @@ class App(GUI):
         g: NDArray[np.float64] = self.model_found_lines.all_data[:, 2]
         data: NDArray[np.float64] = np.column_stack((f, v, g))
 
-        filename_ext: str = os.path.splitext(filename)[1].casefold()
+        filename_ext: str = filename.suffix.casefold()
         if filename_ext in supported_formats_callbacks:
             supported_formats_callbacks[filename_ext](filename)
 
@@ -962,23 +964,24 @@ class App(GUI):
         self.toolbar.clear_ghost_action.setEnabled(False)
         self._canvas.replot()
 
-    def load_data(self, filename: str = '') -> bool:
+    def load_data(self, filename: Path | None = None) -> bool:
         self.clear_ghost()
 
-        if not filename:
+        if filename is None:
             _filter: str
             _formats: dict[tuple[str, ...], str] = {
                 (*all_cases('.conf'), *all_cases('.scandat')): _translate('file type', 'PSK Spectrometer'),
                 tuple(all_cases('.fmd')): _translate('file type', 'Fast Sweep Spectrometer'),
             }
             filename, _filter = self.open_file_dialog(formats=_formats)
+        if filename is None:
+            return False
+
         v: NDArray[np.float64]
         f: NDArray[np.float64]
         g: NDArray[np.float64] = np.empty(0)
         jump: float
-        fn: str
-        if filename.casefold().endswith('.scandat'):
-            fn = os.path.splitext(filename)[0]
+        if filename.suffix.casefold() == '.scandat':
             f, v, g, jump = load_data_scandat(filename, self)
             if f.size and v.size:
                 self.settings.display_processing = True
@@ -986,8 +989,7 @@ class App(GUI):
                     self._data_mode = self.PSK_WITH_JUMP_DATA_MODE
                 else:
                     self._data_mode = self.PSK_DATA_MODE
-        elif filename.casefold().endswith(('.csv', '.conf')):
-            fn = os.path.splitext(filename)[0]
+        elif filename.suffix.casefold() in ('.csv', '.conf'):
             f, v, g, jump = load_data_csv(filename)
             if f.size and v.size:
                 self.settings.display_processing = True
@@ -995,8 +997,7 @@ class App(GUI):
                     self._data_mode = self.PSK_WITH_JUMP_DATA_MODE
                 else:
                     self._data_mode = self.PSK_DATA_MODE
-        elif filename.casefold().endswith(('.fmd', '.frd')):
-            fn = os.path.splitext(filename)[0]
+        elif filename.suffix.casefold() in ('.fmd', '.frd'):
             f, v = load_data_fs(filename)
             if f.size and v.size:
                 self.settings.display_processing = False
@@ -1007,14 +1008,12 @@ class App(GUI):
         if not (f.size and v.size):
             return False
 
-        new_label: str = os.path.split(fn)[-1]
-
         if self._data_mode == self.FS_DATA_MODE:
             self.switch_data_action.setChecked(False)
 
         self._plot_line.setData(f,
                                 (g if self.switch_data_action.isChecked() else v),
-                                name=new_label)
+                                name=str(filename.parent / filename.stem))
         self._plot_data.set_data(frequency_data=f, gamma_data=g, voltage_data=v)
 
         min_frequency: float = f[0]
@@ -1054,21 +1053,22 @@ class App(GUI):
 
         return True
 
-    def load_ghost_data(self, filename: str = '') -> bool:
-        if not filename:
+    def load_ghost_data(self, filename: Path | None = None) -> bool:
+        if filename is None:
             _filter: str
             _formats: dict[tuple[str, ...], str] = {
                 (*all_cases('.conf'), *all_cases('.scandat')): _translate('file type', 'PSK Spectrometer'),
                 tuple(all_cases('.fmd')): _translate('file type', 'Fast Sweep Spectrometer'),
             }
             filename, _filter = self.open_file_dialog(formats=_formats)
+        if filename is None:
+            return False
+
         v: NDArray[np.float64]
         f: NDArray[np.float64]
         g: NDArray[np.float64] = np.empty(0)
         jump: float
-        fn: str
-        if filename.casefold().endswith('.scandat'):
-            fn = os.path.splitext(filename)[0]
+        if filename.suffix.casefold() == '.scandat':
             f, v, g, jump = load_data_scandat(filename, self)
             if f.size and v.size:
                 if jump > 0.0:
@@ -1077,8 +1077,7 @@ class App(GUI):
                 else:
                     if self._data_mode != self.PSK_DATA_MODE:
                         return False
-        elif filename.casefold().endswith(('.csv', '.conf')):
-            fn = os.path.splitext(filename)[0]
+        elif filename.suffix.casefold() in ('.csv', '.conf'):
             f, v, g, jump = load_data_csv(filename)
             if f.size and v.size:
                 if jump > 0.0:
@@ -1087,8 +1086,7 @@ class App(GUI):
                 else:
                     if self._data_mode != self.PSK_DATA_MODE:
                         return False
-        elif filename.casefold().endswith(('.fmd', '.frd')):
-            fn = os.path.splitext(filename)[0]
+        elif filename.suffix.casefold() in ('.fmd', '.frd'):
             f, v = load_data_fs(filename)
             if f.size and v.size:
                 if self._data_mode != self.FS_DATA_MODE:
@@ -1099,11 +1097,9 @@ class App(GUI):
         if not (f.size and v.size):
             return False
 
-        new_label: str = os.path.split(fn)[-1]
-
         self._ghost_line.setData(f,
                                  (g if self.switch_data_action.isChecked() else v),
-                                 name=new_label)
+                                 name=str(filename.parent / filename.stem))
         self._ghost_data.set_data(frequency_data=f, gamma_data=g, voltage_data=v)
 
         self.toolbar.clear_ghost_action.setEnabled(True)
@@ -1217,7 +1213,7 @@ class App(GUI):
         if self._plot_line.yData is None:
             return
 
-        def save_csv(fn: str) -> None:
+        def save_csv(fn: Path) -> None:
             data: NDArray[np.float64]
             sep: str = self.settings.csv_separator
             if self.switch_data_action.isChecked():
@@ -1243,7 +1239,7 @@ class App(GUI):
                                                _translate('unit', 'mV')))),
                            fmt=('%.3f', '%.6f'), encoding='utf-8')
 
-        def save_xlsx(fn: str) -> None:
+        def save_xlsx(fn: Path) -> None:
             data: NDArray[np.float64]
             with pd.ExcelWriter(fn) as writer:
                 df: pd.DataFrame
@@ -1267,13 +1263,15 @@ class App(GUI):
         supported_formats: dict[tuple[str, ...], str] = {
             tuple(all_cases('.csv')): _translate('file type', 'Text with separators')
         }
-        supported_formats_callbacks: dict[str, Callable[[str], None]] = {'.csv': save_csv}
+        supported_formats_callbacks: dict[str, Callable[[Path], None]] = {'.csv': save_csv}
         if importlib.util.find_spec('openpyxl') is not None:
             supported_formats[tuple(all_cases('.xlsx'))] = _translate('file type', 'Microsoft Excel')
             supported_formats_callbacks['.xlsx'] = save_xlsx
 
+        filename: Path | None
+        _filter: str
         filename, _filter = self.save_file_dialog(formats=supported_formats)
-        if not filename:
+        if filename is None:
             return
         x: NDArray[np.float64] = self._plot_line.xData
         y: NDArray[np.float64] = self._plot_line.yData
@@ -1285,7 +1283,7 @@ class App(GUI):
         y = y[good]
         del good
 
-        filename_ext: str = os.path.splitext(filename)[1].casefold()
+        filename_ext: str = filename.suffix.casefold()
         if filename_ext in supported_formats_callbacks:
             supported_formats_callbacks[filename_ext](filename)
 

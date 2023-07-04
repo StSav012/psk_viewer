@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 if sys.version_info < (3, 8):
     message = ('The Python version ' + '.'.join(map(str, sys.version_info[:3])) + ' is not supported.\n' +
@@ -218,7 +219,7 @@ def main() -> int:
         allow_abbrev=True,
         description='IPM RAS PSK and FS spectrometer files viewer.\n'
                     f'Find more at https://github.com/{__author__}/{__original_name__}.')
-    ap.add_argument('file', type=str, nargs=argparse.ZERO_OR_MORE, default=[''])
+    ap.add_argument('file', type=Path, nargs=argparse.ZERO_OR_MORE, default=[None])
     args: argparse.Namespace = ap.parse_intermixed_args()
 
     try:
@@ -289,7 +290,7 @@ def main() -> int:
                 break
         my_translator: QTranslator = QTranslator()
         for language in languages:
-            if my_translator.load(language, resource_path('translations')):
+            if my_translator.load(language, str(resource_path('translations'))):
                 QApplication.installTranslator(my_translator)
                 break
 

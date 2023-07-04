@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
-import os
 import re
+from pathlib import Path
 from typing import Any, Type
 
 import numpy as np
@@ -310,30 +310,38 @@ class GUI(QMainWindow):
         self.settings.beginGroup(section)
         if isinstance(value, np.float64):
             value = float(value)
+        if isinstance(value, Path):
+            value = str(value)
         # print(section, key, value, type(value))
         self.settings.setValue(key, value)
         self.settings.endGroup()
 
-    def open_file_dialog(self, formats: dict[tuple[str, ...], str]) -> tuple[str, str]:
+    def open_file_dialog(self, formats: dict[tuple[str, ...], str]) -> tuple[Path | None, str]:
         directory: str = self.get_config_value('open', 'location', '', str)
-        filename: str
+        _filename: str
         _filter: str
-        filename, _filter = getopenfilename(self,
-                                            filters=join_file_dialog_formats(formats),
-                                            basedir=directory)
-        if filename:
-            self.set_config_value('open', 'location', os.path.split(filename)[0])
+        _filename, _filter = getopenfilename(self,
+                                             filters=join_file_dialog_formats(formats),
+                                             basedir=directory)
+        filename: Path | None = None
+        if _filename:
+            filename = Path(_filename)
+            self.set_config_value('open', 'location', filename.parent)
         return filename, _filter
 
-    def save_file_dialog(self, formats: dict[tuple[str, ...], str]) -> tuple[str, str]:
+    def save_file_dialog(self, formats: dict[tuple[str, ...], str]) -> tuple[Path | None, str]:
         directory: str = self.get_config_value('save', 'location', '', str)
         initial_filter: str = self.get_config_value('save', 'filter', '', str)
-        filename: str
+        _filename: str
         _filter: str
-        filename, _filter = getsavefilename(self,
+        _filename, _filter = getsavefilename(self,
                                             filters=join_file_dialog_formats(formats),
                                             basedir=directory,
                                             selectedfilter=initial_filter)
+        if not _filename:
+            return None, _filter
+
+        filename: Path = Path(_filename)
 
         # set the extension from the format picked (if any)
         e: tuple[str, ...]
@@ -342,7 +350,6 @@ class GUI(QMainWindow):
                 filename = ensure_extension(filename, e[0].casefold())
                 break
 
-        if os.path.split(filename)[0]:
-            self.set_config_value('save', 'location', os.path.split(filename)[0])
+        self.set_config_value('save', 'location', filename.parent)
         self.set_config_value('save', 'filter', _filter)
         return filename, _filter
