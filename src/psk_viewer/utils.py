@@ -29,9 +29,9 @@ def resource_path(relative_path: str | Path) -> Path:
 IMAGE_EXT: str = '.svg'
 
 
-def load_icon(filename: str) -> QIcon:
+def load_icon(widget: QWidget, icon_name: str) -> QIcon:
     def icon_from_data(data: bytes) -> QIcon:
-        palette: QPalette = QPalette()
+        palette: QPalette = widget.palette()
         pixmap: QPixmap = QPixmap()
         pixmap.loadFromData(data
                             .replace(b'"background"', b'"' + palette.window().color().name().encode() + b'"')

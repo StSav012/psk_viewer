@@ -129,7 +129,7 @@ class GUI(QMainWindow):
         fn.INT_REGEX = re.compile(r'(?P<number>[+-]?\d+)\s*'
                                   r'(?P<siPrefix>[u(' + '|'.join(fn.SI_PREFIXES) + r')]?)(?P<suffix>.*)$')
 
-        self.setWindowIcon(load_icon('main'))
+        self.setWindowIcon(load_icon(self, 'main'))
 
         self.form_layout_frequency.addRow(_translate('main window', 'Minimum') + ':', self.spin_frequency_min)
         self.form_layout_frequency.addRow(_translate('main window', 'Maximum') + ':', self.spin_frequency_max)
