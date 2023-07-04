@@ -274,7 +274,7 @@ def main() -> int:
     else:
         app: QApplication = QApplication(sys.argv)
 
-        languages: set[str] = set(QLocale().uiLanguages() + [QLocale().bcp47Name(), QLocale().name()])
+        languages: frozenset[str] = frozenset(QLocale().uiLanguages() + [QLocale().bcp47Name(), QLocale().name()])
         language: str
         qt_translator: QTranslator = QTranslator()
         for language in languages:
