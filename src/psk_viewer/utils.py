@@ -34,9 +34,10 @@ def load_icon(widget: QWidget, icon_name: str) -> QIcon:
         palette: QPalette = widget.palette()
         pixmap: QPixmap = QPixmap()
         pixmap.loadFromData(data
+                            .strip()
                             .replace(b'"background"', b'"' + palette.window().color().name().encode() + b'"')
                             .replace(b'"foreground"', b'"' + palette.text().color().name().encode() + b'"')
-                            .strip())
+                            )
         return QIcon(pixmap)
 
     filename: Path = resource_path('img') / (icon_name + IMAGE_EXT)
