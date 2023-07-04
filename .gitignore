@@ -1,0 +1,11 @@
+.*
+/.*
+!.gitignore
+!/.github/
+/build/
+/dist/
+/typograph.py
+/deployment/
+/pysidedeploy.spec
+/src/psk_viewer/_version.py
+/src/psk_viewer.egg-info/

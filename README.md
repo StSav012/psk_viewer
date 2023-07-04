@@ -34,8 +34,24 @@ It will be convenient to add the Python directory to the `PATH` environment vari
 ### Getting the application
 The source code is available at https://github.com/StSav012/psk_viewer.
 
+###### Use `pip` or another Python package manager
+You can get the code with `pip` (the preferred way): 
+
+  - (optionally) create a virtual environment and activate it,
+  - issue 
+    ```commandline
+    pip install psk_viewer
+    ```
+    in the command line.
+
+Then, do 
+```commandline
+pip install -U psk_viewer
+```
+every time you wish to update the code.
+
 ###### Use `git`
-You can get the code with `git` (the preferred way): 
+You can get the code with `git`: 
 
   - navigate to the directory you wish to store the code in,
   - issue 
@@ -67,7 +83,12 @@ in the preferred directory.
 The source code will get updated every time the application starts unless you manually delete `updater.py` file.
 
 ### Launching the application
-File called `main.py` should be fed to Python executable.
+After the installation via `pip` or another package manager,
+an executable named `psk_viewer` should be available in the environment. That's all.
+
+Otherwise, there's more to do.
+
+A file called `main.py` should be fed to Python executable.
 
 If the file associations set so, the opening of the file should lead to executing the code. Ugly and unsafe.
 

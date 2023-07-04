@@ -1,0 +1,16 @@
+numpy
+scipy
+pandas
+pyqtgraph>=0.13.3
+
+# for the compatibility b/w various Qt versions
+QtPy>=2.3.1
+
+# for unified isons
+qtawesome
+
+# to save MS Excel files
+openpyxl
+
+# to build a package and install it
+setuptools

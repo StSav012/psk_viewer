@@ -7,9 +7,9 @@ from qtpy.QtCore import QAbstractItemModel, QModelIndex, QPoint, Qt
 from qtpy.QtGui import QKeyEvent, QKeySequence
 from qtpy.QtWidgets import QAction, QHeaderView, QMenu, QTableView, QWidget
 
-from found_lines_model import FoundLinesModel
-from settings import Settings
-from utils import HeaderWithUnit, copy_to_clipboard
+from .found_lines_model import FoundLinesModel
+from .settings import Settings
+from .utils import HeaderWithUnit, copy_to_clipboard
 
 __all__ = ['TableView']
 

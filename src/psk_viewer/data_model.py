@@ -7,7 +7,7 @@ import numpy as np
 from numpy.typing import NDArray
 from qtpy.QtCore import QAbstractTableModel, QModelIndex, QObject, Qt
 
-from utils import HeaderWithUnit, superscript_tag
+from .utils import HeaderWithUnit, superscript_tag
 
 __all__ = ('DataModel',)
 
@@ -194,8 +194,8 @@ class DataModel(QAbstractTableModel):
 
     def fetchMore(self, index: QModelIndex = QModelIndex()) -> None:
         # https://sateeshkumarb.wordpress.com/2012/04/01/paginated-display-of-table-data-in-pyqt/
-        reminder: int = self._data.shape[0] - self._rows_loaded
-        items_to_fetch: int = min(reminder, self.ROW_BATCH_COUNT)
+        remainder: int = self._data.shape[0] - self._rows_loaded
+        items_to_fetch: int = min(remainder, self.ROW_BATCH_COUNT)
         self.beginInsertRows(QModelIndex(), self._rows_loaded, self._rows_loaded + items_to_fetch - 1)
         self._rows_loaded += items_to_fetch
         self.endInsertRows()

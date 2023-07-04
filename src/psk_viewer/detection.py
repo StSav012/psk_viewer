@@ -6,6 +6,8 @@ from typing import Final, cast
 import numpy as np
 from numpy.typing import NDArray
 
+__all__ = ['LINE_WIDTH', 'correlation', 'peaks_positions']
+
 LINE_WIDTH: Final[float] = 2.6e6
 
 

@@ -13,11 +13,12 @@ from qtpy.QtWidgets import (QAbstractItemView, QCheckBox, QDockWidget, QFormLayo
                             QPushButton, QStatusBar, QVBoxLayout, QWidget)
 from qtpy.compat import getopenfilename, getsavefilename
 
-from found_lines_model import FoundLinesModel
-from settings import Settings
-from table_view import TableView
-from utils import ensure_extension, join_file_dialog_formats, load_icon
-from valuelabel import ValueLabel
+from . import __version__
+from .found_lines_model import FoundLinesModel
+from .settings import Settings
+from .table_view import TableView
+from .utils import ensure_extension, join_file_dialog_formats, load_icon
+from .valuelabel import ValueLabel
 
 __all__ = ['GUI']
 
@@ -202,7 +203,10 @@ class GUI(QMainWindow):
         self.grid_layout.addWidget(self.figure)
 
         self.setCentralWidget(self.central_widget)
-        self.setWindowTitle(_translate('main window', 'Spectrometer Data Viewer'))
+        if __version__:
+            self.setWindowTitle(_translate('main window', 'Spectrometer Data Viewer (version {0})').format(__version__))
+        else:
+            self.setWindowTitle(_translate('main window', 'Spectrometer Data Viewer'))
         self.setStatusBar(self.status_bar)
 
         self.status_bar.addWidget(self._cursor_x)

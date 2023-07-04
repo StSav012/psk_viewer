@@ -10,8 +10,8 @@ from qtpy.QtGui import QCloseEvent, QColor
 from qtpy.QtWidgets import (QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QHBoxLayout, QListWidget,
                             QScrollArea, QStackedWidget, QVBoxLayout, QWidget)
 
-from colorselector import ColorSelector
-from settings import Settings
+from .colorselector import ColorSelector
+from .settings import Settings
 
 __all__ = ['Preferences']
 

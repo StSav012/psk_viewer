@@ -7,11 +7,11 @@ import numpy as np
 from numpy.typing import NDArray
 from qtpy.QtCore import QCoreApplication, QObject
 
-from data_model import DataModel
-from plot_data_item import PlotDataItem
-from utils import HeaderWithUnit
+from .data_model import DataModel
+from .plot_data_item import PlotDataItem
+from .utils import HeaderWithUnit
 
-__all__ = ('FoundLinesModel',)
+__all__ = ['FoundLinesModel']
 
 _translate = QCoreApplication.translate
 

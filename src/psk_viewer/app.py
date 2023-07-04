@@ -8,22 +8,22 @@ from typing import Any, Callable, Final, Iterable, Sequence, cast
 import numpy as np
 import pandas as pd  # type: ignore
 import pyqtgraph as pg  # type: ignore
-import pyqtgraph.exporters  # type: ignore
 from numpy.typing import NDArray
 from pyqtgraph import PlotWidget
 from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent  # type: ignore
+from pyqtgraph.exporters.ImageExporter import ImageExporter
 from qtpy.QtCore import (QByteArray, QCoreApplication, QItemSelectionModel, QModelIndex,
                          QPoint, QPointF, QRect, QRectF, Qt)
 from qtpy.QtGui import QBrush, QCloseEvent, QGuiApplication, QPalette, QPen
 from qtpy.QtWidgets import QAction, QMessageBox, QWidget
 
-import detection
-from gui import GUI
-from plot_data_item import PlotDataItem
-from preferences import Preferences
-from toolbar import NavigationToolbar
-from utils import (all_cases, copy_to_clipboard, load_data_csv, load_data_fs, load_data_scandat, resource_path,
-                   superscript_number)
+from .detection import correlation, peaks_positions
+from .gui import GUI
+from .plot_data_item import PlotDataItem
+from .preferences import Preferences
+from .toolbar import NavigationToolbar
+from .utils import (all_cases, copy_to_clipboard, load_data_csv, load_data_fs, load_data_scandat, resource_path,
+                    superscript_number)
 
 __all__ = ['App']
 
@@ -709,15 +709,15 @@ class App(GUI):
             x_model_new: NDArray[np.float64] = np.arange(x_model[0], x_model[-1],
                                                          x[1] - x[0])
             y_model_new: NDArray[np.float64] = interpol(x_model_new)
-            found_lines = detection.peaks_positions(x,
-                                                    detection.correlation(y_model_new,
-                                                                          x,
-                                                                          y),
-                                                    threshold=1.0 / threshold)
+            found_lines = peaks_positions(x,
+                                          correlation(y_model_new,
+                                                      x,
+                                                      y),
+                                          threshold=1.0 / threshold)
         elif self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE):
-            found_lines = detection.peaks_positions(x,
-                                                    y,
-                                                    threshold=1.0 / threshold)
+            found_lines = peaks_positions(x,
+                                          y,
+                                          threshold=1.0 / threshold)
         else:
             return 0
 
@@ -1329,12 +1329,12 @@ class App(GUI):
             supported_formats_callbacks[filename_ext](filename)
 
     def copy_figure(self) -> None:
-        exporter: pg.exporters.ImageExporter = pg.exporters.ImageExporter(self._canvas)
+        exporter: ImageExporter = ImageExporter(self._canvas)
         self.hide_cursors()
         exporter.export(copy=True)
 
     def save_figure(self) -> None:
-        exporter: pg.exporters.ImageExporter = pg.exporters.ImageExporter(self._canvas)
+        exporter: ImageExporter = ImageExporter(self._canvas)
         formats: dict[tuple[str, ...], str] = {
             tuple(exporter.getSupportedImageFormats()): _translate('file dialog', 'Image files')
         }
