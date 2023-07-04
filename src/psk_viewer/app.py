@@ -200,9 +200,9 @@ class App(GUI):
         close.setStandardButtons(QMessageBox.StandardButton.Yes
                                  | QMessageBox.StandardButton.No
                                  | QMessageBox.StandardButton.Cancel)
-        close_code: QMessageBox.StandardButton = (QMessageBox.StandardButton.No
-                                                  if self._plot_data.frequency_span > 0.0
-                                                  else QMessageBox.StandardButton.Yes)
+        close_code: int = (QMessageBox.StandardButton.No
+                           if self._plot_data.frequency_span > 0.0
+                           else QMessageBox.StandardButton.Yes)
         while close_code == QMessageBox.StandardButton.No:
             close_code = close.exec()
 
