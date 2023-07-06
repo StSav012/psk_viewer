@@ -56,7 +56,7 @@ def _warn_about_outdated_package(package_name: str, package_version: str, releas
 
 def _make_old_qt_compatible_again() -> None:
     from qtpy import QT6, PYSIDE2
-    from qtpy.QtCore import QLibraryInfo, Qt
+    from qtpy.QtCore import QLibraryInfo, Qt, qVersion
     from qtpy.QtWidgets import QApplication, QDialog
 
     def to_iso_format(s: str) -> str:
@@ -112,70 +112,9 @@ def _make_old_qt_compatible_again() -> None:
 
         return s
 
-    if PYSIDE2:
-        QApplication.exec = QApplication.exec_
-        QDialog.exec = QDialog.exec_
-
     if not QT6:
-        from functools import partialmethod
-
-        from qtpy.QtCore import QObject
-        from qtpy.QtGui import QIcon, QKeySequence
-        from qtpy.QtWidgets import QAction, QMenu, QToolBar, QWidget
-
         QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
         QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
-
-        def add_action(self: QWidget, *args, old_add_action) -> QAction:
-            action: QAction
-            icon: QIcon
-            text: str
-            shortcut: QKeySequence | QKeySequence.StandardKey | str | int
-            receiver: QObject
-            member: bytes
-            if all(isinstance(arg, t)
-                   for arg, t in zip(args, [str,
-                                            (QKeySequence, QKeySequence.StandardKey, str, int),
-                                            QObject,
-                                            bytes])):
-                if len(args) == 2:
-                    text, shortcut = args
-                    action = old_add_action(self, text)
-                    action.setShortcut(shortcut)
-                elif len(args) == 3:
-                    text, shortcut, receiver = args
-                    action = old_add_action(self, text, receiver)
-                    action.setShortcut(shortcut)
-                elif len(args) == 4:
-                    text, shortcut, receiver, member = args
-                    action = old_add_action(self, text, receiver, member, shortcut)
-                else:
-                    return old_add_action(self, *args)
-                return action
-            elif all(isinstance(arg, t)
-                     for arg, t in zip(args, [QIcon,
-                                              str,
-                                              (QKeySequence, QKeySequence.StandardKey, str, int),
-                                              QObject,
-                                              bytes])):
-                if len(args) == 3:
-                    icon, text, shortcut = args
-                    action = old_add_action(self, icon, text)
-                    action.setShortcut(QKeySequence(shortcut))
-                elif len(args) == 4:
-                    icon, text, shortcut, receiver = args
-                    action = old_add_action(self, icon, text, receiver)
-                    action.setShortcut(QKeySequence(shortcut))
-                elif len(args) == 5:
-                    icon, text, shortcut, receiver, member = args
-                    action = old_add_action(self, icon, text, receiver, member, QKeySequence(shortcut))
-                else:
-                    return old_add_action(self, *args)
-                return action
-            return old_add_action(self, *args)
-
-        QMenu.addAction = partialmethod(add_action, old_add_action=QMenu.addAction)
-        QToolBar.addAction = partialmethod(add_action, old_add_action=QToolBar.addAction)
 
     from qtpy import __version__
 
@@ -186,9 +125,71 @@ def _make_old_qt_compatible_again() -> None:
             QLibraryInfo.LibraryLocation = QLibraryInfo.LibraryPath
     if _version_tuple(__version__) < _version_tuple('2.4.0'):
         # 2.4.0 is not released yet, so no warning until there is the release time
+        if PYSIDE2:
+            QApplication.exec = QApplication.exec_
+            QDialog.exec = QDialog.exec_
+
         if not QT6:
             QLibraryInfo.path = lambda *args, **kwargs: QLibraryInfo.location(*args, **kwargs)
             QLibraryInfo.LibraryPath = QLibraryInfo.LibraryLocation
+
+        if _version_tuple(qVersion()) < _version_tuple('6.3'):
+            from functools import partialmethod
+
+            from qtpy.QtCore import QObject
+            from qtpy.QtGui import QIcon, QKeySequence
+            from qtpy.QtWidgets import QAction, QMenu, QToolBar, QWidget
+
+            def add_action(self: QWidget, *args, old_add_action) -> QAction:
+                action: QAction
+                icon: QIcon
+                text: str
+                shortcut: QKeySequence | QKeySequence.StandardKey | str | int
+                receiver: QObject
+                member: bytes
+                if all(isinstance(arg, t)
+                       for arg, t in zip(args, [str,
+                                                (QKeySequence, QKeySequence.StandardKey, str, int),
+                                                QObject,
+                                                bytes])):
+                    if len(args) == 2:
+                        text, shortcut = args
+                        action = old_add_action(self, text)
+                        action.setShortcut(shortcut)
+                    elif len(args) == 3:
+                        text, shortcut, receiver = args
+                        action = old_add_action(self, text, receiver)
+                        action.setShortcut(shortcut)
+                    elif len(args) == 4:
+                        text, shortcut, receiver, member = args
+                        action = old_add_action(self, text, receiver, member, shortcut)
+                    else:
+                        return old_add_action(self, *args)
+                    return action
+                elif all(isinstance(arg, t)
+                         for arg, t in zip(args, [QIcon,
+                                                  str,
+                                                  (QKeySequence, QKeySequence.StandardKey, str, int),
+                                                  QObject,
+                                                  bytes])):
+                    if len(args) == 3:
+                        icon, text, shortcut = args
+                        action = old_add_action(self, icon, text)
+                        action.setShortcut(QKeySequence(shortcut))
+                    elif len(args) == 4:
+                        icon, text, shortcut, receiver = args
+                        action = old_add_action(self, icon, text, receiver)
+                        action.setShortcut(QKeySequence(shortcut))
+                    elif len(args) == 5:
+                        icon, text, shortcut, receiver, member = args
+                        action = old_add_action(self, icon, text, receiver, member, QKeySequence(shortcut))
+                    else:
+                        return old_add_action(self, *args)
+                    return action
+                return old_add_action(self, *args)
+
+            QMenu.addAction = partialmethod(add_action, old_add_action=QMenu.addAction)
+            QToolBar.addAction = partialmethod(add_action, old_add_action=QToolBar.addAction)
 
     from pyqtgraph import __version__
 
