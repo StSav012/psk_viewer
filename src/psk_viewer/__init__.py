@@ -41,7 +41,8 @@ def _version_tuple(version_string: AnyStr) -> tuple[int | AnyStr, ...]:
         try:
             result += (int(part),)
         except ValueError:
-            result += (part,)
+            # follow `pkg_resources` version 0.6a9: remove dashes to sort letters after digits
+            result += (part.replace('-', ''),) if isinstance(part, str) else (part.replace(b'-', b''),)
     return result
 
 
