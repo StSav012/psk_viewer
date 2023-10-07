@@ -195,7 +195,7 @@ def load_data_scandat(filename: str, parent: QWidget) \
         y = np.array([float(line) for line in lines[::2]]) * 1e-3
         bias = np.array([bias_offset - float(line) for line in lines[1::2]])
     x = np.arange(y.size, dtype=float) * frequency_step + min_frequency
-    ok: bool = False
+    ok: bool = True
     while cell_length <= 0.0 or not ok:
         cell_length, ok = QInputDialog.getDouble(parent,
                                                  parent.windowTitle() if parent is not None else '',
