@@ -125,7 +125,8 @@ def _make_old_qt_compatible_again() -> None:
         if QT6:
             QLibraryInfo.LibraryLocation = QLibraryInfo.LibraryPath
     if _version_tuple(__version__) < _version_tuple('2.4.0'):
-        # 2.4.0 is not released yet, so no warning until there is the release time
+        _warn_about_outdated_package(package_name='QtPy', package_version='2.4.0',
+            release_time=datetime.fromisoformat(to_iso_format('2023-08-29T16:24:56Z')))
         if PYSIDE2:
             QApplication.exec = QApplication.exec_
             QDialog.exec = QDialog.exec_
