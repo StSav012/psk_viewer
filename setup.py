@@ -70,19 +70,19 @@ def required_packages() -> list[str]:
             or uname.machine not in ('x86_64', 'AMD64')):
         # Qt6 does not support the OSes
         qt_list = [
-            PackageRequirement(package_name='PyQt5', min_version='5.15.0'),
-            PackageRequirement(package_name='PySide2', min_version='5.15.0'),
+            PackageRequirement(package_name='PyQt5', min_version='5.15.10'),
         ]
     else:
         qt_list = [
-            PackageRequirement(package_name='PySide6-Essentials', min_version='6.4.0'),
-            PackageRequirement(package_name='PyQt6', min_version='6.4.0'),
-            PackageRequirement(package_name='PyQt5', min_version='5.15.0'),
-            PackageRequirement(package_name='PySide2', min_version='5.15.0'),
+            PackageRequirement(package_name='PySide6-Essentials', min_version='6.6.2'),
+            PackageRequirement(package_name='PyQt6', min_version='6.6.2'),
+            PackageRequirement(package_name='PyQt5', min_version='5.15.10'),
         ]
+    if sys.version_info < (3, 11):
+        qt_list.append(PackageRequirement(package_name='PySide2', min_version='5.13.2'))
 
     requirements: list[PackageRequirement | Sequence[PackageRequirement]] = [
-        PackageRequirement(package_name='qtpy', min_version='2.3.1'),
+        PackageRequirement(package_name='qtpy', min_version='2.4.1'),
         PackageRequirement(package_name='qtawesome'),
         qt_list,
         PackageRequirement(package_name='pandas'),
