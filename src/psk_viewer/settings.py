@@ -30,14 +30,14 @@ class Settings(QSettings):
     def __init__(self, organization: str, application: str, parent: QObject) -> None:
         super().__init__(organization, application, parent)
         self.display_processing: bool = True
-        # for some reason, the dicts are not being translated when used as class variables
-        self.LINE_ENDS: Final[dict[str, str]] = {
+
+        self.LINE_ENDS: dict[str, str] = {
             '\n': _translate('line end', r'Line Feed (\n)'),
             '\r': _translate('line end', r'Carriage Return (\r)'),
             '\r\n': _translate('line end', r'CR+LF (\r\n)'),
             '\n\r': _translate('line end', r'LF+CR (\n\r)')
         }
-        self.CSV_SEPARATORS: Final[dict[str, str]] = {
+        self.CSV_SEPARATORS: dict[str, str] = {
             ',': _translate('csv separator', r'comma (,)'),
             '\t': _translate('csv separator', r'tab (\t)'),
             ';': _translate('csv separator', r'semicolon (;)'),
@@ -45,9 +45,24 @@ class Settings(QSettings):
         }
 
     @property
-    def dialog(self) -> dict[str, dict[str, (Settings.CallbackOnly
-                                             | Settings.SpinboxAndCallback
-                                             | Settings.ComboboxAndCallback)]]:
+    def dialog(self) -> dict[str, dict[str, (CallbackOnly
+                                             | PathCallbackOnly
+                                             | SpinboxAndCallback
+                                             | ComboboxAndCallback
+                                             | EditableComboboxAndCallback)]]:
+        self.LINE_ENDS = {
+            '\n': _translate('line end', r'Line Feed (\n)'),
+            '\r': _translate('line end', r'Carriage Return (\r)'),
+            '\r\n': _translate('line end', r'CR+LF (\r\n)'),
+            '\n\r': _translate('line end', r'LF+CR (\n\r)')
+        }
+        self.CSV_SEPARATORS = {
+            ',': _translate('csv separator', r'comma (,)'),
+            '\t': _translate('csv separator', r'tab (\t)'),
+            ';': _translate('csv separator', r'semicolon (;)'),
+            ' ': _translate('csv separator', r'space ( )')
+        }
+
         jump_opts: dict[str, bool | int | str] = {
             'suffix': _translate('unit', 'Hz'),
             'siPrefix': True,
