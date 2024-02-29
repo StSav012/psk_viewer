@@ -4,8 +4,9 @@ from __future__ import annotations
 import itertools
 import sys
 from contextlib import suppress
+from os import PathLike
 from pathlib import Path
-from typing import Any, Final, Iterator
+from typing import Any, BinaryIO, Collection, Final, Iterator
 
 import numpy as np
 from numpy.typing import NDArray
@@ -389,3 +390,48 @@ class HeaderWithUnit:
 
     def __str__(self) -> str:
         return self._str
+
+def find_qm_files(
+        root: str | PathLike[str] = Path.cwd(),
+        *,
+        exclude: Collection[str | PathLike[str]] = frozenset(),
+) -> Iterator[Path]:
+    magic: Final[bytes] = bytes(
+        [
+            0x3C,
+            0xB8,
+            0x64,
+            0x18,
+            0xCA,
+            0xEF,
+            0x9C,
+            0x95,
+            0xCD,
+            0x21,
+            0x1C,
+            0xBF,
+            0x60,
+            0xA1,
+            0xBD,
+            0xDD,
+        ]
+    )
+    exclude = frozenset(map(Path, exclude))
+
+    def list_files(path: Path) -> set[Path]:
+        files: set[Path] = set()
+        if path not in exclude:
+            if path.is_dir():
+                for child in path.iterdir():
+                    if (child := child.resolve()) not in files:
+                        files.update(list_files(child))
+            elif path.is_file():
+                files.add(path.resolve())
+        return files
+
+    file: Path
+    f_in: BinaryIO
+    for file in list_files(Path(root)):
+        with suppress(Exception), open(file, "rb") as f_in:
+            if f_in.read(len(magic)) == magic:
+                yield file
