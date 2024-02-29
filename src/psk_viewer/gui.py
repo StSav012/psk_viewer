@@ -106,17 +106,20 @@ class GUI(QMainWindow):
         self.table_found_lines: TableView = TableView(self.settings, self.box_found_lines)
         self.model_found_lines: FoundLinesModel = FoundLinesModel(self)
 
+        self.toolbar: NavigationToolbar = NavigationToolbar(self)
         self.status_bar: QStatusBar = QStatusBar()
 
         # plot
         self.figure: pg.PlotWidget = pg.PlotWidget(self.central_widget)
-        self.figure.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
+        self._canvas: pg.PlotItem = self.figure.getPlotItem()
         self._cursor_x: ValueLabel = ValueLabel(self.status_bar, siPrefix=True, decimals=6)
         self._cursor_y: ValueLabel = ValueLabel(self.status_bar, siPrefix=True, decimals=3)
 
-        self.setup_ui_appearance()
+        self._view_all_action: QAction = QAction()
 
-    def setup_ui_appearance(self) -> None:
+        self._setup_appearance()
+
+    def _setup_appearance(self) -> None:
         fn.SI_PREFIXES = _translate('si prefixes', 'y,z,a,f,p,n,µ,m, ,k,M,G,T,P,E,Z,Y').split(',')
         fn.SI_PREFIXES_ASCII = fn.SI_PREFIXES
         fn.SI_PREFIX_EXPONENTS.update(dict([(s, (i - 8) * 3) for i, s in enumerate(fn.SI_PREFIXES)]))
@@ -130,6 +133,7 @@ class GUI(QMainWindow):
                                   r'(?P<siPrefix>[u(' + '|'.join(fn.SI_PREFIXES) + r')]?)(?P<suffix>.*)$')
 
         self.setWindowIcon(load_icon(self, 'main'))
+        self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.toolbar)
 
         self.form_layout_frequency.addRow(_translate('main window', 'Minimum') + ':', self.spin_frequency_min)
         self.form_layout_frequency.addRow(_translate('main window', 'Maximum') + ':', self.spin_frequency_max)
@@ -290,7 +294,145 @@ class GUI(QMainWindow):
 
         self.spin_threshold.setOpts(compactHeight=False)
 
+        self.figure.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
+
+        self._install_translation()
+
         self.adjustSize()
+
+    def _setup_translation(self) -> None:
+        fn.SI_PREFIXES = _translate('si prefixes', 'y,z,a,f,p,n,µ,m, ,k,M,G,T,P,E,Z,Y').split(',')
+        fn.SI_PREFIXES_ASCII = fn.SI_PREFIXES
+        fn.SI_PREFIX_EXPONENTS.update(dict([(s, (i - 8) * 3) for i, s in enumerate(fn.SI_PREFIXES)]))
+        if _translate('si prefix alternative micro', 'u'):
+            fn.SI_PREFIX_EXPONENTS[_translate('si prefix alternative micro', 'u')] = -6
+
+        self.form_layout_frequency.labelForField(self.spin_frequency_min).setText(self.tr('Minimum:'))
+        self.form_layout_frequency.labelForField(self.spin_frequency_max).setText(self.tr('Maximum:'))
+        self.form_layout_frequency.labelForField(self.spin_frequency_center).setText(self.tr('Center:'))
+        self.form_layout_frequency.labelForField(self.spin_frequency_span).setText(self.tr('Span:'))
+
+        self.form_layout_voltage.labelForField(self.spin_voltage_min).setText(self.tr('Minimum:'))
+        self.form_layout_voltage.labelForField(self.spin_voltage_max).setText(self.tr('Maximum:'))
+
+        self.switch_data_action.setText(self.tr('Show Absorption'))
+        self.switch_data_action.setToolTip(self.tr('Switch Y data between absorption and voltage'))
+
+        self.form_layout_find_lines.labelForField(self.spin_threshold).setText(self.tr('Search threshold:'))
+
+        if __version__:
+            self.setWindowTitle(self.tr('Spectrometer Data Viewer (version {0})').format(__version__))
+        else:
+            self.setWindowTitle(self.tr('Spectrometer Data Viewer'))
+
+        self._cursor_x.suffix = _translate('unit', 'Hz')
+        self._cursor_y.suffix = _translate('unit', 'V')
+
+        self.box_frequency.setWindowTitle(self.tr('Frequency'))
+        self.check_frequency_persists.setText(self.tr('Keep frequency range'))
+
+        self.button_zoom_x_out_coarse.setText(self.tr('−50%'))
+        self.button_zoom_x_out_fine.setText(self.tr('−10%'))
+        self.button_zoom_x_in_fine.setText(self.tr('+10%'))
+        self.button_zoom_x_in_coarse.setText(self.tr('+50%'))
+
+        self.button_move_x_left_coarse.setText('−' + pg.siFormat(5e8, suffix=_translate('unit', 'Hz')))
+        self.button_move_x_left_fine.setText('−' + pg.siFormat(5e7, suffix=_translate('unit', 'Hz')))
+        self.button_move_x_right_fine.setText('+' + pg.siFormat(5e7, suffix=_translate('unit', 'Hz')))
+        self.button_move_x_right_coarse.setText('+' + pg.siFormat(5e8, suffix=_translate('unit', 'Hz')))
+
+        self.box_voltage.setWindowTitle(self.tr('Vertical Axis'))
+        self.check_voltage_persists.setText(self.tr('Keep voltage range'))
+
+        self.button_zoom_y_out_coarse.setText(self.tr('−50%'))
+        self.button_zoom_y_out_fine.setText(self.tr('−10%'))
+        self.button_zoom_y_in_fine.setText(self.tr('+10%'))
+        self.button_zoom_y_in_coarse.setText(self.tr('+50%'))
+
+        self.box_find_lines.setWindowTitle(self.tr('Find Lines Automatically'))
+        self.group_find_lines.setToolTip(self.tr('Try to detect lines automatically'))
+        self.button_find_lines.setText(self.tr('Find Lines Automatically'))
+        self.button_clear_lines.setText(self.tr('Clear Automatically Found Lines'))
+        self.button_prev_line.setText(self.tr('Previous Line'))
+        self.button_next_line.setText(self.tr('Next Line'))
+
+        self.box_found_lines.setWindowTitle(self.tr('Found Lines'))
+
+        self.spin_frequency_min.setSuffix(_translate('unit', 'Hz'))
+        self.spin_frequency_max.setSuffix(_translate('unit', 'Hz'))
+        self.spin_frequency_center.setSuffix(_translate('unit', 'Hz'))
+        self.spin_frequency_span.setSuffix(_translate('unit', 'Hz'))
+
+        self.spin_voltage_min.setSuffix(_translate('unit', 'V'))
+        self.spin_voltage_max.setSuffix(_translate('unit', 'V'))
+
+        self.figure.setLabel('bottom',
+            text=_translate("plot axes labels", 'Frequency'),
+            units=_translate('unit', 'Hz'))
+        self.figure.setLabel('left',
+            text=_translate("plot axes labels", 'Voltage'),
+            units=_translate('unit', 'V'))
+
+        self._view_all_action.setText(_translate("plot context menu action", "View All"))
+        self._canvas.ctrl.alphaGroup.parent().setTitle(_translate("plot context menu action", "Alpha"))
+        self._canvas.ctrl.gridGroup.parent().setTitle(_translate("plot context menu action", "Grid"))
+        self._canvas.ctrl.xGridCheck.setText(_translate("plot context menu action", "Show X Grid"))
+        self._canvas.ctrl.yGridCheck.setText(_translate("plot context menu action", "Show Y Grid"))
+        self._canvas.ctrl.label.setText(_translate("plot context menu action", "Opacity"))
+        self._canvas.ctrl.alphaGroup.setTitle(_translate("plot context menu action", "Alpha"))
+        self._canvas.ctrl.autoAlphaCheck.setText(_translate("plot context menu action", "Auto"))
+
+        self._canvas.vb.menu.setTitle(_translate('menu', 'Plot Options'))
+
+    def _install_translation(self) -> None:
+        qt_translations_path: str = QLibraryInfo.path(
+            QLibraryInfo.LibraryPath.TranslationsPath
+        )
+        qt_translator: QTranslator
+        translator: QTranslator
+        if self.settings.translation_path is not None:
+            translator = QTranslator(self)
+            if translator.load(str(self.settings.translation_path)):
+                new_locale: QLocale = QLocale(translator.language())
+
+                # remove existing translators
+                for child in self.children():
+                    if isinstance(child, QTranslator) and child is not translator:
+                        QApplication.removeTranslator(child)
+
+                qt_translator = QTranslator(self)
+                if qt_translator.load(new_locale, "qtbase", "_", qt_translations_path):
+                    QApplication.installTranslator(qt_translator)
+
+                QApplication.installTranslator(translator)
+                self.setLocale(new_locale)
+        else:
+            current_locale: QLocale = self.locale()
+            ui_languages: frozenset[str] = frozenset(
+                [
+                    *current_locale.uiLanguages(),
+                    *map(lambda s: s.replace("-", "_"), current_locale.uiLanguages()),
+                ]
+            )
+            for qm_file in find_qm_files(
+                    root=qt_translations_path, exclude=[sys.exec_prefix]
+            ):
+                qt_translator = QTranslator(self)
+                if (
+                        qt_translator.load(str(qm_file))
+                        and qt_translator.language() in ui_languages
+                ):
+                    QApplication.installTranslator(qt_translator)
+            for qm_file in find_qm_files(
+                    exclude=[qt_translations_path, sys.exec_prefix]
+            ):
+                translator = QTranslator(self)
+                if (
+                        translator.load(str(qm_file))
+                        and translator.language() in ui_languages
+                ):
+                    QApplication.installTranslator(translator)
+        self._setup_translation()
 
     def get_config_value(self, section: str, key: str, default: Any, _type: Type[Any]) -> Any:
         if section not in self.settings.childGroups():

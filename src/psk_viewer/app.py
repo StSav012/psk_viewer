@@ -21,7 +21,6 @@ from .detection import correlation, peaks_positions
 from .gui import GUI
 from .plot_data_item import PlotDataItem
 from .preferences import Preferences
-from .toolbar import NavigationToolbar
 from .utils import (all_cases, copy_to_clipboard, load_data_csv, load_data_fs, load_data_scandat, resource_path,
                     superscript_number)
 
@@ -77,11 +76,6 @@ class App(GUI):
 
         self._is_dark: bool = self.palette().color(QPalette.ColorRole.Window).lightness() < 128
 
-        self.toolbar: NavigationToolbar = NavigationToolbar(self)
-        self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.toolbar)
-
-        self._canvas: pg.PlotItem = self.figure.getPlotItem()
-        self._view_all_action: QAction = QAction()
 
         self._ghost_line: pg.PlotDataItem = self.figure.plot(np.empty(0), name='')
         self._plot_line: pg.PlotDataItem = self.figure.plot(np.empty(0), name='')
@@ -169,26 +163,7 @@ class App(GUI):
         self._canvas.ctrl.autoAlphaCheck.hide()
         self.figure.sceneObj.contextMenu = None
 
-        self.translate_ui()
-
-    def translate_ui(self) -> None:
-        self.figure.setLabel('bottom',
-                             text=_translate("plot axes labels", 'Frequency'),
-                             units=_translate('unit', 'Hz'))
-        self.figure.setLabel('left',
-                             text=_translate("plot axes labels", 'Voltage'),
-                             units=_translate('unit', 'V'))
-
-        self._view_all_action.setText(_translate("plot context menu action", "View All"))
-        self._canvas.ctrl.alphaGroup.parent().setTitle(_translate("plot context menu action", "Alpha"))
-        self._canvas.ctrl.gridGroup.parent().setTitle(_translate("plot context menu action", "Grid"))
-        self._canvas.ctrl.xGridCheck.setText(_translate("plot context menu action", "Show X Grid"))
-        self._canvas.ctrl.yGridCheck.setText(_translate("plot context menu action", "Show Y Grid"))
-        self._canvas.ctrl.label.setText(_translate("plot context menu action", "Opacity"))
-        self._canvas.ctrl.alphaGroup.setTitle(_translate("plot context menu action", "Alpha"))
-        self._canvas.ctrl.autoAlphaCheck.setText(_translate("plot context menu action", "Auto"))
-
-        self._canvas.vb.menu.setTitle(_translate('menu', 'Plot Options'))
+        self._install_translation()
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """ senseless joke in the loop """
