@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 import os
-from typing import Final, NamedTuple, cast
+from pathlib import Path
+from typing import NamedTuple, Sequence, cast
 
 import pyqtgraph as pg  # type: ignore
 from qtpy.QtCore import QCoreApplication, QObject, QSettings
@@ -17,6 +18,9 @@ class Settings(QSettings):
     """ convenient internal representation of the application settings """
 
     class CallbackOnly(NamedTuple):
+        callback: str
+
+    class PathCallbackOnly(NamedTuple):
         callback: str
 
     class SpinboxAndCallback(NamedTuple):
@@ -129,12 +133,10 @@ class Settings(QSettings):
                 self.tr('CSV separator:'):
                     Settings.ComboboxAndCallback(self.CSV_SEPARATORS, Settings.csv_separator.fget.__name__),
             },
-            _translate('preferences', 'Export'): {
-                _translate('preferences', 'Line ending:'):
-                    Settings.ComboboxAndCallback(self.LINE_ENDS, 'line_end'),
-                _translate('preferences', 'CSV separator:'):
-                    Settings.ComboboxAndCallback(self.CSV_SEPARATORS, 'csv_separator'),
-            }
+            (self.tr("View"), ("mdi6.binoculars",)): {
+                self.tr("Translation file:"):
+                    Settings.PathCallbackOnly(Settings.translation_path.fget.__name__),
+            },
         }
 
     @property
@@ -364,4 +366,17 @@ class Settings(QSettings):
     def log10_gamma(self, new_value: bool) -> None:
         self.beginGroup('marks')
         self.setValue('log10gamma', new_value)
+        self.endGroup()
+
+    @property
+    def translation_path(self) -> Path | None:
+        self.beginGroup("translation")
+        v: str = cast(str, self.value("filePath", "", str))
+        self.endGroup()
+        return Path(v) if v else None
+
+    @translation_path.setter
+    def translation_path(self, new_value: str | os.PathLike[str] | None) -> None:
+        self.beginGroup("translation")
+        self.setValue("filePath", str(new_value) if new_value is not None else "")
         self.endGroup()
