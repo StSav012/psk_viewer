@@ -336,7 +336,6 @@ def all_cases(text: str) -> Iterator[str]:
         return
 
     length: int = len(cases[0])
-    c: str
     if not all(len(c) == length for c in cases):
         # don't know what to do with cases of different lengths
         yield from cases
@@ -344,7 +343,6 @@ def all_cases(text: str) -> Iterator[str]:
     # now, all the cases are of the same length
 
     # get all possible variants of characters at each position
-    i: int
     variants: Iterator[list[str]] = (sorted(set(c[i] for c in cases), reverse=True) for i in range(length))
 
     combination: tuple[str, ...]
