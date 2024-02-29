@@ -5,11 +5,11 @@ from qtpy.QtCore import Signal
 from qtpy.QtGui import QColor, QPalette
 from qtpy.QtWidgets import QColorDialog, QPushButton, QWidget
 
-__all__ = ['ColorSelector']
+__all__ = ["ColorSelector"]
 
 
 class ColorSelector(QPushButton):
-    colorSelected: Signal = Signal(QColor, name='colorSelected')
+    colorSelected: Signal = Signal(QColor, name="colorSelected")
 
     def __init__(self, parent: QWidget, color: QColor) -> None:
         super().__init__(parent)
@@ -39,6 +39,9 @@ class ColorSelector(QPushButton):
     def paint_button(self) -> None:
         pal: QPalette = self.palette()
         pal.setColor(QPalette.ColorRole.Button, self.color)
-        pal.setColor(QPalette.ColorRole.ButtonText, QColor('white' if self.color.lightnessF() < 0.5 else 'black'))
+        pal.setColor(
+            QPalette.ColorRole.ButtonText,
+            QColor("white" if self.color.lightnessF() < 0.5 else "black"),
+        )
         self.setPalette(pal)
         self.update()

@@ -12,8 +12,17 @@ from numpy.typing import NDArray
 from pyqtgraph import PlotWidget
 from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent  # type: ignore
 from pyqtgraph.exporters.ImageExporter import ImageExporter
-from qtpy.QtCore import (QByteArray, QCoreApplication, QItemSelectionModel, QModelIndex,
-                         QPoint, QPointF, QRect, QRectF, Qt)
+from qtpy.QtCore import (
+    QByteArray,
+    QCoreApplication,
+    QItemSelectionModel,
+    QModelIndex,
+    QPoint,
+    QPointF,
+    QRect,
+    QRectF,
+    Qt,
+)
 from qtpy.QtGui import QBrush, QCloseEvent, QGuiApplication, QPalette, QPen
 from qtpy.QtWidgets import QAction, QMessageBox, QWidget
 
@@ -21,18 +30,27 @@ from .detection import correlation, peaks_positions
 from .gui import GUI
 from .plot_data_item import PlotDataItem
 from .preferences import Preferences
-from .utils import (all_cases, copy_to_clipboard, load_data_csv, load_data_fs, load_data_scandat, resource_path,
-                    superscript_number)
+from .utils import (
+    all_cases,
+    copy_to_clipboard,
+    load_data_csv,
+    load_data_fs,
+    load_data_scandat,
+    resource_path,
+    superscript_number,
+)
 
-__all__ = ['App']
+__all__ = ["App"]
 
 _translate = QCoreApplication.translate
 
 pg.ViewBox.suggestPadding = lambda *_: 0.0
 
 
-def tick_strings(self: pg.AxisItem, values: Iterable[float], scale: float, spacing: float) -> list[str]:
-    """ improve formatting of `AxisItem.tickStrings` """
+def tick_strings(
+    self: pg.AxisItem, values: Iterable[float], scale: float, spacing: float
+) -> list[str]:
+    """improve formatting of `AxisItem.tickStrings`"""
 
     if self.logMode:
         return cast(list[str], self.logTickStrings(values, scale, spacing))
@@ -43,19 +61,19 @@ def tick_strings(self: pg.AxisItem, values: Iterable[float], scale: float, spaci
     for v in values:
         vs: float = v * scale
         v_str: str
-        if abs(vs) < .001 or abs(vs) >= 10000:
-            v_str = f'{vs:g}'.casefold()
-            while 'e-0' in v_str:
-                v_str = v_str.replace('e-0', 'e-')
-            v_str = v_str.replace('+', '')
-            if 'e' in v_str:
-                e_pos: int = v_str.find('e')
+        if abs(vs) < 0.001 or abs(vs) >= 10000:
+            v_str = f"{vs:g}".casefold()
+            while "e-0" in v_str:
+                v_str = v_str.replace("e-0", "e-")
+            v_str = v_str.replace("+", "")
+            if "e" in v_str:
+                e_pos: int = v_str.find("e")
                 man: str = v_str[:e_pos]
-                exp: str = superscript_number(v_str[e_pos + 1:])
-                v_str = man + '×10' + exp
-            v_str = v_str.replace('-', '−')
+                exp: str = superscript_number(v_str[e_pos + 1 :])
+                v_str = man + "×10" + exp
+            v_str = v_str.replace("-", "−")
         else:
-            v_str = f'{vs:0.{places}f}'
+            v_str = f"{vs:0.{places}f}"
         strings.append(v_str)
     return strings
 
@@ -68,17 +86,22 @@ class App(GUI):
     PSK_WITH_JUMP_DATA_MODE: Final[int] = 2
     FS_DATA_MODE: Final[int] = -1
 
-    def __init__(self, file_path: Path | None = None,
-                 parent: QWidget | None = None, flags: Qt.WindowType = Qt.WindowType.Window) -> None:
+    def __init__(
+        self,
+        file_path: Path | None = None,
+        parent: QWidget | None = None,
+        flags: Qt.WindowType = Qt.WindowType.Window,
+    ) -> None:
         super().__init__(parent, flags)
 
         self._data_mode: int = 0
 
-        self._is_dark: bool = self.palette().color(QPalette.ColorRole.Window).lightness() < 128
+        self._is_dark: bool = (
+            self.palette().color(QPalette.ColorRole.Window).lightness() < 128
+        )
 
-
-        self._ghost_line: pg.PlotDataItem = self.figure.plot(np.empty(0), name='')
-        self._plot_line: pg.PlotDataItem = self.figure.plot(np.empty(0), name='')
+        self._ghost_line: pg.PlotDataItem = self.figure.plot(np.empty(0), name="")
+        self._plot_line: pg.PlotDataItem = self.figure.plot(np.empty(0), name="")
         self._ghost_data: PlotDataItem = PlotDataItem()
         self._plot_data: PlotDataItem = PlotDataItem()
 
@@ -86,27 +109,41 @@ class App(GUI):
 
         self.model_signal: NDArray[np.float_]
         try:
-            self.model_signal = pd.read_csv(resource_path('averaged fs signal filtered.csv')).values.ravel()
+            self.model_signal = pd.read_csv(
+                resource_path("averaged fs signal filtered.csv")
+            ).values.ravel()
         except (OSError, BlockingIOError):
             self.model_signal = np.empty(0)
             self.box_find_lines.hide()
         self.box_find_lines.setDisabled(True)
-        self.user_found_lines: pg.PlotDataItem = self._canvas.scatterPlot(np.empty(0), symbol='o', pxMode=True)
-        self.automatically_found_lines: pg.PlotDataItem = self._canvas.scatterPlot(np.empty(0), symbol='o', pxMode=True)
+        self.user_found_lines: pg.PlotDataItem = self._canvas.scatterPlot(
+            np.empty(0), symbol="o", pxMode=True
+        )
+        self.automatically_found_lines: pg.PlotDataItem = self._canvas.scatterPlot(
+            np.empty(0), symbol="o", pxMode=True
+        )
         self.user_found_lines_data: NDArray[np.float_] = np.empty(0)
         self.automatically_found_lines_data: NDArray[np.float_] = np.empty(0)
 
         # cross-hair
-        self._crosshair_v_line: pg.InfiniteLine = pg.InfiniteLine(angle=90, movable=False)
-        self._crosshair_h_line: pg.InfiniteLine = pg.InfiniteLine(angle=0, movable=False)
+        self._crosshair_v_line: pg.InfiniteLine = pg.InfiniteLine(
+            angle=90, movable=False
+        )
+        self._crosshair_h_line: pg.InfiniteLine = pg.InfiniteLine(
+            angle=0, movable=False
+        )
 
-        self._cursor_balloon: pg.TextItem = pg.TextItem(color='#ccc' if self._is_dark else '#333')
+        self._cursor_balloon: pg.TextItem = pg.TextItem(
+            color="#ccc" if self._is_dark else "#333"
+        )
         self.figure.addItem(self._cursor_balloon)
 
-        self._mouse_moved_signal_proxy: pg.SignalProxy = pg.SignalProxy(self.figure.scene().sigMouseMoved,
-                                                                        rateLimit=10, slot=self.on_mouse_moved)
-        self._axis_range_changed_signal_proxy: pg.SignalProxy = pg.SignalProxy(self.figure.sigRangeChanged,
-                                                                               rateLimit=20, slot=self.on_lim_changed)
+        self._mouse_moved_signal_proxy: pg.SignalProxy = pg.SignalProxy(
+            self.figure.scene().sigMouseMoved, rateLimit=10, slot=self.on_mouse_moved
+        )
+        self._axis_range_changed_signal_proxy: pg.SignalProxy = pg.SignalProxy(
+            self.figure.sigRangeChanged, rateLimit=20, slot=self.on_lim_changed
+        )
 
         self.setup_ui()
 
@@ -118,7 +155,7 @@ class App(GUI):
             loaded: bool = self.load_data(file_path)
             self.toolbar.load_trace_action.setEnabled(loaded)
             if loaded:
-                self.set_config_value('open', 'location', file_path.parent)
+                self.set_config_value("open", "location", file_path.parent)
 
     def setup_ui(self) -> None:
         ax: pg.AxisItem
@@ -126,15 +163,15 @@ class App(GUI):
         if self._is_dark:
             self.figure.setBackground(QBrush(pg.mkColor(0, 0, 0)))
             for label, ax_d in self._canvas.axes.items():
-                ax = ax_d['item']
-                ax.setPen('d')
-                ax.setTextPen('d')
+                ax = ax_d["item"]
+                ax.setPen("d")
+                ax.setTextPen("d")
         else:
             self.figure.setBackground(QBrush(pg.mkColor(255, 255, 255)))
             for label, ax_d in self._canvas.axes.items():
-                ax = ax_d['item']
-                ax.setPen('k')
-                ax.setTextPen('k')
+                ax = ax_d["item"]
+                ax.setPen("k")
+                ax.setTextPen("k")
 
         self.figure.plotItem.addItem(self._crosshair_v_line, ignoreBounds=True)
         self.figure.plotItem.addItem(self._crosshair_h_line, ignoreBounds=True)
@@ -166,24 +203,28 @@ class App(GUI):
         self._install_translation()
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        """ senseless joke in the loop """
+        """senseless joke in the loop"""
         close: QMessageBox = QMessageBox()
-        close.setText(self.tr('Are you sure?'))
+        close.setText(self.tr("Are you sure?"))
         close.setIcon(QMessageBox.Icon.Question)
         close.setWindowIcon(self.windowIcon())
-        close.setWindowTitle(self.tr('Spectrometer Data Viewer'))
-        close.setStandardButtons(QMessageBox.StandardButton.Yes
-                                 | QMessageBox.StandardButton.No
-                                 | QMessageBox.StandardButton.Cancel)
-        close_code: int = (QMessageBox.StandardButton.No
-                           if self._plot_data.frequency_span > 0.0
-                           else QMessageBox.StandardButton.Yes)
+        close.setWindowTitle(self.tr("Spectrometer Data Viewer"))
+        close.setStandardButtons(
+            QMessageBox.StandardButton.Yes
+            | QMessageBox.StandardButton.No
+            | QMessageBox.StandardButton.Cancel
+        )
+        close_code: int = (
+            QMessageBox.StandardButton.No
+            if self._plot_data.frequency_span > 0.0
+            else QMessageBox.StandardButton.Yes
+        )
         while close_code == QMessageBox.StandardButton.No:
             close_code = close.exec()
 
         if close_code == QMessageBox.StandardButton.Yes:
-            self.settings.setValue('windowGeometry', self.saveGeometry())
-            self.settings.setValue('windowState', self.saveState())
+            self.settings.setValue("windowGeometry", self.saveGeometry())
+            self.settings.setValue("windowState", self.saveState())
             self.settings.sync()
             event.accept()
         elif close_code == QMessageBox.StandardButton.Cancel:
@@ -192,27 +233,44 @@ class App(GUI):
     def load_config(self) -> None:
         self._loading = True
         # common settings
-        if self.settings.contains('windowGeometry'):
-            self.restoreGeometry(cast(QByteArray, self.settings.value('windowGeometry', QByteArray())))
+        if self.settings.contains("windowGeometry"):
+            self.restoreGeometry(
+                cast(QByteArray, self.settings.value("windowGeometry", QByteArray()))
+            )
         else:
             app: QCoreApplication | None = QCoreApplication.instance()
             if isinstance(app, QGuiApplication):
                 window_frame: QRect = self.frameGeometry()
-                desktop_center: QPoint = app.primaryScreen().availableGeometry().center()
+                desktop_center: QPoint = (
+                    app.primaryScreen().availableGeometry().center()
+                )
                 window_frame.moveCenter(desktop_center)
                 self.move(window_frame.topLeft())
-        self.restoreState(cast(QByteArray, self.settings.value('windowState', QByteArray())))
+        self.restoreState(
+            cast(QByteArray, self.settings.value("windowState", QByteArray()))
+        )
 
-        self.check_frequency_persists.setChecked(self.get_config_value('frequency', 'persists', False, bool))
-        self.check_voltage_persists.setChecked(self.get_config_value('voltage', 'persists', False, bool))
+        self.check_frequency_persists.setChecked(
+            self.get_config_value("frequency", "persists", False, bool)
+        )
+        self.check_voltage_persists.setChecked(
+            self.get_config_value("voltage", "persists", False, bool)
+        )
 
-        self.spin_threshold.setValue(self.get_config_value('lineSearch', 'threshold', 12.0, float))
+        self.spin_threshold.setValue(
+            self.get_config_value("lineSearch", "threshold", 12.0, float)
+        )
 
-        if self.get_config_value('display', 'unit', PlotDataItem.VOLTAGE_DATA, str) == PlotDataItem.GAMMA_DATA:
+        if (
+            self.get_config_value("display", "unit", PlotDataItem.VOLTAGE_DATA, str)
+            == PlotDataItem.GAMMA_DATA
+        ):
             self._plot_data.data_type = PlotDataItem.GAMMA_DATA
         else:
             self._plot_data.data_type = PlotDataItem.VOLTAGE_DATA
-        self.switch_data_action.setChecked(self._plot_data.data_type == PlotDataItem.GAMMA_DATA)
+        self.switch_data_action.setChecked(
+            self._plot_data.data_type == PlotDataItem.GAMMA_DATA
+        )
         self.display_gamma_or_voltage()
 
         self._loading = False
@@ -221,9 +279,13 @@ class App(GUI):
     def setup_ui_actions(self) -> None:
         self.toolbar.open_action.triggered.connect(self.on_open_action_clicked)
         self.toolbar.clear_action.triggered.connect(self.clear)
-        self.toolbar.open_ghost_action.triggered.connect(lambda: cast(None, self.load_ghost_data()))
+        self.toolbar.open_ghost_action.triggered.connect(
+            lambda: cast(None, self.load_ghost_data())
+        )
         self.toolbar.clear_ghost_action.triggered.connect(self.clear_ghost)
-        self.toolbar.differentiate_action.toggled.connect(self.calculate_second_derivative)
+        self.toolbar.differentiate_action.toggled.connect(
+            self.calculate_second_derivative
+        )
         self.toolbar.save_data_action.triggered.connect(self.save_data)
         self.toolbar.copy_figure_action.triggered.connect(self.copy_figure)
         self.toolbar.save_figure_action.triggered.connect(self.save_figure)
@@ -235,29 +297,62 @@ class App(GUI):
 
         self.spin_frequency_min.valueChanged.connect(self.spin_frequency_min_changed)
         self.spin_frequency_max.valueChanged.connect(self.spin_frequency_max_changed)
-        self.spin_frequency_center.valueChanged.connect(self.spin_frequency_center_changed)
+        self.spin_frequency_center.valueChanged.connect(
+            self.spin_frequency_center_changed
+        )
         self.spin_frequency_span.valueChanged.connect(self.spin_frequency_span_changed)
-        self.button_zoom_x_out_coarse.clicked.connect(lambda: self.button_zoom_x_clicked(1. / 0.5))
-        self.button_zoom_x_out_fine.clicked.connect(lambda: self.button_zoom_x_clicked(1. / 0.9))
-        self.button_zoom_x_in_fine.clicked.connect(lambda: self.button_zoom_x_clicked(0.9))
-        self.button_zoom_x_in_coarse.clicked.connect(lambda: self.button_zoom_x_clicked(0.5))
-        self.button_move_x_left_coarse.clicked.connect(lambda: self.button_move_x_clicked(-500.))
-        self.button_move_x_left_fine.clicked.connect(lambda: self.button_move_x_clicked(-50.))
-        self.button_move_x_right_fine.clicked.connect(lambda: self.button_move_x_clicked(50.))
-        self.button_move_x_right_coarse.clicked.connect(lambda: self.button_move_x_clicked(500.))
-        self.check_frequency_persists.toggled.connect(self.check_frequency_persists_toggled)
+        self.button_zoom_x_out_coarse.clicked.connect(
+            lambda: self.button_zoom_x_clicked(1.0 / 0.5)
+        )
+        self.button_zoom_x_out_fine.clicked.connect(
+            lambda: self.button_zoom_x_clicked(1.0 / 0.9)
+        )
+        self.button_zoom_x_in_fine.clicked.connect(
+            lambda: self.button_zoom_x_clicked(0.9)
+        )
+        self.button_zoom_x_in_coarse.clicked.connect(
+            lambda: self.button_zoom_x_clicked(0.5)
+        )
+        self.button_move_x_left_coarse.clicked.connect(
+            lambda: self.button_move_x_clicked(-500.0)
+        )
+        self.button_move_x_left_fine.clicked.connect(
+            lambda: self.button_move_x_clicked(-50.0)
+        )
+        self.button_move_x_right_fine.clicked.connect(
+            lambda: self.button_move_x_clicked(50.0)
+        )
+        self.button_move_x_right_coarse.clicked.connect(
+            lambda: self.button_move_x_clicked(500.0)
+        )
+        self.check_frequency_persists.toggled.connect(
+            self.check_frequency_persists_toggled
+        )
 
         self.switch_data_action.toggled.connect(self.on_switch_data_action_toggled)
         self.spin_voltage_min.valueChanged.connect(self.spin_voltage_min_changed)
         self.spin_voltage_max.valueChanged.connect(self.spin_voltage_max_changed)
-        self.button_zoom_y_out_coarse.clicked.connect(lambda: self.button_zoom_y_clicked(1. / 0.5))
-        self.button_zoom_y_out_fine.clicked.connect(lambda: self.button_zoom_y_clicked(1. / 0.9))
-        self.button_zoom_y_in_fine.clicked.connect(lambda: self.button_zoom_y_clicked(0.9))
-        self.button_zoom_y_in_coarse.clicked.connect(lambda: self.button_zoom_y_clicked(0.5))
-        self.check_voltage_persists.toggled.connect(self.on_check_voltage_persists_toggled)
+        self.button_zoom_y_out_coarse.clicked.connect(
+            lambda: self.button_zoom_y_clicked(1.0 / 0.5)
+        )
+        self.button_zoom_y_out_fine.clicked.connect(
+            lambda: self.button_zoom_y_clicked(1.0 / 0.9)
+        )
+        self.button_zoom_y_in_fine.clicked.connect(
+            lambda: self.button_zoom_y_clicked(0.9)
+        )
+        self.button_zoom_y_in_coarse.clicked.connect(
+            lambda: self.button_zoom_y_clicked(0.5)
+        )
+        self.check_voltage_persists.toggled.connect(
+            self.on_check_voltage_persists_toggled
+        )
 
-        self.spin_threshold.valueChanged.connect(lambda new_value:
-                                                 self.set_config_value('lineSearch', 'threshold', new_value))
+        self.spin_threshold.valueChanged.connect(
+            lambda new_value: self.set_config_value(
+                "lineSearch", "threshold", new_value
+            )
+        )
         self.button_find_lines.clicked.connect(self.on_button_find_lines_clicked)
         self.button_clear_lines.clicked.connect(self.clear_automatically_found_lines)
         self.button_prev_line.clicked.connect(self.prev_found_line)
@@ -269,7 +364,9 @@ class App(GUI):
         for line in (self.automatically_found_lines, self.user_found_lines):
             line.sigPointsClicked.connect(self.on_points_clicked)
 
-        self._view_all_action.triggered.connect(lambda: cast(None, self._canvas.vb.autoRange(padding=0.0)))
+        self._view_all_action.triggered.connect(
+            lambda: cast(None, self._canvas.vb.autoRange(padding=0.0))
+        )
 
         self.figure.sceneObj.sigMouseClicked.connect(self.on_plot_clicked)
 
@@ -283,8 +380,10 @@ class App(GUI):
         self.spin_frequency_min.setMaximum(max_freq)
         self.spin_frequency_max.setMinimum(min_freq)
         self._loading = False
-        self.set_frequency_range(lower_value=self.spin_frequency_min.value(),
-                                 upper_value=self.spin_frequency_max.value())
+        self.set_frequency_range(
+            lower_value=self.spin_frequency_min.value(),
+            upper_value=self.spin_frequency_max.value(),
+        )
 
     def on_ylim_changed(self, ylim: Iterable[float | np.float_]) -> None:
         min_voltage, max_voltage = min(ylim), max(ylim)
@@ -294,10 +393,11 @@ class App(GUI):
         self.spin_voltage_min.setMaximum(max_voltage)
         self.spin_voltage_max.setMinimum(min_voltage)
         self._loading = False
-        self.set_voltage_range(lower_value=min_voltage,
-                               upper_value=max_voltage)
+        self.set_voltage_range(lower_value=min_voltage, upper_value=max_voltage)
 
-    def on_points_clicked(self, item: pg.PlotDataItem, points: Iterable[pg.SpotItem], ev: MouseClickEvent) -> None:
+    def on_points_clicked(
+        self, item: pg.PlotDataItem, points: Iterable[pg.SpotItem], ev: MouseClickEvent
+    ) -> None:
         if item.xData is None or item.yData is None:
             return
         if not self.trace_mode:
@@ -307,34 +407,51 @@ class App(GUI):
 
         point: pg.SpotItem
         if ev.modifiers() == Qt.KeyboardModifier.ShiftModifier:
-            items: NDArray[np.float_] = item.scatter.data['item']
+            items: NDArray[np.float_] = item.scatter.data["item"]
             index: NDArray[np.bool_] = np.full(items.shape, True, np.bool_)
             for point in points:
-                index &= (items != point)
-                self.automatically_found_lines_data \
-                    = self.automatically_found_lines_data[self.automatically_found_lines_data != point.pos().x()]
-                self.user_found_lines_data = \
-                    self.user_found_lines_data[self.user_found_lines_data != point.pos().x()]
+                index &= items != point
+                self.automatically_found_lines_data = (
+                    self.automatically_found_lines_data[
+                        self.automatically_found_lines_data != point.pos().x()
+                    ]
+                )
+                self.user_found_lines_data = self.user_found_lines_data[
+                    self.user_found_lines_data != point.pos().x()
+                ]
 
             item.setData(item.xData[index], item.yData[index])
 
             # update the table
-            self.model_found_lines.set_lines(self._plot_data,
-                                             (self.automatically_found_lines_data,
-                                              self.user_found_lines_data))
+            self.model_found_lines.set_lines(
+                self._plot_data,
+                (self.automatically_found_lines_data, self.user_found_lines_data),
+            )
 
-            self.toolbar.copy_trace_action.setEnabled(not self.model_found_lines.is_empty)
-            self.toolbar.save_trace_action.setEnabled(not self.model_found_lines.is_empty)
-            self.toolbar.clear_trace_action.setEnabled(not self.model_found_lines.is_empty)
+            self.toolbar.copy_trace_action.setEnabled(
+                not self.model_found_lines.is_empty
+            )
+            self.toolbar.save_trace_action.setEnabled(
+                not self.model_found_lines.is_empty
+            )
+            self.toolbar.clear_trace_action.setEnabled(
+                not self.model_found_lines.is_empty
+            )
 
         elif ev.modifiers() == Qt.KeyboardModifier.NoModifier:
-            found_lines_frequencies: NDArray[np.float_] = self.model_found_lines.all_data[:, 0]
-            selected_points: list[int] = [cast(int, np.argmin(np.abs(point.pos().x() - found_lines_frequencies)))
-                                          for point in points]
+            found_lines_frequencies: NDArray[np.float_] = (
+                self.model_found_lines.all_data[:, 0]
+            )
+            selected_points: list[int] = [
+                cast(int, np.argmin(np.abs(point.pos().x() - found_lines_frequencies)))
+                for point in points
+            ]
             self.on_points_selected(selected_points)
 
     def on_button_find_lines_clicked(self) -> None:
-        self.status_bar.showMessage(f'Found {self.find_lines(self.spin_threshold.value())} lines')
+        self.status_bar.showMessage(
+            f"Found {self.find_lines(self.spin_threshold.value())} lines"
+        )
 
     def on_mouse_moved(self, event: tuple[QPointF]) -> None:
         if self._plot_line.xData is None and self._plot_line.yData is None:
@@ -355,17 +472,30 @@ class App(GUI):
 
                 if self.settings.show_coordinates_at_crosshair:
                     self._cursor_balloon.setPos(point)
-                    self._cursor_balloon.setHtml(self._cursor_x.text() + '<br>' + self._cursor_y.text())
+                    self._cursor_balloon.setHtml(
+                        self._cursor_x.text() + "<br>" + self._cursor_y.text()
+                    )
                     balloon_border: QRectF = self._cursor_balloon.boundingRect()
                     sx: float
                     sy: float
                     sx, sy = self._canvas.vb.viewPixelSize()
                     balloon_width: float = balloon_border.width() * sx
                     balloon_height: float = balloon_border.height() * sy
-                    anchor_x: float = 0.0 if point.x() - self.figure.visibleRange().left() < balloon_width else 1.0
-                    anchor_y: float = 0.0 if self.figure.visibleRange().bottom() - point.y() < balloon_height else 1.0
+                    anchor_x: float = (
+                        0.0
+                        if point.x() - self.figure.visibleRange().left() < balloon_width
+                        else 1.0
+                    )
+                    anchor_y: float = (
+                        0.0
+                        if self.figure.visibleRange().bottom() - point.y()
+                        < balloon_height
+                        else 1.0
+                    )
                     self._cursor_balloon.setAnchor((anchor_x, anchor_y))
-                self._cursor_balloon.setVisible(self.settings.show_coordinates_at_crosshair)
+                self._cursor_balloon.setVisible(
+                    self.settings.show_coordinates_at_crosshair
+                )
             else:
                 self.hide_cursors()
         else:
@@ -375,43 +505,84 @@ class App(GUI):
         pos: QPointF = event.scenePos()
         if not self.trace_mode:
             return
-        if event.modifiers() != Qt.KeyboardModifier.NoModifier or event.button() != Qt.MouseButton.LeftButton:
+        if (
+            event.modifiers() != Qt.KeyboardModifier.NoModifier
+            or event.button() != Qt.MouseButton.LeftButton
+        ):
             return
         if not self.figure.sceneBoundingRect().contains(pos):
             return
-        x_span: float = cast(float, np.ptp(self._canvas.axes['bottom']['item'].range))
-        y_span: float = cast(float, np.ptp(self._canvas.axes['left']['item'].range))
+        x_span: float = cast(float, np.ptp(self._canvas.axes["bottom"]["item"].range))
+        y_span: float = cast(float, np.ptp(self._canvas.axes["left"]["item"].range))
         point: QPointF = self._canvas.vb.mapSceneToView(pos)
         if self._plot_line.xData is None or not self._plot_line.xData.size:
             return
-        distance: NDArray[np.float_] = np.min(np.hypot((self._plot_line.xData - point.x()) / x_span,
-                                               (self._plot_line.yData - point.y()) / y_span))
+        distance: NDArray[np.float_] = np.min(
+            np.hypot(
+                (self._plot_line.xData - point.x()) / x_span,
+                (self._plot_line.yData - point.y()) / y_span,
+            )
+        )
         if distance > 0.01:
             return
-        closest_point_index: int = cast(int, np.argmin(np.hypot((self._plot_line.xData - point.x()) / x_span,
-                                                                (self._plot_line.yData - point.y()) / y_span)))
+        closest_point_index: int = cast(
+            int,
+            np.argmin(
+                np.hypot(
+                    (self._plot_line.xData - point.x()) / x_span,
+                    (self._plot_line.yData - point.y()) / y_span,
+                )
+            ),
+        )
 
         # avoid the same point to be marked several times
-        if (self.user_found_lines.xData is not None
-                and self.user_found_lines.yData.size
-                and np.any((self.user_found_lines.xData == self._plot_line.xData[closest_point_index])
-                           & (self.user_found_lines.yData == self._plot_line.yData[closest_point_index]))):
+        if (
+            self.user_found_lines.xData is not None
+            and self.user_found_lines.yData.size
+            and np.any(
+                (
+                    self.user_found_lines.xData
+                    == self._plot_line.xData[closest_point_index]
+                )
+                & (
+                    self.user_found_lines.yData
+                    == self._plot_line.yData[closest_point_index]
+                )
+            )
+        ):
             return
-        if (self.automatically_found_lines.xData is not None
-                and self.automatically_found_lines.yData.size
-                and np.any((self.automatically_found_lines.xData == self._plot_line.xData[closest_point_index])
-                           & (self.automatically_found_lines.yData == self._plot_line.yData[closest_point_index]))):
+        if (
+            self.automatically_found_lines.xData is not None
+            and self.automatically_found_lines.yData.size
+            and np.any(
+                (
+                    self.automatically_found_lines.xData
+                    == self._plot_line.xData[closest_point_index]
+                )
+                & (
+                    self.automatically_found_lines.yData
+                    == self._plot_line.yData[closest_point_index]
+                )
+            )
+        ):
             return
 
-        self.user_found_lines_data = np.append(self.user_found_lines_data, self._plot_line.xData[closest_point_index])
+        self.user_found_lines_data = np.append(
+            self.user_found_lines_data, self._plot_line.xData[closest_point_index]
+        )
 
         self.user_found_lines.setData(
             self.user_found_lines_data,
-            self._plot_line.yData[self.model_found_lines.frequency_indices(self._plot_data,
-                                                                           self.user_found_lines_data)]
+            self._plot_line.yData[
+                self.model_found_lines.frequency_indices(
+                    self._plot_data, self.user_found_lines_data
+                )
+            ],
         )
 
-        self.model_found_lines.add_line(self._plot_data, self._plot_line.xData[closest_point_index])
+        self.model_found_lines.add_line(
+            self._plot_data, self._plot_line.xData[closest_point_index]
+        )
         if self.settings.copy_frequency:
             copy_to_clipboard(str(1e-6 * self._plot_line.xData[closest_point_index]))
         self.toolbar.copy_trace_action.setEnabled(True)
@@ -436,7 +607,11 @@ class App(GUI):
         row: int
         for row in rows:
             index: QModelIndex = self.model_found_lines.index(row, 0)
-            sm.select(index, QItemSelectionModel.SelectionFlag.Select | QItemSelectionModel.SelectionFlag.Rows)
+            sm.select(
+                index,
+                QItemSelectionModel.SelectionFlag.Select
+                | QItemSelectionModel.SelectionFlag.Rows,
+            )
             self.table_found_lines.scrollTo(index)
 
     def spin_frequency_min_changed(self, new_value: float) -> None:
@@ -444,9 +619,13 @@ class App(GUI):
             return
         self._loading = True
         self.spin_frequency_max.setMinimum(new_value)
-        self.spin_frequency_center.setValue(0.5 * (new_value + self.spin_frequency_max.value()))
+        self.spin_frequency_center.setValue(
+            0.5 * (new_value + self.spin_frequency_max.value())
+        )
         self.spin_frequency_span.setValue(self.spin_frequency_max.value() - new_value)
-        self.set_frequency_range(lower_value=new_value, upper_value=self.spin_frequency_max.value())
+        self.set_frequency_range(
+            lower_value=new_value, upper_value=self.spin_frequency_max.value()
+        )
         self._loading = False
 
     def spin_frequency_max_changed(self, new_value: float) -> None:
@@ -454,9 +633,13 @@ class App(GUI):
             return
         self._loading = True
         self.spin_frequency_min.setMaximum(new_value)
-        self.spin_frequency_center.setValue(0.5 * (self.spin_frequency_min.value() + new_value))
+        self.spin_frequency_center.setValue(
+            0.5 * (self.spin_frequency_min.value() + new_value)
+        )
         self.spin_frequency_span.setValue(new_value - self.spin_frequency_min.value())
-        self.set_frequency_range(lower_value=self.spin_frequency_min.value(), upper_value=new_value)
+        self.set_frequency_range(
+            lower_value=self.spin_frequency_min.value(), upper_value=new_value
+        )
         self._loading = False
 
     def spin_frequency_center_changed(self, new_value: float) -> None:
@@ -522,14 +705,16 @@ class App(GUI):
     def check_frequency_persists_toggled(self, new_value: bool) -> None:
         if self._loading:
             return
-        self.set_config_value('frequency', 'persists', new_value)
+        self.set_config_value("frequency", "persists", new_value)
 
     def spin_voltage_min_changed(self, new_value: float) -> None:
         if self._loading:
             return
         self._loading = True
         self.spin_voltage_max.setMinimum(new_value)
-        self.set_voltage_range(lower_value=new_value, upper_value=self.spin_voltage_max.value())
+        self.set_voltage_range(
+            lower_value=new_value, upper_value=self.spin_voltage_max.value()
+        )
         self._loading = False
 
     def spin_voltage_max_changed(self, new_value: float) -> None:
@@ -537,7 +722,9 @@ class App(GUI):
             return
         self._loading = True
         self.spin_voltage_min.setMaximum(new_value)
-        self.set_voltage_range(lower_value=self.spin_voltage_min.value(), upper_value=new_value)
+        self.set_voltage_range(
+            lower_value=self.spin_voltage_min.value(), upper_value=new_value
+        )
         self._loading = False
 
     def button_zoom_y_clicked(self, factor: float) -> None:
@@ -560,7 +747,7 @@ class App(GUI):
     def on_check_voltage_persists_toggled(self, new_value: bool) -> None:
         if self._loading:
             return
-        self.set_config_value('voltage', 'persists', new_value)
+        self.set_config_value("voltage", "persists", new_value)
 
     def edit_parameters(self) -> None:
         preferences_dialog: Preferences = Preferences(self.settings, self)
@@ -572,10 +759,18 @@ class App(GUI):
         self.set_crosshair_lines_appearance()
         self.model_found_lines.fancy_table_numbers = self.settings.fancy_table_numbers
         self.model_found_lines.log10_gamma = self.settings.log10_gamma
-        if self._data_mode == self.PSK_DATA_MODE and self._plot_data.frequency_span > 0.0:
-            jump: float = round(self.settings.jump / self._plot_data.frequency_step) * self._plot_data.frequency_step
-            self.toolbar.differentiate_action.setEnabled(0. < jump < 0.25 * self._plot_data.frequency_span)
-            if not (0. < jump < 0.25 * self._plot_data.frequency_span):
+        if (
+            self._data_mode == self.PSK_DATA_MODE
+            and self._plot_data.frequency_span > 0.0
+        ):
+            jump: float = (
+                round(self.settings.jump / self._plot_data.frequency_step)
+                * self._plot_data.frequency_step
+            )
+            self.toolbar.differentiate_action.setEnabled(
+                0.0 < jump < 0.25 * self._plot_data.frequency_span
+            )
+            if not (0.0 < jump < 0.25 * self._plot_data.frequency_span):
                 self.toolbar.differentiate_action.blockSignals(True)
                 self.toolbar.differentiate_action.setChecked(False)
                 self.toolbar.differentiate_action.blockSignals(False)
@@ -590,7 +785,9 @@ class App(GUI):
 
     def on_open_action_clicked(self) -> None:
         loaded: bool = self.load_data()
-        self.toolbar.load_trace_action.setEnabled(loaded or self.toolbar.load_trace_action.isEnabled())
+        self.toolbar.load_trace_action.setEnabled(
+            loaded or self.toolbar.load_trace_action.isEnabled()
+        )
 
     @property
     def line(self) -> PlotDataItem:
@@ -600,19 +797,31 @@ class App(GUI):
     def label(self) -> str | None:
         return self._plot_line.name()
 
-    def set_frequency_range(self, lower_value: float | np.float_, upper_value: float | np.float_) -> None:
+    def set_frequency_range(
+        self, lower_value: float | np.float_, upper_value: float | np.float_
+    ) -> None:
         self.figure.plotItem.setXRange(lower_value, upper_value, padding=0.0)
 
-    def set_voltage_range(self, lower_value: float | np.float_, upper_value: float | np.float_) -> None:
+    def set_voltage_range(
+        self, lower_value: float | np.float_, upper_value: float | np.float_
+    ) -> None:
         self.figure.plotItem.setYRange(lower_value, upper_value, padding=0.0)
 
     def set_plot_line_appearance(self) -> None:
-        self._plot_line.setPen(pg.mkPen(self.settings.line_color, width=0.5 * self.settings.line_thickness))
-        self._ghost_line.setPen(pg.mkPen(self.settings.ghost_line_color, width=0.5 * self.settings.line_thickness))
+        self._plot_line.setPen(
+            pg.mkPen(self.settings.line_color, width=0.5 * self.settings.line_thickness)
+        )
+        self._ghost_line.setPen(
+            pg.mkPen(
+                self.settings.ghost_line_color, width=0.5 * self.settings.line_thickness
+            )
+        )
         self._canvas.replot()
 
     def set_marks_appearance(self) -> None:
-        pen: QPen = pg.mkPen(self.settings.mark_pen, width=0.5 * self.settings.mark_pen_thickness)
+        pen: QPen = pg.mkPen(
+            self.settings.mark_pen, width=0.5 * self.settings.mark_pen_thickness
+        )
         brush: QBrush = pg.mkBrush(self.settings.mark_brush)
         self.automatically_found_lines.setSymbolPen(pen)
         self.automatically_found_lines.setSymbolBrush(brush)
@@ -623,7 +832,10 @@ class App(GUI):
         self._canvas.replot()
 
     def set_crosshair_lines_appearance(self) -> None:
-        pen: QPen = pg.mkPen(self.settings.crosshair_lines_color, width=0.5 * self.settings.crosshair_lines_thickness)
+        pen: QPen = pg.mkPen(
+            self.settings.crosshair_lines_color,
+            width=0.5 * self.settings.crosshair_lines_thickness,
+        )
         self._crosshair_v_line.setPen(pen)
         self._crosshair_h_line.setPen(pen)
         self._canvas.replot()
@@ -642,35 +854,35 @@ class App(GUI):
         found_lines: NDArray[np.float_]
         if self._data_mode == self.FS_DATA_MODE:
             # re-scale the signal to the actual frequency mesh
-            x_model: NDArray[np.float_] = np.arange(self.model_signal.size, dtype=x.dtype) * 0.1
+            x_model: NDArray[np.float_] = (
+                np.arange(self.model_signal.size, dtype=x.dtype) * 0.1
+            )
             interpol = interpolate.interp1d(x_model, self.model_signal, kind=2)
-            x_model_new: NDArray[np.float_] = np.arange(x_model[0], x_model[-1],
-                                                         x[1] - x[0])
+            x_model_new: NDArray[np.float_] = np.arange(
+                x_model[0], x_model[-1], x[1] - x[0]
+            )
             y_model_new: NDArray[np.float_] = interpol(x_model_new)
-            found_lines = peaks_positions(x,
-                                          correlation(y_model_new,
-                                                      x,
-                                                      y),
-                                          threshold=1.0 / threshold)
+            found_lines = peaks_positions(
+                x, correlation(y_model_new, x, y), threshold=1.0 / threshold
+            )
         elif self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE):
-            found_lines = peaks_positions(x,
-                                          y,
-                                          threshold=1.0 / threshold)
+            found_lines = peaks_positions(x, y, threshold=1.0 / threshold)
         else:
             return 0
 
         self._ignore_scale_change = True
         if found_lines.size:
             self.automatically_found_lines_data = x[found_lines]
-            self.automatically_found_lines.setData(x[found_lines],
-                                                   y[found_lines])
+            self.automatically_found_lines.setData(x[found_lines], y[found_lines])
         else:
             self.automatically_found_lines.setData(np.empty(0), np.empty(0))
             self.automatically_found_lines_data = np.empty(0)
 
         # update the table
-        self.model_found_lines.set_lines(self._plot_data,
-                                         (self.automatically_found_lines_data, self.user_found_lines_data))
+        self.model_found_lines.set_lines(
+            self._plot_data,
+            (self.automatically_found_lines_data, self.user_found_lines_data),
+        )
 
         self.toolbar.copy_trace_action.setEnabled(not self.model_found_lines.is_empty)
         self.toolbar.save_trace_action.setEnabled(not self.model_found_lines.is_empty)
@@ -693,7 +905,7 @@ class App(GUI):
         line_data: NDArray[np.float_] = self.automatically_found_lines.xData
         if line_data is None or not line_data.size:
             return
-        i: int = cast(int, np.searchsorted(line_data, init_frequency, side='right') - 2)
+        i: int = cast(int, np.searchsorted(line_data, init_frequency, side="right") - 2)
         if 0 <= i < line_data.size and line_data[i] != init_frequency:
             self.spin_frequency_center.setValue(line_data[i])
             self.ensure_y_fits()
@@ -707,7 +919,7 @@ class App(GUI):
         line_data: NDArray[np.float_] = self.automatically_found_lines.xData
         if line_data is None or not line_data.size:
             return
-        i: int = cast(int, np.searchsorted(line_data, init_frequency, side='left') + 1)
+        i: int = cast(int, np.searchsorted(line_data, init_frequency, side="left") + 1)
         if i < line_data.size and line_data[i] != init_frequency:
             self.spin_frequency_center.setValue(line_data[i])
             self.ensure_y_fits()
@@ -721,22 +933,33 @@ class App(GUI):
             return
         if self._plot_line.yData is None or self._plot_line.yData.size < 2:
             return
-        x: pg.AxisItem = self._canvas.getAxis('bottom')
-        y: pg.AxisItem = self._canvas.getAxis('left')
-        visible_points: NDArray[np.float_] \
-            = self._plot_line.yData[(self._plot_line.xData >= min(x.range)) & (self._plot_line.xData <= max(x.range))]
+        x: pg.AxisItem = self._canvas.getAxis("bottom")
+        y: pg.AxisItem = self._canvas.getAxis("left")
+        visible_points: NDArray[np.float_] = self._plot_line.yData[
+            (self._plot_line.xData >= min(x.range))
+            & (self._plot_line.xData <= max(x.range))
+        ]
         if np.any(visible_points < min(y.range)):
             minimum: np.float_ = np.min(visible_points)
-            self.set_voltage_range(minimum - 0.05 * (max(y.range) - minimum), max(y.range))
+            self.set_voltage_range(
+                minimum - 0.05 * (max(y.range) - minimum), max(y.range)
+            )
         if np.any(visible_points > max(y.range)):
             maximum: np.float_ = np.max(visible_points)
-            self.set_voltage_range(min(y.range), maximum + 0.05 * (maximum - min(y.range)))
+            self.set_voltage_range(
+                min(y.range), maximum + 0.05 * (maximum - min(y.range))
+            )
 
     def load_found_lines(self) -> None:
         def load_csv(fn: Path) -> Sequence[float]:
             sep: str = self.settings.csv_separator
-            data: NDArray[np.float_] = np.loadtxt(fn, delimiter=sep, usecols=(0,), encoding='utf-8') * 1e6
-            data = data[(data >= self._plot_data.min_frequency) & (data <= self._plot_data.max_frequency)]
+            data: NDArray[np.float_] = (
+                np.loadtxt(fn, delimiter=sep, usecols=(0,), encoding="utf-8") * 1e6
+            )
+            data = data[
+                (data >= self._plot_data.min_frequency)
+                & (data <= self._plot_data.max_frequency)
+            ]
             return data
 
         def load_xlsx(fn: Path) -> Sequence[float]:
@@ -744,7 +967,9 @@ class App(GUI):
             from openpyxl.workbook.workbook import Workbook
             from openpyxl.worksheet.worksheet import Worksheet
 
-            workbook: Workbook = load_workbook(fn, read_only=True, keep_vba=False, data_only=True)
+            workbook: Workbook = load_workbook(
+                fn, read_only=True, keep_vba=False, data_only=True
+            )
             if len(workbook.sheetnames) != 1:
                 return []
             sheet: Worksheet | None = workbook.active
@@ -765,7 +990,10 @@ class App(GUI):
                 return []
 
             data_: NDArray[np.float_] = np.asarray(data, dtype=np.float_) * 1e6
-            data_ = data_[(data_ >= self._plot_data.min_frequency) & (data_ <= self._plot_data.max_frequency)]
+            data_ = data_[
+                (data_ >= self._plot_data.min_frequency)
+                & (data_ <= self._plot_data.max_frequency)
+            ]
             return data_
 
         import importlib.util
@@ -775,22 +1003,27 @@ class App(GUI):
         mimetypes.init()
 
         supported_formats: dict[tuple[str, ...], str] = {
-            tuple(all_cases('.csv')): _translate('file type', 'Text with separators'),
-            tuple(all_cases('.txt')): _translate('file type', 'Plain text'),
+            tuple(all_cases(".csv")): _translate("file type", "Text with separators"),
+            tuple(all_cases(".txt")): _translate("file type", "Plain text"),
         }
         supported_formats_callbacks: dict[str, Callable[[Path], Sequence[float]]] = {
-            mimetypes.types_map['.csv']: load_csv,
-            mimetypes.types_map['.txt']: load_csv,
+            mimetypes.types_map[".csv"]: load_csv,
+            mimetypes.types_map[".txt"]: load_csv,
         }
-        if importlib.util.find_spec('openpyxl') is not None:
-            supported_formats[tuple(all_cases('.xlsx'))] = _translate('file type', 'Microsoft Excel')
-            supported_formats_callbacks[mimetypes.types_map['.xlsx']] = load_xlsx
+        if importlib.util.find_spec("openpyxl") is not None:
+            supported_formats[tuple(all_cases(".xlsx"))] = _translate(
+                "file type", "Microsoft Excel"
+            )
+            supported_formats_callbacks[mimetypes.types_map[".xlsx"]] = load_xlsx
 
         # reorder the dict
         supported_formats = {
-            tuple(chain.from_iterable(supported_formats.keys())): _translate('file type', 'Supported formats'),
+            tuple(chain.from_iterable(supported_formats.keys())): _translate(
+                "file type", "Supported formats"
+            ),
             **supported_formats,
-            ('.*',): _translate('file type', 'All files')}
+            (".*",): _translate("file type", "All files"),
+        }
 
         filename, _filter = self.open_file_dialog(formats=supported_formats)
         if filename is None:
@@ -805,55 +1038,86 @@ class App(GUI):
 
         self.model_found_lines.add_lines(self._plot_data, new_lines)
         # add the new lines to the marked ones
-        self.user_found_lines_data = np.concatenate((self.user_found_lines_data, new_lines))
+        self.user_found_lines_data = np.concatenate(
+            (self.user_found_lines_data, new_lines)
+        )
         # avoid duplicates
-        self.user_found_lines_data = \
-            self.user_found_lines_data[np.unique(self.user_found_lines_data, return_index=True)[1]]
+        self.user_found_lines_data = self.user_found_lines_data[
+            np.unique(self.user_found_lines_data, return_index=True)[1]
+        ]
         # plot the data
         self.user_found_lines.setData(
             self.user_found_lines_data,
-            self._plot_line.yData[self.model_found_lines.frequency_indices(self._plot_data,
-                                                                           self.user_found_lines_data)]
+            self._plot_line.yData[
+                self.model_found_lines.frequency_indices(
+                    self._plot_data, self.user_found_lines_data
+                )
+            ],
         )
         self.toolbar.copy_trace_action.setEnabled(True)
         self.toolbar.save_trace_action.setEnabled(True)
         self.toolbar.clear_trace_action.setEnabled(True)
 
     def copy_found_lines(self) -> None:
-        copy_to_clipboard(self.table_found_lines.stringify_table_plain_text(),
-                          self.table_found_lines.stringify_table_html(),
-                          Qt.TextFormat.RichText)
+        copy_to_clipboard(
+            self.table_found_lines.stringify_table_plain_text(),
+            self.table_found_lines.stringify_table_html(),
+            Qt.TextFormat.RichText,
+        )
 
     def save_found_lines(self) -> None:
         def save_csv(fn: Path) -> None:
             sep: str = self.settings.csv_separator
             # noinspection PyTypeChecker
-            np.savetxt(fn, data,
-                       delimiter=sep,
-                       header=(sep.join((self.model_found_lines.header[0].name,
-                                         self.model_found_lines.header[1].name,
-                                         self.model_found_lines.header[2].name)) + '\n'
-                               + sep.join((self.model_found_lines.header[0].unit,
-                                           self.model_found_lines.header[1].unit,
-                                           self.model_found_lines.header[2].unit))),
-                       fmt=('%.3f', '%.6f', '%.6e'), encoding='utf-8')
+            np.savetxt(
+                fn,
+                data,
+                delimiter=sep,
+                header=(
+                    sep.join(
+                        (
+                            self.model_found_lines.header[0].name,
+                            self.model_found_lines.header[1].name,
+                            self.model_found_lines.header[2].name,
+                        )
+                    )
+                    + "\n"
+                    + sep.join(
+                        (
+                            self.model_found_lines.header[0].unit,
+                            self.model_found_lines.header[1].unit,
+                            self.model_found_lines.header[2].unit,
+                        )
+                    )
+                ),
+                fmt=("%.3f", "%.6f", "%.6e"),
+                encoding="utf-8",
+            )
 
         def save_xlsx(fn: Path) -> None:
             with pd.ExcelWriter(fn) as writer:
                 df: pd.DataFrame = pd.DataFrame(data)
-                df.to_excel(writer, index=False,
-                            header=self.model_found_lines.header,
-                            sheet_name=self._plot_line.name() or _translate('workbook', 'Sheet1'))
+                df.to_excel(
+                    writer,
+                    index=False,
+                    header=self.model_found_lines.header,
+                    sheet_name=self._plot_line.name()
+                    or _translate("workbook", "Sheet1"),
+                )
 
         import importlib.util
 
         supported_formats: dict[tuple[str, ...], str] = {
-            tuple(all_cases('.csv')): _translate('file type', 'Text with separators')
+            tuple(all_cases(".csv")): _translate("file type", "Text with separators")
         }
-        supported_formats_callbacks: dict[str, Callable[[Path], None]] = {'.csv': save_csv}
-        if importlib.util.find_spec('openpyxl') is not None:
-            supported_formats[tuple(all_cases('.xlsx'))] = _translate('file type', 'Microsoft Excel')
-            supported_formats_callbacks['.xlsx'] = save_xlsx
+        supported_formats_callbacks: dict[str, Callable[[Path], None]] = {
+            ".csv": save_csv
+        }
+        if importlib.util.find_spec("openpyxl") is not None:
+            supported_formats[tuple(all_cases(".xlsx"))] = _translate(
+                "file type", "Microsoft Excel"
+            )
+            supported_formats_callbacks[".xlsx"] = save_xlsx
 
         filename: Path | None
         _filter: str
@@ -899,11 +1163,13 @@ class App(GUI):
 
     def clear(self) -> None:
         close: QMessageBox = QMessageBox()
-        close.setText(self.tr('Are you sure?'))
+        close.setText(self.tr("Are you sure?"))
         close.setIcon(QMessageBox.Icon.Question)
         close.setWindowIcon(self.windowIcon())
-        close.setWindowTitle(self.tr('Spectrometer Data Viewer'))
-        close.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel)
+        close.setWindowTitle(self.tr("Spectrometer Data Viewer"))
+        close.setStandardButtons(
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel
+        )
         if close.exec() != QMessageBox.StandardButton.Yes:
             return
 
@@ -933,7 +1199,7 @@ class App(GUI):
         self._cursor_y.setVisible(True)
         self._canvas.replot()
         self.status_bar.clearMessage()
-        self.setWindowTitle(self.tr('Spectrometer Data Viewer'))
+        self.setWindowTitle(self.tr("Spectrometer Data Viewer"))
 
     def clear_ghost(self) -> None:
         self._ghost_line.clear()
@@ -947,8 +1213,12 @@ class App(GUI):
         if filename is None:
             _filter: str
             _formats: dict[tuple[str, ...], str] = {
-                (*all_cases('.conf'), *all_cases('.scandat')): _translate('file type', 'PSK Spectrometer'),
-                tuple(all_cases('.fmd')): _translate('file type', 'Fast Sweep Spectrometer'),
+                (*all_cases(".conf"), *all_cases(".scandat")): _translate(
+                    "file type", "PSK Spectrometer"
+                ),
+                tuple(all_cases(".fmd")): _translate(
+                    "file type", "Fast Sweep Spectrometer"
+                ),
             }
             filename, _filter = self.open_file_dialog(formats=_formats)
         if filename is None:
@@ -958,7 +1228,7 @@ class App(GUI):
         f: NDArray[np.float_]
         g: NDArray[np.float_] = np.empty(0)
         jump: float
-        if filename.suffix.casefold() == '.scandat':
+        if filename.suffix.casefold() == ".scandat":
             f, v, g, jump = load_data_scandat(filename, self)
             if f.size and v.size:
                 self.settings.display_processing = True
@@ -966,7 +1236,7 @@ class App(GUI):
                     self._data_mode = self.PSK_WITH_JUMP_DATA_MODE
                 else:
                     self._data_mode = self.PSK_DATA_MODE
-        elif filename.suffix.casefold() in ('.csv', '.conf'):
+        elif filename.suffix.casefold() in (".csv", ".conf"):
             f, v, g, jump = load_data_csv(filename)
             if f.size and v.size:
                 self.settings.display_processing = True
@@ -974,7 +1244,7 @@ class App(GUI):
                     self._data_mode = self.PSK_WITH_JUMP_DATA_MODE
                 else:
                     self._data_mode = self.PSK_DATA_MODE
-        elif filename.suffix.casefold() in ('.fmd', '.frd'):
+        elif filename.suffix.casefold() in (".fmd", ".frd"):
             f, v = load_data_fs(filename)
             if f.size and v.size:
                 self.settings.display_processing = False
@@ -988,19 +1258,26 @@ class App(GUI):
         if self._data_mode == self.FS_DATA_MODE:
             self.switch_data_action.setChecked(False)
 
-        self._plot_line.setData(f,
-                                (g if self.switch_data_action.isChecked() else v),
-                                name=str(filename.parent / filename.stem))
+        self._plot_line.setData(
+            f,
+            (g if self.switch_data_action.isChecked() else v),
+            name=str(filename.parent / filename.stem),
+        )
         self._plot_data.set_data(frequency_data=f, gamma_data=g, voltage_data=v)
 
         min_frequency: np.float_ = f[0]
         max_frequency: np.float_ = f[-1]
 
         self.toolbar.clear_action.setEnabled(True)
-        step: int = int(round(self.settings.jump / ((max_frequency - min_frequency) / (f.size - 1))))
-        self.toolbar.differentiate_action.setEnabled(self._data_mode == self.PSK_DATA_MODE
-                                                     and 0 < step < 0.25 * f.size)
-        self.switch_data_action.setEnabled(self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE))
+        step: int = int(
+            round(self.settings.jump / ((max_frequency - min_frequency) / (f.size - 1)))
+        )
+        self.toolbar.differentiate_action.setEnabled(
+            self._data_mode == self.PSK_DATA_MODE and 0 < step < 0.25 * f.size
+        )
+        self.switch_data_action.setEnabled(
+            self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE)
+        )
         self.toolbar.save_data_action.setEnabled(True)
         self.toolbar.copy_figure_action.setEnabled(True)
         self.toolbar.save_figure_action.setEnabled(True)
@@ -1008,8 +1285,12 @@ class App(GUI):
         self.box_find_lines.setEnabled(bool(self.model_signal.size))
 
         self._loading = True
-        self.spin_frequency_min.setMaximum(max(max_frequency, self.spin_frequency_min.value()))
-        self.spin_frequency_max.setMinimum(min(min_frequency, self.spin_frequency_max.value()))
+        self.spin_frequency_min.setMaximum(
+            max(max_frequency, self.spin_frequency_min.value())
+        )
+        self.spin_frequency_max.setMinimum(
+            min(min_frequency, self.spin_frequency_max.value())
+        )
         if not self.check_frequency_persists.isChecked():
             self.spin_frequency_min.setValue(min_frequency)
             self.spin_frequency_max.setValue(max_frequency)
@@ -1019,12 +1300,16 @@ class App(GUI):
 
         self.display_gamma_or_voltage()
 
-        self.set_frequency_range(lower_value=self.spin_frequency_min.value(),
-                                 upper_value=self.spin_frequency_max.value())
-        self.set_voltage_range(lower_value=self.spin_voltage_min.value(),
-                               upper_value=self.spin_voltage_max.value())
+        self.set_frequency_range(
+            lower_value=self.spin_frequency_min.value(),
+            upper_value=self.spin_frequency_max.value(),
+        )
+        self.set_voltage_range(
+            lower_value=self.spin_voltage_min.value(),
+            upper_value=self.spin_voltage_max.value(),
+        )
 
-        self.setWindowTitle(self.tr('%s — Spectrometer Data Viewer') % filename)
+        self.setWindowTitle(self.tr("%s — Spectrometer Data Viewer") % filename)
 
         self.toolbar.open_ghost_action.setEnabled(True)
 
@@ -1034,8 +1319,12 @@ class App(GUI):
         if filename is None:
             _filter: str
             _formats: dict[tuple[str, ...], str] = {
-                (*all_cases('.conf'), *all_cases('.scandat')): _translate('file type', 'PSK Spectrometer'),
-                tuple(all_cases('.fmd')): _translate('file type', 'Fast Sweep Spectrometer'),
+                (*all_cases(".conf"), *all_cases(".scandat")): _translate(
+                    "file type", "PSK Spectrometer"
+                ),
+                tuple(all_cases(".fmd")): _translate(
+                    "file type", "Fast Sweep Spectrometer"
+                ),
             }
             filename, _filter = self.open_file_dialog(formats=_formats)
         if filename is None:
@@ -1045,7 +1334,7 @@ class App(GUI):
         f: NDArray[np.float_]
         g: NDArray[np.float_] = np.empty(0)
         jump: float
-        if filename.suffix.casefold() == '.scandat':
+        if filename.suffix.casefold() == ".scandat":
             f, v, g, jump = load_data_scandat(filename, self)
             if f.size and v.size:
                 if jump > 0.0:
@@ -1054,7 +1343,7 @@ class App(GUI):
                 else:
                     if self._data_mode != self.PSK_DATA_MODE:
                         return False
-        elif filename.suffix.casefold() in ('.csv', '.conf'):
+        elif filename.suffix.casefold() in (".csv", ".conf"):
             f, v, g, jump = load_data_csv(filename)
             if f.size and v.size:
                 if jump > 0.0:
@@ -1063,7 +1352,7 @@ class App(GUI):
                 else:
                     if self._data_mode != self.PSK_DATA_MODE:
                         return False
-        elif filename.suffix.casefold() in ('.fmd', '.frd'):
+        elif filename.suffix.casefold() in (".fmd", ".frd"):
             f, v = load_data_fs(filename)
             if f.size and v.size:
                 if self._data_mode != self.FS_DATA_MODE:
@@ -1074,9 +1363,11 @@ class App(GUI):
         if not (f.size and v.size):
             return False
 
-        self._ghost_line.setData(f,
-                                 (g if self.switch_data_action.isChecked() else v),
-                                 name=str(filename.parent / filename.stem))
+        self._ghost_line.setData(
+            f,
+            (g if self.switch_data_action.isChecked() else v),
+            name=str(filename.parent / filename.stem),
+        )
         self._ghost_data.set_data(frequency_data=f, gamma_data=g, voltage_data=v)
 
         self.toolbar.clear_ghost_action.setEnabled(True)
@@ -1098,9 +1389,13 @@ class App(GUI):
         self.model_found_lines.refresh()
 
     def on_switch_data_action_toggled(self, new_state: bool) -> None:
-        self._plot_data.data_type = PlotDataItem.GAMMA_DATA if new_state else PlotDataItem.VOLTAGE_DATA
-        self._ghost_data.data_type = PlotDataItem.GAMMA_DATA if new_state else PlotDataItem.VOLTAGE_DATA
-        self.set_config_value('display', 'unit', self._plot_data.data_type)
+        self._plot_data.data_type = (
+            PlotDataItem.GAMMA_DATA if new_state else PlotDataItem.VOLTAGE_DATA
+        )
+        self._ghost_data.data_type = (
+            PlotDataItem.GAMMA_DATA if new_state else PlotDataItem.VOLTAGE_DATA
+        )
+        self.set_config_value("display", "unit", self._plot_data.data_type)
         self.display_gamma_or_voltage(new_state)
 
     def display_gamma_or_voltage(self, display_gamma: bool | None = None) -> None:
@@ -1115,9 +1410,9 @@ class App(GUI):
             self._ghost_data.jump = np.nan
 
         if display_gamma:
-            self.box_voltage.setWindowTitle(self.tr('Absorption'))
+            self.box_voltage.setWindowTitle(self.tr("Absorption"))
         else:
-            self.box_voltage.setWindowTitle(self.tr('Voltage'))
+            self.box_voltage.setWindowTitle(self.tr("Voltage"))
 
         if self._plot_data:  # something is loaded
             self._plot_line.setData(self._plot_data.x_data, self._plot_data.y_data)
@@ -1139,47 +1434,62 @@ class App(GUI):
             self.automatically_found_lines.setData(
                 self.automatically_found_lines_data,
                 self._plot_data.y_data[
-                    self.model_found_lines.frequency_indices(self._plot_data, self.automatically_found_lines_data)])
+                    self.model_found_lines.frequency_indices(
+                        self._plot_data, self.automatically_found_lines_data
+                    )
+                ],
+            )
         if self.user_found_lines_data.size:  # something is marked
             self.user_found_lines.setData(
                 self.user_found_lines_data,
                 self._plot_data.y_data[
-                    self.model_found_lines.frequency_indices(self._plot_data, self.user_found_lines_data)])
+                    self.model_found_lines.frequency_indices(
+                        self._plot_data, self.user_found_lines_data
+                    )
+                ],
+            )
 
-        a: pg.AxisItem = self._canvas.getAxis('left')
+        a: pg.AxisItem = self._canvas.getAxis("left")
         if display_gamma:
-            self.check_voltage_persists.setText(self.tr('Keep absorption range'))
+            self.check_voltage_persists.setText(self.tr("Keep absorption range"))
 
             a.enableAutoSIPrefix(False)
-            a.setLabel(text=_translate("plot axes labels", 'Absorption'),
-                       units=_translate('unit', 'cm<sup>−1</sup>'))
+            a.setLabel(
+                text=_translate("plot axes labels", "Absorption"),
+                units=_translate("unit", "cm<sup>−1</sup>"),
+            )
             a.scale = 1.0
             a.autoSIPrefixScale = 1.0
 
-            self._cursor_y.suffix = _translate('unit', 'cm<sup>−1</sup>')
+            self._cursor_y.suffix = _translate("unit", "cm<sup>−1</sup>")
             self._cursor_y.siPrefix = False
-            self._cursor_y.setFormatStr('{mantissa:.{decimals}f}×10<sup>{exp}</sup>{suffixGap}{suffix}')
+            self._cursor_y.setFormatStr(
+                "{mantissa:.{decimals}f}×10<sup>{exp}</sup>{suffixGap}{suffix}"
+            )
             opts = {
-                'suffix': _translate('unit', 'cm⁻¹'),
-                'siPrefix': False,
-                'format': '{value:.{decimals}e}{suffixGap}{suffix}'
+                "suffix": _translate("unit", "cm⁻¹"),
+                "siPrefix": False,
+                "format": "{value:.{decimals}e}{suffixGap}{suffix}",
             }
 
         else:
-            self.check_voltage_persists.setText(self.tr('Keep voltage range'))
+            self.check_voltage_persists.setText(self.tr("Keep voltage range"))
 
             a.enableAutoSIPrefix(True)
-            a.setLabel(text=_translate("plot axes labels", 'Voltage'),
-                       units=_translate('unit', 'V'),
-                       )
+            a.setLabel(
+                text=_translate("plot axes labels", "Voltage"),
+                units=_translate("unit", "V"),
+            )
 
-            self._cursor_y.suffix = _translate('unit', 'V')
+            self._cursor_y.suffix = _translate("unit", "V")
             self._cursor_y.siPrefix = True
-            self._cursor_y.setFormatStr('{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}')
+            self._cursor_y.setFormatStr(
+                "{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}"
+            )
             opts = {
-                'suffix': _translate('unit', 'V'),
-                'siPrefix': True,
-                'format': '{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}'
+                "suffix": _translate("unit", "V"),
+                "siPrefix": True,
+                "format": "{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}",
             }
         self.spin_voltage_min.setOpts(**opts)
         self.spin_voltage_max.setOpts(**opts)
@@ -1196,25 +1506,47 @@ class App(GUI):
             if self.switch_data_action.isChecked():
                 data = np.column_stack((x * 1e-6, y))
                 # noinspection PyTypeChecker
-                np.savetxt(fn, data,
-                           delimiter=sep,
-                           header=(sep.join((_translate("plot axes labels", 'Frequency'),
-                                             _translate("plot axes labels", 'Absorption')))
-                                   + '\n'
-                                   + sep.join((_translate('unit', 'MHz'),
-                                               _translate('unit', 'cm⁻¹')))),
-                           fmt=('%.3f', '%.6e'), encoding='utf-8')
+                np.savetxt(
+                    fn,
+                    data,
+                    delimiter=sep,
+                    header=(
+                        sep.join(
+                            (
+                                _translate("plot axes labels", "Frequency"),
+                                _translate("plot axes labels", "Absorption"),
+                            )
+                        )
+                        + "\n"
+                        + sep.join(
+                            (_translate("unit", "MHz"), _translate("unit", "cm⁻¹"))
+                        )
+                    ),
+                    fmt=("%.3f", "%.6e"),
+                    encoding="utf-8",
+                )
             else:
                 data = np.column_stack((x * 1e-6, y * 1e3))
                 # noinspection PyTypeChecker
-                np.savetxt(filename, data,
-                           delimiter=sep,
-                           header=(sep.join((_translate("plot axes labels", 'Frequency'),
-                                             _translate("plot axes labels", 'Voltage')))
-                                   + '\n'
-                                   + sep.join((_translate('unit', 'MHz'),
-                                               _translate('unit', 'mV')))),
-                           fmt=('%.3f', '%.6f'), encoding='utf-8')
+                np.savetxt(
+                    filename,
+                    data,
+                    delimiter=sep,
+                    header=(
+                        sep.join(
+                            (
+                                _translate("plot axes labels", "Frequency"),
+                                _translate("plot axes labels", "Voltage"),
+                            )
+                        )
+                        + "\n"
+                        + sep.join(
+                            (_translate("unit", "MHz"), _translate("unit", "mV"))
+                        )
+                    ),
+                    fmt=("%.3f", "%.6f"),
+                    encoding="utf-8",
+                )
 
         def save_xlsx(fn: Path) -> None:
             data: NDArray[np.float_]
@@ -1223,27 +1555,43 @@ class App(GUI):
                 if self.switch_data_action.isChecked():
                     data = np.column_stack((x * 1e-6, y))
                     df = pd.DataFrame(data)
-                    df.to_excel(writer, index=False,
-                                header=[self.model_found_lines.header[0],
-                                        self.model_found_lines.header[2]],
-                                sheet_name=self._plot_line.name() or _translate('workbook', 'Sheet1'))
+                    df.to_excel(
+                        writer,
+                        index=False,
+                        header=[
+                            self.model_found_lines.header[0],
+                            self.model_found_lines.header[2],
+                        ],
+                        sheet_name=self._plot_line.name()
+                        or _translate("workbook", "Sheet1"),
+                    )
                 else:
                     data = np.column_stack((x * 1e-6, y * 1e3))
                     df = pd.DataFrame(data)
-                    df.to_excel(writer, index=False,
-                                header=[self.model_found_lines.header[0],
-                                        self.model_found_lines.header[1]],
-                                sheet_name=self._plot_line.name() or _translate('workbook', 'Sheet1'))
+                    df.to_excel(
+                        writer,
+                        index=False,
+                        header=[
+                            self.model_found_lines.header[0],
+                            self.model_found_lines.header[1],
+                        ],
+                        sheet_name=self._plot_line.name()
+                        or _translate("workbook", "Sheet1"),
+                    )
 
         import importlib.util
 
         supported_formats: dict[tuple[str, ...], str] = {
-            tuple(all_cases('.csv')): _translate('file type', 'Text with separators')
+            tuple(all_cases(".csv")): _translate("file type", "Text with separators")
         }
-        supported_formats_callbacks: dict[str, Callable[[Path], None]] = {'.csv': save_csv}
-        if importlib.util.find_spec('openpyxl') is not None:
-            supported_formats[tuple(all_cases('.xlsx'))] = _translate('file type', 'Microsoft Excel')
-            supported_formats_callbacks['.xlsx'] = save_xlsx
+        supported_formats_callbacks: dict[str, Callable[[Path], None]] = {
+            ".csv": save_csv
+        }
+        if importlib.util.find_spec("openpyxl") is not None:
+            supported_formats[tuple(all_cases(".xlsx"))] = _translate(
+                "file type", "Microsoft Excel"
+            )
+            supported_formats_callbacks[".xlsx"] = save_xlsx
 
         filename: Path | None
         _filter: str
@@ -1254,7 +1602,7 @@ class App(GUI):
         y: NDArray[np.float_] = self._plot_line.yData
         max_mark: float
         min_mark: float
-        min_mark, max_mark = self._canvas.axes['bottom']['item'].range
+        min_mark, max_mark = self._canvas.axes["bottom"]["item"].range
         good: NDArray[np.bool_] = (min_mark <= x) & (x <= max_mark)
         x = x[good]
         y = y[good]
@@ -1272,7 +1620,9 @@ class App(GUI):
     def save_figure(self) -> None:
         exporter: ImageExporter = ImageExporter(self._canvas)
         formats: dict[tuple[str, ...], str] = {
-            tuple(exporter.getSupportedImageFormats()): _translate('file dialog', 'Image files')
+            tuple(exporter.getSupportedImageFormats()): _translate(
+                "file dialog", "Image files"
+            )
         }
         filename: Path | None
         _filter: str

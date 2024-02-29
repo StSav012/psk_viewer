@@ -8,7 +8,7 @@ from pyqtgraph import functions as fn  # type: ignore
 from qtpy.QtGui import QPaintEvent
 from qtpy.QtWidgets import QLabel, QWidget
 
-__all__ = ['ValueLabel']
+__all__ = ["ValueLabel"]
 
 
 class ValueLabel(QLabel):
@@ -21,15 +21,22 @@ class ValueLabel(QLabel):
 
     This is ValueLabel from pyqtgraph made right.
     """
+
     values: list[tuple[float, int | float]]
     averageTime: float
     suffix: str
     siPrefix: bool
     decimals: int
 
-    def __init__(self, parent: QWidget | None = None,
-                 suffix: str | None = None, siPrefix: bool = False, decimals: int = 3,
-                 averageTime: float = 0., formatStr: str | None = None) -> None:
+    def __init__(
+        self,
+        parent: QWidget | None = None,
+        suffix: str | None = None,
+        siPrefix: bool = False,
+        decimals: int = 3,
+        averageTime: float = 0.0,
+        formatStr: str | None = None,
+    ) -> None:
         """
         ==============      ==================================================================================
         **Arguments:**
@@ -47,11 +54,11 @@ class ValueLabel(QLabel):
         QLabel.__init__(self, parent)
         self.values = []
         self.averageTime = averageTime  # no averaging by default
-        self.suffix = suffix or ''
+        self.suffix = suffix or ""
         self.siPrefix = siPrefix
         self.decimals = decimals
         if formatStr is None:
-            self.formatStr = '{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}'
+            self.formatStr = "{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}"
         else:
             self.formatStr = formatStr
 
@@ -82,23 +89,25 @@ class ValueLabel(QLabel):
 
     def generateText(self) -> str:
         if len(self.values) == 0:
-            return ''
+            return ""
         val: float = self.averageValue()
         if math.isnan(val):
-            return ''
+            return ""
 
         # format the string
-        parts = {'value': val, 'suffix': self.suffix, 'decimals': self.decimals}
+        parts = {"value": val, "suffix": self.suffix, "decimals": self.decimals}
         if self.siPrefix and self.suffix:
             # SI prefix was requested, so scale the value accordingly
             (s, p) = fn.siScale(val)
-            parts.update({'siPrefix': p, 'scaledValue': s * val})
+            parts.update({"siPrefix": p, "scaledValue": s * val})
         else:
             # no SI prefix /suffix requested; scale is 1
             exp: int = int(math.floor(math.log10(abs(val)))) if val != 0.0 else 0
             man: float = val * math.pow(0.1, exp)
-            parts.update({'siPrefix': '', 'scaledValue': val, 'exp': exp, 'mantissa': man})
+            parts.update(
+                {"siPrefix": "", "scaledValue": val, "exp": exp, "mantissa": man}
+            )
 
-        parts['suffixGap'] = ' ' if (parts['suffix'] or parts['siPrefix']) else ''
+        parts["suffixGap"] = " " if (parts["suffix"] or parts["siPrefix"]) else ""
 
-        return self.formatStr.format(**parts).replace('-', '−')
+        return self.formatStr.format(**parts).replace("-", "−")

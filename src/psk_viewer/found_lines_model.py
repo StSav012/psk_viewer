@@ -11,7 +11,7 @@ from .data_model import DataModel
 from .plot_data_item import PlotDataItem
 from .utils import HeaderWithUnit
 
-__all__ = ['FoundLinesModel']
+__all__ = ["FoundLinesModel"]
 
 _translate = QCoreApplication.translate
 
@@ -25,16 +25,32 @@ class FoundLinesModel(DataModel):
         self._fancy_table_numbers: bool = False
 
         self._header = [
-            HeaderWithUnit(name=_translate("plot axes labels", 'Frequency'), unit=_translate('unit', 'MHz')),
-            HeaderWithUnit(name=_translate("plot axes labels", 'Voltage'), unit=_translate('unit', 'mV')),
             HeaderWithUnit(
-                name=_translate("plot axes labels", 'Absorption'),
-                unit=_translate('unit', 'cm⁻¹') if not self._log10_gamma else _translate('unit', 'log₁₀(cm⁻¹)')
+                name=_translate("plot axes labels", "Frequency"),
+                unit=_translate("unit", "MHz"),
+            ),
+            HeaderWithUnit(
+                name=_translate("plot axes labels", "Voltage"),
+                unit=_translate("unit", "mV"),
+            ),
+            HeaderWithUnit(
+                name=_translate("plot axes labels", "Absorption"),
+                unit=(
+                    _translate("unit", "cm⁻¹")
+                    if not self._log10_gamma
+                    else _translate("unit", "log₁₀(cm⁻¹)")
+                ),
             ),
         ]
-        self.set_format([DataModel.Format(precision=3, scale=1e-6),
-                         DataModel.Format(precision=4, scale=1e3),
-                         DataModel.Format(precision=4, scale=np.nan, fancy=self._fancy_table_numbers)])
+        self.set_format(
+            [
+                DataModel.Format(precision=3, scale=1e-6),
+                DataModel.Format(precision=4, scale=1e3),
+                DataModel.Format(
+                    precision=4, scale=np.nan, fancy=self._fancy_table_numbers
+                ),
+            ]
+        )
 
     @property
     def log10_gamma(self) -> bool:
@@ -47,8 +63,12 @@ class FoundLinesModel(DataModel):
         self._log10_gamma = bool(new_value)
         if len(self._header) == 3:
             self._header[2] = HeaderWithUnit(
-                name=_translate("plot axes labels", 'Absorption'),
-                unit=_translate('unit', 'cm⁻¹') if not self._log10_gamma else _translate('unit', 'log₁₀(cm⁻¹)')
+                name=_translate("plot axes labels", "Absorption"),
+                unit=(
+                    _translate("unit", "cm⁻¹")
+                    if not self._log10_gamma
+                    else _translate("unit", "log₁₀(cm⁻¹)")
+                ),
             )
         self.refresh()
 
@@ -61,9 +81,15 @@ class FoundLinesModel(DataModel):
         if bool(new_value) == self._fancy_table_numbers:
             return
         self._fancy_table_numbers = bool(new_value)
-        self.set_format([DataModel.Format(precision=3, scale=1e-6),
-                         DataModel.Format(precision=4, scale=1e3),
-                         DataModel.Format(precision=4, scale=np.nan, fancy=self._fancy_table_numbers)])
+        self.set_format(
+            [
+                DataModel.Format(precision=3, scale=1e-6),
+                DataModel.Format(precision=4, scale=1e3),
+                DataModel.Format(
+                    precision=4, scale=np.nan, fancy=self._fancy_table_numbers
+                ),
+            ]
+        )
         self.refresh()
 
     def add_line(self, plot_data: PlotDataItem, frequency: float) -> None:
@@ -72,24 +98,34 @@ class FoundLinesModel(DataModel):
         self._frequencies = np.append(self._frequencies, frequency)
         self.refresh(plot_data)
 
-    def add_lines(self, plot_data: PlotDataItem, frequency_values: Iterable[float]) -> None:
+    def add_lines(
+        self, plot_data: PlotDataItem, frequency_values: Iterable[float]
+    ) -> None:
         self._frequencies = np.concatenate((self._frequencies, frequency_values))
         # avoid duplicates
-        self._frequencies = self._frequencies[np.unique(self._frequencies, return_index=True)[1]]
+        self._frequencies = self._frequencies[
+            np.unique(self._frequencies, return_index=True)[1]
+        ]
         self.refresh(plot_data)
 
-    def set_lines(self, plot_data: PlotDataItem,
-                  frequencies: NDArray[np.float64] | Iterable[NDArray[np.float64]]) -> None:
+    def set_lines(
+        self,
+        plot_data: PlotDataItem,
+        frequencies: NDArray[np.float64] | Iterable[NDArray[np.float64]],
+    ) -> None:
         if isinstance(frequencies, np.ndarray):
             self._frequencies = frequencies.ravel()
         else:
             self._frequencies = np.concatenate(frequencies)
         # avoid duplicates
-        self._frequencies = self._frequencies[np.unique(self._frequencies, return_index=True)[1]]
+        self._frequencies = self._frequencies[
+            np.unique(self._frequencies, return_index=True)[1]
+        ]
         self.refresh(plot_data)
 
-    def frequency_indices(self, plot_data: PlotDataItem,
-                          frequencies: NDArray[np.float64] | None = None) -> NDArray[np.float64]:
+    def frequency_indices(
+        self, plot_data: PlotDataItem, frequencies: NDArray[np.float64] | None = None
+    ) -> NDArray[np.float64]:
         if frequencies is None:
             frequencies = self._frequencies
         return np.searchsorted(plot_data.x_data, frequencies)
@@ -108,15 +144,29 @@ class FoundLinesModel(DataModel):
             return
 
         if plot_data.voltage_data.size == plot_data.gamma_data.size:
-            self.set_data(np.column_stack((
-                plot_data.frequency_data[frequency_indices],
-                plot_data.voltage_data[frequency_indices],
-                (np.log10(plot_data.gamma_data[frequency_indices].astype(np.complex_))
-                 if self._log10_gamma
-                 else plot_data.gamma_data[frequency_indices]),
-            )))
+            self.set_data(
+                np.column_stack(
+                    (
+                        plot_data.frequency_data[frequency_indices],
+                        plot_data.voltage_data[frequency_indices],
+                        (
+                            np.log10(
+                                plot_data.gamma_data[frequency_indices].astype(
+                                    np.complex_
+                                )
+                            )
+                            if self._log10_gamma
+                            else plot_data.gamma_data[frequency_indices]
+                        ),
+                    )
+                )
+            )
         else:
-            self.set_data(np.column_stack((
-                plot_data.frequency_data[frequency_indices],
-                plot_data.voltage_data[frequency_indices],
-            )))
+            self.set_data(
+                np.column_stack(
+                    (
+                        plot_data.frequency_data[frequency_indices],
+                        plot_data.voltage_data[frequency_indices],
+                    )
+                )
+            )

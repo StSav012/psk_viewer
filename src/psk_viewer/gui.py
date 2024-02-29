@@ -35,13 +35,15 @@ from .toolbar import NavigationToolbar
 from .utils import ensure_extension, find_qm_files, join_file_dialog_formats, load_icon
 from .valuelabel import ValueLabel
 
-__all__ = ['GUI']
+__all__ = ["GUI"]
 
 _translate = QCoreApplication.translate
 
 
 class GUI(QMainWindow):
-    def __init__(self, parent: QWidget | None = None, flags: Qt.WindowType = Qt.WindowType.Window) -> None:
+    def __init__(
+        self, parent: QWidget | None = None, flags: Qt.WindowType = Qt.WindowType.Window
+    ) -> None:
         super().__init__(parent, flags)
         self.settings: Settings = Settings("SavSoft", "Spectrometer Viewer", self)
 
@@ -53,7 +55,7 @@ class GUI(QMainWindow):
 
         # Frequency box
         self.box_frequency: QDockWidget = QDockWidget(self.central_widget)
-        self.box_frequency.setObjectName('box_frequency')
+        self.box_frequency.setObjectName("box_frequency")
         self.group_frequency: QWidget = QWidget(self.box_frequency)
         self.v_layout_frequency: QVBoxLayout = QVBoxLayout(self.group_frequency)
         self.form_layout_frequency: QFormLayout = QFormLayout()
@@ -81,7 +83,7 @@ class GUI(QMainWindow):
 
         # Voltage box
         self.box_voltage: QDockWidget = QDockWidget(self.central_widget)
-        self.box_voltage.setObjectName('box_voltage')
+        self.box_voltage.setObjectName("box_voltage")
         self.group_voltage: QWidget = QWidget(self.box_voltage)
         self.v_layout_voltage: QVBoxLayout = QVBoxLayout(self.group_voltage)
         self.form_layout_voltage: QFormLayout = QFormLayout()
@@ -102,7 +104,7 @@ class GUI(QMainWindow):
 
         # Find Lines box
         self.box_find_lines: QDockWidget = QDockWidget(self.central_widget)
-        self.box_find_lines.setObjectName('box_find_lines')
+        self.box_find_lines.setObjectName("box_find_lines")
         self.group_find_lines: QWidget = QWidget(self.box_find_lines)
         self.v_layout_find_lines: QVBoxLayout = QVBoxLayout(self.group_find_lines)
         self.form_layout_find_lines: QFormLayout = QFormLayout()
@@ -117,8 +119,10 @@ class GUI(QMainWindow):
 
         # Found Lines table
         self.box_found_lines: QDockWidget = QDockWidget(self.central_widget)
-        self.box_found_lines.setObjectName('box_found_lines')
-        self.table_found_lines: TableView = TableView(self.settings, self.box_found_lines)
+        self.box_found_lines.setObjectName("box_found_lines")
+        self.table_found_lines: TableView = TableView(
+            self.settings, self.box_found_lines
+        )
         self.model_found_lines: FoundLinesModel = FoundLinesModel(self)
 
         self.toolbar: NavigationToolbar = NavigationToolbar(self)
@@ -127,33 +131,46 @@ class GUI(QMainWindow):
         # plot
         self.figure: pg.PlotWidget = pg.PlotWidget(self.central_widget)
         self._canvas: pg.PlotItem = self.figure.getPlotItem()
-        self._cursor_x: ValueLabel = ValueLabel(self.status_bar, siPrefix=True, decimals=6)
-        self._cursor_y: ValueLabel = ValueLabel(self.status_bar, siPrefix=True, decimals=3)
+        self._cursor_x: ValueLabel = ValueLabel(
+            self.status_bar, siPrefix=True, decimals=6
+        )
+        self._cursor_y: ValueLabel = ValueLabel(
+            self.status_bar, siPrefix=True, decimals=3
+        )
 
         self._view_all_action: QAction = QAction()
 
         self._setup_appearance()
 
     def _setup_appearance(self) -> None:
-        fn.SI_PREFIXES = _translate('si prefixes', 'y,z,a,f,p,n,µ,m, ,k,M,G,T,P,E,Z,Y').split(',')
+        fn.SI_PREFIXES = _translate(
+            "si prefixes", "y,z,a,f,p,n,µ,m, ,k,M,G,T,P,E,Z,Y"
+        ).split(",")
         fn.SI_PREFIXES_ASCII = fn.SI_PREFIXES
-        fn.SI_PREFIX_EXPONENTS.update(dict([(s, (i - 8) * 3) for i, s in enumerate(fn.SI_PREFIXES)]))
-        if _translate('si prefix alternative micro', 'u'):
-            fn.SI_PREFIX_EXPONENTS[_translate('si prefix alternative micro', 'u')] = -6
+        fn.SI_PREFIX_EXPONENTS.update(
+            dict([(s, (i - 8) * 3) for i, s in enumerate(fn.SI_PREFIXES)])
+        )
+        if _translate("si prefix alternative micro", "u"):
+            fn.SI_PREFIX_EXPONENTS[_translate("si prefix alternative micro", "u")] = -6
         fn.FLOAT_REGEX = re.compile(
-            r'(?P<number>[+-]?((((\d+(\.\d*)?)|(\d*\.\d+))([eE][+-]?\d+)?)'
-            r'|(nan|NaN|NAN|inf|Inf|INF)))\s*'
-            r'((?P<siPrefix>[u(' + '|'.join(fn.SI_PREFIXES) + r')]?)(?P<suffix>\w.*))?$')
-        fn.INT_REGEX = re.compile(r'(?P<number>[+-]?\d+)\s*'
-                                  r'(?P<siPrefix>[u(' + '|'.join(fn.SI_PREFIXES) + r')]?)(?P<suffix>.*)$')
+            r"(?P<number>[+-]?((((\d+(\.\d*)?)|(\d*\.\d+))([eE][+-]?\d+)?)"
+            r"|(nan|NaN|NAN|inf|Inf|INF)))\s*"
+            r"((?P<siPrefix>[u(" + "|".join(fn.SI_PREFIXES) + r")]?)(?P<suffix>\w.*))?$"
+        )
+        fn.INT_REGEX = re.compile(
+            r"(?P<number>[+-]?\d+)\s*"
+            r"(?P<siPrefix>[u(" + "|".join(fn.SI_PREFIXES) + r")]?)(?P<suffix>.*)$"
+        )
 
-        self.setWindowIcon(load_icon(self, 'main'))
+        self.setWindowIcon(load_icon(self, "main"))
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.toolbar)
 
-        self.form_layout_frequency.addRow(self.tr('Minimum:'), self.spin_frequency_min)
-        self.form_layout_frequency.addRow(self.tr('Maximum:'), self.spin_frequency_max)
-        self.form_layout_frequency.addRow(self.tr('Center:'), self.spin_frequency_center)
-        self.form_layout_frequency.addRow(self.tr('Span:'), self.spin_frequency_span)
+        self.form_layout_frequency.addRow(self.tr("Minimum:"), self.spin_frequency_min)
+        self.form_layout_frequency.addRow(self.tr("Maximum:"), self.spin_frequency_max)
+        self.form_layout_frequency.addRow(
+            self.tr("Center:"), self.spin_frequency_center
+        )
+        self.form_layout_frequency.addRow(self.tr("Span:"), self.spin_frequency_span)
 
         self.grid_layout_frequency.addWidget(self.check_frequency_persists, 0, 0, 1, 4)
         self.grid_layout_frequency.addWidget(self.button_zoom_x_out_coarse, 1, 0)
@@ -169,8 +186,8 @@ class GUI(QMainWindow):
         self.v_layout_frequency.addLayout(self.form_layout_frequency)
         self.v_layout_frequency.addLayout(self.grid_layout_frequency)
 
-        self.form_layout_voltage.addRow(self.tr('Minimum:'), self.spin_voltage_min)
-        self.form_layout_voltage.addRow(self.tr('Maximum:'), self.spin_voltage_max)
+        self.form_layout_voltage.addRow(self.tr("Minimum:"), self.spin_voltage_min)
+        self.form_layout_voltage.addRow(self.tr("Maximum:"), self.spin_voltage_max)
 
         self.grid_layout_voltage.addWidget(self.check_voltage_persists, 0, 0, 1, 4)
         self.grid_layout_voltage.addWidget(self.button_zoom_y_out_coarse, 1, 0)
@@ -181,14 +198,18 @@ class GUI(QMainWindow):
         self.v_layout_voltage.addWidget(self.switch_data_action)
         self.switch_data_action.setEnabled(False)
         self.switch_data_action.setCheckable(True)
-        self.switch_data_action.setShortcut('Ctrl+`')
-        self.switch_data_action.setText(self.tr('Show Absorption'))
-        self.switch_data_action.setToolTip(self.tr('Switch Y data between absorption and voltage'))
+        self.switch_data_action.setShortcut("Ctrl+`")
+        self.switch_data_action.setText(self.tr("Show Absorption"))
+        self.switch_data_action.setToolTip(
+            self.tr("Switch Y data between absorption and voltage")
+        )
 
         self.v_layout_voltage.addLayout(self.form_layout_voltage)
         self.v_layout_voltage.addLayout(self.grid_layout_voltage)
 
-        self.form_layout_find_lines.addRow(self.tr('Search threshold:'), self.spin_threshold)
+        self.form_layout_find_lines.addRow(
+            self.tr("Search threshold:"), self.spin_threshold
+        )
         self.grid_layout_find_lines.addWidget(self.button_find_lines, 0, 0, 1, 2)
         self.grid_layout_find_lines.addWidget(self.button_clear_lines, 1, 0, 1, 2)
         self.grid_layout_find_lines.addWidget(self.button_prev_line, 2, 0)
@@ -199,83 +220,105 @@ class GUI(QMainWindow):
 
         # TODO: adjust size when undocked
         self.box_frequency.setWidget(self.group_frequency)
-        self.box_frequency.setFeatures(self.box_frequency.features()
-                                       & ~QDockWidget.DockWidgetFeature.DockWidgetClosable)
+        self.box_frequency.setFeatures(
+            self.box_frequency.features()
+            & ~QDockWidget.DockWidgetFeature.DockWidgetClosable
+        )
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.box_frequency)
 
         self.box_voltage.setWidget(self.group_voltage)
-        self.box_voltage.setFeatures(self.box_voltage.features()
-                                     & ~QDockWidget.DockWidgetFeature.DockWidgetClosable)
+        self.box_voltage.setFeatures(
+            self.box_voltage.features()
+            & ~QDockWidget.DockWidgetFeature.DockWidgetClosable
+        )
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.box_voltage)
 
         self.box_find_lines.setWidget(self.group_find_lines)
-        self.box_find_lines.setFeatures(self.box_find_lines.features()
-                                        & ~QDockWidget.DockWidgetFeature.DockWidgetClosable)
+        self.box_find_lines.setFeatures(
+            self.box_find_lines.features()
+            & ~QDockWidget.DockWidgetFeature.DockWidgetClosable
+        )
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.box_find_lines)
 
         self.box_found_lines.setWidget(self.table_found_lines)
-        self.box_found_lines.setFeatures(self.box_found_lines.features()
-                                         & ~QDockWidget.DockWidgetFeature.DockWidgetClosable)
+        self.box_found_lines.setFeatures(
+            self.box_found_lines.features()
+            & ~QDockWidget.DockWidgetFeature.DockWidgetClosable
+        )
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.box_found_lines)
 
         self.grid_layout.addWidget(self.figure)
 
         self.setCentralWidget(self.central_widget)
         if __version__:
-            self.setWindowTitle(self.tr('Spectrometer Data Viewer (version {0})').format(__version__))
+            self.setWindowTitle(
+                self.tr("Spectrometer Data Viewer (version {0})").format(__version__)
+            )
         else:
-            self.setWindowTitle(self.tr('Spectrometer Data Viewer'))
+            self.setWindowTitle(self.tr("Spectrometer Data Viewer"))
         self.setStatusBar(self.status_bar)
 
         self.status_bar.addWidget(self._cursor_x)
         self.status_bar.addWidget(self._cursor_y)
 
-        self._cursor_x.suffix = _translate('unit', 'Hz')
-        self._cursor_y.suffix = _translate('unit', 'V')
+        self._cursor_x.suffix = _translate("unit", "Hz")
+        self._cursor_y.suffix = _translate("unit", "V")
 
-        self.box_frequency.setWindowTitle(self.tr('Frequency'))
-        self.check_frequency_persists.setText(self.tr('Keep frequency range'))
+        self.box_frequency.setWindowTitle(self.tr("Frequency"))
+        self.check_frequency_persists.setText(self.tr("Keep frequency range"))
 
-        self.button_zoom_x_out_coarse.setText(self.tr('−50%'))
-        self.button_zoom_x_out_fine.setText(self.tr('−10%'))
-        self.button_zoom_x_in_fine.setText(self.tr('+10%'))
-        self.button_zoom_x_in_coarse.setText(self.tr('+50%'))
+        self.button_zoom_x_out_coarse.setText(self.tr("−50%"))
+        self.button_zoom_x_out_fine.setText(self.tr("−10%"))
+        self.button_zoom_x_in_fine.setText(self.tr("+10%"))
+        self.button_zoom_x_in_coarse.setText(self.tr("+50%"))
 
-        self.button_move_x_left_coarse.setText('−' + pg.siFormat(5e8, suffix=_translate('unit', 'Hz')))
-        self.button_move_x_left_fine.setText('−' + pg.siFormat(5e7, suffix=_translate('unit', 'Hz')))
-        self.button_move_x_right_fine.setText('+' + pg.siFormat(5e7, suffix=_translate('unit', 'Hz')))
-        self.button_move_x_right_coarse.setText('+' + pg.siFormat(5e8, suffix=_translate('unit', 'Hz')))
+        self.button_move_x_left_coarse.setText(
+            "−" + pg.siFormat(5e8, suffix=_translate("unit", "Hz"))
+        )
+        self.button_move_x_left_fine.setText(
+            "−" + pg.siFormat(5e7, suffix=_translate("unit", "Hz"))
+        )
+        self.button_move_x_right_fine.setText(
+            "+" + pg.siFormat(5e7, suffix=_translate("unit", "Hz"))
+        )
+        self.button_move_x_right_coarse.setText(
+            "+" + pg.siFormat(5e8, suffix=_translate("unit", "Hz"))
+        )
 
-        self.box_voltage.setWindowTitle(self.tr('Vertical Axis'))
-        self.check_voltage_persists.setText(self.tr('Keep voltage range'))
+        self.box_voltage.setWindowTitle(self.tr("Vertical Axis"))
+        self.check_voltage_persists.setText(self.tr("Keep voltage range"))
 
-        self.button_zoom_y_out_coarse.setText(self.tr('−50%'))
-        self.button_zoom_y_out_fine.setText(self.tr('−10%'))
-        self.button_zoom_y_in_fine.setText(self.tr('+10%'))
-        self.button_zoom_y_in_coarse.setText(self.tr('+50%'))
+        self.button_zoom_y_out_coarse.setText(self.tr("−50%"))
+        self.button_zoom_y_out_fine.setText(self.tr("−10%"))
+        self.button_zoom_y_in_fine.setText(self.tr("+10%"))
+        self.button_zoom_y_in_coarse.setText(self.tr("+50%"))
 
-        self.box_find_lines.setWindowTitle(self.tr('Find Lines Automatically'))
-        self.group_find_lines.setToolTip(self.tr('Try to detect lines automatically'))
-        self.button_find_lines.setText(self.tr('Find Lines Automatically'))
-        self.button_clear_lines.setText(self.tr('Clear Automatically Found Lines'))
-        self.button_prev_line.setText(self.tr('Previous Line'))
-        self.button_next_line.setText(self.tr('Next Line'))
+        self.box_find_lines.setWindowTitle(self.tr("Find Lines Automatically"))
+        self.group_find_lines.setToolTip(self.tr("Try to detect lines automatically"))
+        self.button_find_lines.setText(self.tr("Find Lines Automatically"))
+        self.button_clear_lines.setText(self.tr("Clear Automatically Found Lines"))
+        self.button_prev_line.setText(self.tr("Previous Line"))
+        self.button_next_line.setText(self.tr("Next Line"))
         self.button_clear_lines.setEnabled(False)
         self.button_next_line.setEnabled(False)
         self.button_prev_line.setEnabled(False)
 
-        self.box_found_lines.setWindowTitle(self.tr('Found Lines'))
+        self.box_found_lines.setWindowTitle(self.tr("Found Lines"))
         self.model_found_lines.set_format(
             [
                 DataModel.Format(3, 1e-6),
                 DataModel.Format(4, 1e3),
-                DataModel.Format(4, np.nan, self.settings.fancy_table_numbers)
+                DataModel.Format(4, np.nan, self.settings.fancy_table_numbers),
             ]
         )
         self.table_found_lines.setModel(self.model_found_lines)
         self.table_found_lines.setMouseTracking(True)
-        self.table_found_lines.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
-        self.table_found_lines.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.table_found_lines.setContextMenuPolicy(
+            Qt.ContextMenuPolicy.ActionsContextMenu
+        )
+        self.table_found_lines.setEditTriggers(
+            QAbstractItemView.EditTrigger.NoEditTriggers
+        )
         self.table_found_lines.setDropIndicatorShown(False)
         self.table_found_lines.setDragDropOverwriteMode(False)
         self.table_found_lines.setCornerButtonEnabled(False)
@@ -289,24 +332,24 @@ class GUI(QMainWindow):
         self.table_found_lines.verticalHeader().setHighlightSections(False)
 
         opts = {
-            'suffix': _translate('unit', 'Hz'),
-            'siPrefix': True,
-            'decimals': 6,
-            'dec': True,
-            'compactHeight': False,
-            'format': '{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}'
+            "suffix": _translate("unit", "Hz"),
+            "siPrefix": True,
+            "decimals": 6,
+            "dec": True,
+            "compactHeight": False,
+            "format": "{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}",
         }
         self.spin_frequency_min.setOpts(**opts)
         self.spin_frequency_max.setOpts(**opts)
         self.spin_frequency_center.setOpts(**opts)
         self.spin_frequency_span.setOpts(**opts)
         opts = {
-            'suffix': _translate('unit', 'V'),
-            'siPrefix': True,
-            'decimals': 3,
-            'dec': True,
-            'compactHeight': False,
-            'format': '{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}'
+            "suffix": _translate("unit", "V"),
+            "siPrefix": True,
+            "decimals": 3,
+            "dec": True,
+            "compactHeight": False,
+            "format": "{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}",
         }
         self.spin_voltage_min.setOpts(**opts)
         self.spin_voltage_max.setOpts(**opts)
@@ -320,88 +363,138 @@ class GUI(QMainWindow):
         self.adjustSize()
 
     def _setup_translation(self) -> None:
-        fn.SI_PREFIXES = _translate('si prefixes', 'y,z,a,f,p,n,µ,m, ,k,M,G,T,P,E,Z,Y').split(',')
+        fn.SI_PREFIXES = _translate(
+            "si prefixes", "y,z,a,f,p,n,µ,m, ,k,M,G,T,P,E,Z,Y"
+        ).split(",")
         fn.SI_PREFIXES_ASCII = fn.SI_PREFIXES
-        fn.SI_PREFIX_EXPONENTS.update(dict([(s, (i - 8) * 3) for i, s in enumerate(fn.SI_PREFIXES)]))
-        if _translate('si prefix alternative micro', 'u'):
-            fn.SI_PREFIX_EXPONENTS[_translate('si prefix alternative micro', 'u')] = -6
+        fn.SI_PREFIX_EXPONENTS.update(
+            dict([(s, (i - 8) * 3) for i, s in enumerate(fn.SI_PREFIXES)])
+        )
+        if _translate("si prefix alternative micro", "u"):
+            fn.SI_PREFIX_EXPONENTS[_translate("si prefix alternative micro", "u")] = -6
 
-        self.form_layout_frequency.labelForField(self.spin_frequency_min).setText(self.tr('Minimum:'))
-        self.form_layout_frequency.labelForField(self.spin_frequency_max).setText(self.tr('Maximum:'))
-        self.form_layout_frequency.labelForField(self.spin_frequency_center).setText(self.tr('Center:'))
-        self.form_layout_frequency.labelForField(self.spin_frequency_span).setText(self.tr('Span:'))
+        self.form_layout_frequency.labelForField(self.spin_frequency_min).setText(
+            self.tr("Minimum:")
+        )
+        self.form_layout_frequency.labelForField(self.spin_frequency_max).setText(
+            self.tr("Maximum:")
+        )
+        self.form_layout_frequency.labelForField(self.spin_frequency_center).setText(
+            self.tr("Center:")
+        )
+        self.form_layout_frequency.labelForField(self.spin_frequency_span).setText(
+            self.tr("Span:")
+        )
 
-        self.form_layout_voltage.labelForField(self.spin_voltage_min).setText(self.tr('Minimum:'))
-        self.form_layout_voltage.labelForField(self.spin_voltage_max).setText(self.tr('Maximum:'))
+        self.form_layout_voltage.labelForField(self.spin_voltage_min).setText(
+            self.tr("Minimum:")
+        )
+        self.form_layout_voltage.labelForField(self.spin_voltage_max).setText(
+            self.tr("Maximum:")
+        )
 
-        self.switch_data_action.setText(self.tr('Show Absorption'))
-        self.switch_data_action.setToolTip(self.tr('Switch Y data between absorption and voltage'))
+        self.switch_data_action.setText(self.tr("Show Absorption"))
+        self.switch_data_action.setToolTip(
+            self.tr("Switch Y data between absorption and voltage")
+        )
 
-        self.form_layout_find_lines.labelForField(self.spin_threshold).setText(self.tr('Search threshold:'))
+        self.form_layout_find_lines.labelForField(self.spin_threshold).setText(
+            self.tr("Search threshold:")
+        )
 
         if __version__:
-            self.setWindowTitle(self.tr('Spectrometer Data Viewer (version {0})').format(__version__))
+            self.setWindowTitle(
+                self.tr("Spectrometer Data Viewer (version {0})").format(__version__)
+            )
         else:
-            self.setWindowTitle(self.tr('Spectrometer Data Viewer'))
+            self.setWindowTitle(self.tr("Spectrometer Data Viewer"))
 
-        self._cursor_x.suffix = _translate('unit', 'Hz')
-        self._cursor_y.suffix = _translate('unit', 'V')
+        self._cursor_x.suffix = _translate("unit", "Hz")
+        self._cursor_y.suffix = _translate("unit", "V")
 
-        self.box_frequency.setWindowTitle(self.tr('Frequency'))
-        self.check_frequency_persists.setText(self.tr('Keep frequency range'))
+        self.box_frequency.setWindowTitle(self.tr("Frequency"))
+        self.check_frequency_persists.setText(self.tr("Keep frequency range"))
 
-        self.button_zoom_x_out_coarse.setText(self.tr('−50%'))
-        self.button_zoom_x_out_fine.setText(self.tr('−10%'))
-        self.button_zoom_x_in_fine.setText(self.tr('+10%'))
-        self.button_zoom_x_in_coarse.setText(self.tr('+50%'))
+        self.button_zoom_x_out_coarse.setText(self.tr("−50%"))
+        self.button_zoom_x_out_fine.setText(self.tr("−10%"))
+        self.button_zoom_x_in_fine.setText(self.tr("+10%"))
+        self.button_zoom_x_in_coarse.setText(self.tr("+50%"))
 
-        self.button_move_x_left_coarse.setText('−' + pg.siFormat(5e8, suffix=_translate('unit', 'Hz')))
-        self.button_move_x_left_fine.setText('−' + pg.siFormat(5e7, suffix=_translate('unit', 'Hz')))
-        self.button_move_x_right_fine.setText('+' + pg.siFormat(5e7, suffix=_translate('unit', 'Hz')))
-        self.button_move_x_right_coarse.setText('+' + pg.siFormat(5e8, suffix=_translate('unit', 'Hz')))
+        self.button_move_x_left_coarse.setText(
+            "−" + pg.siFormat(5e8, suffix=_translate("unit", "Hz"))
+        )
+        self.button_move_x_left_fine.setText(
+            "−" + pg.siFormat(5e7, suffix=_translate("unit", "Hz"))
+        )
+        self.button_move_x_right_fine.setText(
+            "+" + pg.siFormat(5e7, suffix=_translate("unit", "Hz"))
+        )
+        self.button_move_x_right_coarse.setText(
+            "+" + pg.siFormat(5e8, suffix=_translate("unit", "Hz"))
+        )
 
-        self.box_voltage.setWindowTitle(self.tr('Vertical Axis'))
-        self.check_voltage_persists.setText(self.tr('Keep voltage range'))
+        self.box_voltage.setWindowTitle(self.tr("Vertical Axis"))
+        self.check_voltage_persists.setText(self.tr("Keep voltage range"))
 
-        self.button_zoom_y_out_coarse.setText(self.tr('−50%'))
-        self.button_zoom_y_out_fine.setText(self.tr('−10%'))
-        self.button_zoom_y_in_fine.setText(self.tr('+10%'))
-        self.button_zoom_y_in_coarse.setText(self.tr('+50%'))
+        self.button_zoom_y_out_coarse.setText(self.tr("−50%"))
+        self.button_zoom_y_out_fine.setText(self.tr("−10%"))
+        self.button_zoom_y_in_fine.setText(self.tr("+10%"))
+        self.button_zoom_y_in_coarse.setText(self.tr("+50%"))
 
-        self.box_find_lines.setWindowTitle(self.tr('Find Lines Automatically'))
-        self.group_find_lines.setToolTip(self.tr('Try to detect lines automatically'))
-        self.button_find_lines.setText(self.tr('Find Lines Automatically'))
-        self.button_clear_lines.setText(self.tr('Clear Automatically Found Lines'))
-        self.button_prev_line.setText(self.tr('Previous Line'))
-        self.button_next_line.setText(self.tr('Next Line'))
+        self.box_find_lines.setWindowTitle(self.tr("Find Lines Automatically"))
+        self.group_find_lines.setToolTip(self.tr("Try to detect lines automatically"))
+        self.button_find_lines.setText(self.tr("Find Lines Automatically"))
+        self.button_clear_lines.setText(self.tr("Clear Automatically Found Lines"))
+        self.button_prev_line.setText(self.tr("Previous Line"))
+        self.button_next_line.setText(self.tr("Next Line"))
 
-        self.box_found_lines.setWindowTitle(self.tr('Found Lines'))
+        self.box_found_lines.setWindowTitle(self.tr("Found Lines"))
 
-        self.spin_frequency_min.setSuffix(_translate('unit', 'Hz'))
-        self.spin_frequency_max.setSuffix(_translate('unit', 'Hz'))
-        self.spin_frequency_center.setSuffix(_translate('unit', 'Hz'))
-        self.spin_frequency_span.setSuffix(_translate('unit', 'Hz'))
+        self.spin_frequency_min.setSuffix(_translate("unit", "Hz"))
+        self.spin_frequency_max.setSuffix(_translate("unit", "Hz"))
+        self.spin_frequency_center.setSuffix(_translate("unit", "Hz"))
+        self.spin_frequency_span.setSuffix(_translate("unit", "Hz"))
 
-        self.spin_voltage_min.setSuffix(_translate('unit', 'V'))
-        self.spin_voltage_max.setSuffix(_translate('unit', 'V'))
+        self.spin_voltage_min.setSuffix(_translate("unit", "V"))
+        self.spin_voltage_max.setSuffix(_translate("unit", "V"))
 
-        self.figure.setLabel('bottom',
-            text=_translate("plot axes labels", 'Frequency'),
-            units=_translate('unit', 'Hz'))
-        self.figure.setLabel('left',
-            text=_translate("plot axes labels", 'Voltage'),
-            units=_translate('unit', 'V'))
+        self.figure.setLabel(
+            "bottom",
+            text=_translate("plot axes labels", "Frequency"),
+            units=_translate("unit", "Hz"),
+        )
+        self.figure.setLabel(
+            "left",
+            text=_translate("plot axes labels", "Voltage"),
+            units=_translate("unit", "V"),
+        )
 
-        self._view_all_action.setText(_translate("plot context menu action", "View All"))
-        self._canvas.ctrl.alphaGroup.parent().setTitle(_translate("plot context menu action", "Alpha"))
-        self._canvas.ctrl.gridGroup.parent().setTitle(_translate("plot context menu action", "Grid"))
-        self._canvas.ctrl.xGridCheck.setText(_translate("plot context menu action", "Show X Grid"))
-        self._canvas.ctrl.yGridCheck.setText(_translate("plot context menu action", "Show Y Grid"))
-        self._canvas.ctrl.label.setText(_translate("plot context menu action", "Opacity"))
-        self._canvas.ctrl.alphaGroup.setTitle(_translate("plot context menu action", "Alpha"))
-        self._canvas.ctrl.autoAlphaCheck.setText(_translate("plot context menu action", "Auto"))
+        self._view_all_action.setText(
+            _translate("plot context menu action", "View All")
+        )
+        self._canvas.ctrl.alphaGroup.parent().setTitle(
+            _translate("plot context menu action", "Alpha")
+        )
+        self._canvas.ctrl.gridGroup.parent().setTitle(
+            _translate("plot context menu action", "Grid")
+        )
+        self._canvas.ctrl.xGridCheck.setText(
+            _translate("plot context menu action", "Show X Grid")
+        )
+        self._canvas.ctrl.yGridCheck.setText(
+            _translate("plot context menu action", "Show Y Grid")
+        )
+        self._canvas.ctrl.label.setText(
+            _translate("plot context menu action", "Opacity")
+        )
+        self._canvas.ctrl.alphaGroup.setTitle(
+            _translate("plot context menu action", "Alpha")
+        )
+        self._canvas.ctrl.autoAlphaCheck.setText(
+            _translate("plot context menu action", "Auto")
+        )
 
-        self._canvas.vb.menu.setTitle(_translate('menu', 'Plot Options'))
+        self._canvas.vb.menu.setTitle(_translate("menu", "Plot Options"))
 
     def _install_translation(self) -> None:
         qt_translations_path: str = QLibraryInfo.path(
@@ -434,26 +527,28 @@ class GUI(QMainWindow):
                 ]
             )
             for qm_file in find_qm_files(
-                    root=qt_translations_path, exclude=[sys.exec_prefix]
+                root=qt_translations_path, exclude=[sys.exec_prefix]
             ):
                 qt_translator = QTranslator(self)
                 if (
-                        qt_translator.load(str(qm_file))
-                        and qt_translator.language() in ui_languages
+                    qt_translator.load(str(qm_file))
+                    and qt_translator.language() in ui_languages
                 ):
                     QApplication.installTranslator(qt_translator)
             for qm_file in find_qm_files(
-                    exclude=[qt_translations_path, sys.exec_prefix]
+                exclude=[qt_translations_path, sys.exec_prefix]
             ):
                 translator = QTranslator(self)
                 if (
-                        translator.load(str(qm_file))
-                        and translator.language() in ui_languages
+                    translator.load(str(qm_file))
+                    and translator.language() in ui_languages
                 ):
                     QApplication.installTranslator(translator)
         self._setup_translation()
 
-    def get_config_value(self, section: str, key: str, default: Any, _type: Type[Any]) -> Any:
+    def get_config_value(
+        self, section: str, key: str, default: Any, _type: Type[Any]
+    ) -> Any:
         if section not in self.settings.childGroups():
             return default
         self.settings.beginGroup(section)
@@ -477,28 +572,34 @@ class GUI(QMainWindow):
         self.settings.setValue(key, value)
         self.settings.endGroup()
 
-    def open_file_dialog(self, formats: dict[tuple[str, ...], str]) -> tuple[Path | None, str]:
-        directory: str = self.get_config_value('open', 'location', '', str)
+    def open_file_dialog(
+        self, formats: dict[tuple[str, ...], str]
+    ) -> tuple[Path | None, str]:
+        directory: str = self.get_config_value("open", "location", "", str)
         _filename: str
         _filter: str
-        _filename, _filter = getopenfilename(self,
-                                             filters=join_file_dialog_formats(formats),
-                                             basedir=directory)
+        _filename, _filter = getopenfilename(
+            self, filters=join_file_dialog_formats(formats), basedir=directory
+        )
         filename: Path | None = None
         if _filename:
             filename = Path(_filename)
-            self.set_config_value('open', 'location', filename.parent)
+            self.set_config_value("open", "location", filename.parent)
         return filename, _filter
 
-    def save_file_dialog(self, formats: dict[tuple[str, ...], str]) -> tuple[Path | None, str]:
-        directory: str = self.get_config_value('save', 'location', '', str)
-        initial_filter: str = self.get_config_value('save', 'filter', '', str)
+    def save_file_dialog(
+        self, formats: dict[tuple[str, ...], str]
+    ) -> tuple[Path | None, str]:
+        directory: str = self.get_config_value("save", "location", "", str)
+        initial_filter: str = self.get_config_value("save", "filter", "", str)
         _filename: str
         _filter: str
-        _filename, _filter = getsavefilename(self,
-                                            filters=join_file_dialog_formats(formats),
-                                            basedir=directory,
-                                            selectedfilter=initial_filter)
+        _filename, _filter = getsavefilename(
+            self,
+            filters=join_file_dialog_formats(formats),
+            basedir=directory,
+            selectedfilter=initial_filter,
+        )
         if not _filename:
             return None, _filter
 
@@ -511,6 +612,6 @@ class GUI(QMainWindow):
                 filename = ensure_extension(filename, e[0].casefold())
                 break
 
-        self.set_config_value('save', 'location', filename.parent)
-        self.set_config_value('save', 'filter', _filter)
+        self.set_config_value("save", "location", filename.parent)
+        self.set_config_value("save", "filter", _filter)
         return filename, _filter

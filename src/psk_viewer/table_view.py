@@ -11,7 +11,7 @@ from .found_lines_model import FoundLinesModel
 from .settings import Settings
 from .utils import HeaderWithUnit, copy_to_clipboard
 
-__all__ = ['TableView']
+__all__ = ["TableView"]
 
 
 class TableView(QTableView):
@@ -22,7 +22,9 @@ class TableView(QTableView):
         def popup(pos: QPoint) -> None:
             menu: QMenu = QMenu()
             model: FoundLinesModel = cast(FoundLinesModel, self.model())
-            actions: list[QAction] = []  # store the actions not to lose all of them but the last
+            actions: list[QAction] = (
+                []
+            )  # store the actions not to lose all of them but the last
             index: int
             column: str | HeaderWithUnit
             for index, column in enumerate(model.header):
@@ -35,10 +37,14 @@ class TableView(QTableView):
             if sum(action.isChecked() for action in actions) == 1:
                 for action in actions:
                     if action.isChecked():
-                        action.setDisabled(True)  # don't allow hiding the last visible column
+                        action.setDisabled(
+                            True
+                        )  # don't allow hiding the last visible column
             chosen_action: QAction | None = menu.exec_(self.mapToGlobal(pos))
             if chosen_action in actions:
-                self.setColumnHidden(actions.index(chosen_action), not chosen_action.isChecked())
+                self.setColumnHidden(
+                    actions.index(chosen_action), not chosen_action.isChecked()
+                )
 
         header: QHeaderView = self.horizontalHeader()
         header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -49,12 +55,15 @@ class TableView(QTableView):
         if old == new:
             return
         # hide columns according to the settings
-        self.settings.beginGroup('marksTable')
-        self.settings.beginReadArray('columns')
+        self.settings.beginGroup("marksTable")
+        self.settings.beginReadArray("columns")
         column: int
         for column in range(old, new):
             self.settings.setArrayIndex(column)
-            hidden: bool = not cast(bool, self.settings.value('visible', not self.isColumnHidden(column), bool))
+            hidden: bool = not cast(
+                bool,
+                self.settings.value("visible", not self.isColumnHidden(column), bool),
+            )
             if hidden != self.isColumnHidden(column):
                 super().setColumnHidden(column, hidden)
                 if not hidden:
@@ -64,11 +73,11 @@ class TableView(QTableView):
 
     def setColumnHidden(self, column: int, hidden: bool) -> None:
         super().setColumnHidden(column, hidden)
-        self.settings.beginGroup('marksTable')
+        self.settings.beginGroup("marksTable")
         header: QHeaderView = self.horizontalHeader()
-        self.settings.beginWriteArray('columns', header.count())
+        self.settings.beginWriteArray("columns", header.count())
         self.settings.setArrayIndex(column)
-        self.settings.setValue('visible', not hidden)
+        self.settings.setValue("visible", not hidden)
         self.settings.endArray()
         self.settings.endGroup()
 
@@ -89,20 +98,26 @@ class TableView(QTableView):
         model: FoundLinesModel = cast(FoundLinesModel, self.model())
         text_matrix: list[list[str]]
         if whole_table:
-            text_matrix = [[model.formatted_item(row, column)
-                            for column in range(model.columnCount())
-                            if not self.isColumnHidden(column)]
-                           for row in range(model.rowCount(available_count=True))]
+            text_matrix = [
+                [
+                    model.formatted_item(row, column)
+                    for column in range(model.columnCount())
+                    if not self.isColumnHidden(column)
+                ]
+                for row in range(model.rowCount(available_count=True))
+            ]
         else:
             si: QModelIndex
             rows: list[int] = sorted(set(si.row() for si in self.selectedIndexes()))
             cols: list[int] = sorted(set(si.column() for si in self.selectedIndexes()))
-            text_matrix = [['' for _ in range(len(cols))]
-                           for _ in range(len(rows))]
+            text_matrix = [["" for _ in range(len(cols))] for _ in range(len(rows))]
             for si in self.selectedIndexes():
-                text_matrix[rows.index(si.row())][cols.index(si.column())] = \
+                text_matrix[rows.index(si.row())][cols.index(si.column())] = (
                     model.formatted_item(si.row(), si.column())
-        text: list[str] = [self.settings.csv_separator.join(row_texts) for row_texts in text_matrix]
+                )
+        text: list[str] = [
+            self.settings.csv_separator.join(row_texts) for row_texts in text_matrix
+        ]
         return self.settings.line_end.join(text)
 
     def stringify_table_html(self, whole_table: bool = True) -> str:
@@ -113,30 +128,38 @@ class TableView(QTableView):
         model: FoundLinesModel = cast(FoundLinesModel, self.model())
         text_matrix: list[list[str]]
         if whole_table:
-            text_matrix = [[('<td>' + model.formatted_item(row, column) + '</td>')
-                            for column in range(model.columnCount())
-                            if not self.isColumnHidden(column)]
-                           for row in range(model.rowCount(available_count=True))]
+            text_matrix = [
+                [
+                    ("<td>" + model.formatted_item(row, column) + "</td>")
+                    for column in range(model.columnCount())
+                    if not self.isColumnHidden(column)
+                ]
+                for row in range(model.rowCount(available_count=True))
+            ]
         else:
             si: QModelIndex
             rows: list[int] = sorted(set(si.row() for si in self.selectedIndexes()))
             cols: list[int] = sorted(set(si.column() for si in self.selectedIndexes()))
-            text_matrix = [['' for _ in range(len(cols))]
-                           for _ in range(len(rows))]
+            text_matrix = [["" for _ in range(len(cols))] for _ in range(len(rows))]
             for si in self.selectedIndexes():
-                text_matrix[rows.index(si.row())][cols.index(si.column())] = \
-                    '<td>' + model.formatted_item(si.row(), si.column()) + '</td>'
-        text: list[str] = [('<tr>' + self.settings.csv_separator.join(row_texts) + '</tr>')
-                           for row_texts in text_matrix]
-        text.insert(0, '<table>')
-        text.append('</table>')
+                text_matrix[rows.index(si.row())][cols.index(si.column())] = (
+                    "<td>" + model.formatted_item(si.row(), si.column()) + "</td>"
+                )
+        text: list[str] = [
+            ("<tr>" + self.settings.csv_separator.join(row_texts) + "</tr>")
+            for row_texts in text_matrix
+        ]
+        text.insert(0, "<table>")
+        text.append("</table>")
         return self.settings.line_end.join(text)
 
     def keyPressEvent(self, e: QKeyEvent) -> None:
         if e.matches(QKeySequence.StandardKey.Copy):
-            copy_to_clipboard(self.stringify_table_plain_text(False),
-                              self.stringify_table_html(False),
-                              Qt.TextFormat.RichText)
+            copy_to_clipboard(
+                self.stringify_table_plain_text(False),
+                self.stringify_table_html(False),
+                Qt.TextFormat.RichText,
+            )
             e.accept()
         elif e.matches(QKeySequence.StandardKey.SelectAll):
             self.selectAll()
