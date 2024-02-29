@@ -27,6 +27,10 @@ class Settings(QSettings):
         combobox_data: dict[str, str]
         callback: str
 
+    class EditableComboboxAndCallback(NamedTuple):
+        combobox_items: Sequence[str]
+        callback: str
+
     def __init__(self, organization: str, application: str, parent: QObject) -> None:
         super().__init__(organization, application, parent)
         self.display_processing: bool = True
