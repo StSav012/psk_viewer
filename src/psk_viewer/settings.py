@@ -85,30 +85,49 @@ class Settings(QSettings):
             'format': '{value:.{decimals}f}{suffixGap}{suffix}'
         }
         return {
-            _translate('preferences', 'Processing'): {
-                _translate('preferences', 'Jump:'): Settings.SpinboxAndCallback(jump_opts, 'jump')
+            self.tr('Processing'): {
+                self.tr('Jump:'):
+                    Settings.SpinboxAndCallback(jump_opts, Settings.jump.fget.__name__)
             } if self.display_processing else {},
-            _translate('preferences', 'Crosshair'): {
-                _translate('preferences', 'Show crosshair lines'): Settings.CallbackOnly('show_crosshair'),
-                _translate('preferences', 'Show coordinates'): Settings.CallbackOnly('show_coordinates_at_crosshair'),
-                _translate('preferences', 'Color:'): Settings.CallbackOnly('crosshair_lines_color'),
-                _translate('preferences', 'Thickness:'):
-                    Settings.SpinboxAndCallback(line_opts, 'crosshair_lines_thickness')
+            self.tr('Crosshair'): {
+                self.tr('Show crosshair lines'):
+                    Settings.CallbackOnly(Settings.show_crosshair.fget.__name__),
+                self.tr('Show coordinates'):
+                    Settings.CallbackOnly(Settings.show_coordinates_at_crosshair.fget.__name__),
+                self.tr('Color:'):
+                    Settings.CallbackOnly(Settings.crosshair_lines_color.fget.__name__),
+                self.tr('Thickness:'):
+                    Settings.SpinboxAndCallback(line_opts, Settings.crosshair_lines_thickness.fget.__name__)
             },
-            _translate('preferences', 'Line'): {
-                _translate('preferences', 'Color:'): Settings.CallbackOnly('line_color'),
-                _translate('preferences', 'Ghost Color:'): Settings.CallbackOnly('ghost_line_color'),
-                _translate('preferences', 'Thickness:'): Settings.SpinboxAndCallback(line_opts, 'line_thickness')
+            self.tr('Line'): {
+                self.tr('Color:'):
+                    Settings.CallbackOnly(Settings.line_color.fget.__name__),
+                self.tr('Ghost Color:'):
+                    Settings.CallbackOnly(Settings.ghost_line_color.fget.__name__),
+                self.tr('Thickness:'):
+                    Settings.SpinboxAndCallback(line_opts, Settings.line_thickness.fget.__name__)
             },
-            _translate('preferences', 'Marks'): {
-                _translate('preferences', 'Copy frequency to clipboard'): Settings.CallbackOnly('copy_frequency'),
-                _translate('preferences', 'Fancy exponents in the table'): Settings.CallbackOnly('fancy_table_numbers'),
-                _translate('preferences', 'Show log₁₀ absorption'): Settings.CallbackOnly('log10_gamma'),
-                _translate('preferences', 'Fill color:'): Settings.CallbackOnly('mark_brush'),
-                _translate('preferences', 'Border color:'): Settings.CallbackOnly('mark_pen'),
-                _translate('preferences', 'Size:'): Settings.SpinboxAndCallback(line_opts, 'mark_size'),
-                _translate('preferences', 'Border thickness:'):
-                    Settings.SpinboxAndCallback(line_opts, 'mark_pen_thickness')
+            self.tr('Marks'): {
+                self.tr('Copy frequency to clipboard'):
+                    Settings.CallbackOnly(Settings.copy_frequency.fget.__name__),
+                self.tr('Fancy exponents in the table'):
+                    Settings.CallbackOnly(Settings.fancy_table_numbers.fget.__name__),
+                self.tr('Show log₁₀ absorption'):
+                    Settings.CallbackOnly(Settings.log10_gamma.fget.__name__),
+                self.tr('Fill color:'):
+                    Settings.CallbackOnly(Settings.mark_brush.fget.__name__),
+                self.tr('Border color:'):
+                    Settings.CallbackOnly(Settings.mark_pen.fget.__name__),
+                self.tr('Size:'):
+                    Settings.SpinboxAndCallback(line_opts, Settings.mark_size.fget.__name__),
+                self.tr('Border thickness:'):
+                    Settings.SpinboxAndCallback(line_opts, Settings.mark_pen_thickness.fget.__name__)
+            },
+            self.tr('Export'): {
+                self.tr('Line ending:'):
+                    Settings.ComboboxAndCallback(self.LINE_ENDS, Settings.line_end.fget.__name__),
+                self.tr('CSV separator:'):
+                    Settings.ComboboxAndCallback(self.CSV_SEPARATORS, Settings.csv_separator.fget.__name__),
             },
             _translate('preferences', 'Export'): {
                 _translate('preferences', 'Line ending:'):
