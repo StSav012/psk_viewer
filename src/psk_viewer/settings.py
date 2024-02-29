@@ -39,13 +39,20 @@ class Settings(QSettings):
         super().__init__(organization, application, parent)
         self.display_processing: bool = True
 
-        self.LINE_ENDS: dict[str, str] = {
-            "\n": _translate("line end", r"Line Feed (\n)"),
-            "\r": _translate("line end", r"Carriage Return (\r)"),
+        self._line_ends: dict[str, str] = {
+            "\n": _translate("line end", r"line feed (\n, U+000A)"),
+            "\r": _translate("line end", r"carriage return (\r, U+000D)"),
             "\r\n": _translate("line end", r"CR+LF (\r\n)"),
             "\n\r": _translate("line end", r"LF+CR (\n\r)"),
+            "\x85": _translate("line end", "next line (U+0085)"),
+            "\u2028": _translate("line end", "line separator (U+2028)"),
+            "\u2029": _translate("line end", "paragraph separator (U+2029)"),
         }
-        self.CSV_SEPARATORS: dict[str, str] = {
+        if os.linesep not in self._line_ends:
+            self._line_ends[os.linesep] = _translate("line end", "system ({0})").format(
+                repr(os.linesep)[1:-1]
+            )
+        self._csv_separators: dict[str, str] = {
             ",": _translate("csv separator", r"comma (,)"),
             "\t": _translate("csv separator", r"tab (\t)"),
             ";": _translate("csv separator", r"semicolon (;)"),
@@ -68,13 +75,20 @@ class Settings(QSettings):
             ),
         ],
     ]:
-        self.LINE_ENDS = {
-            "\n": _translate("line end", r"Line Feed (\n)"),
-            "\r": _translate("line end", r"Carriage Return (\r)"),
+        self._line_ends = {
+            "\n": _translate("line end", r"line feed (\n, U+000A)"),
+            "\r": _translate("line end", r"carriage return (\r, U+000D)"),
             "\r\n": _translate("line end", r"CR+LF (\r\n)"),
             "\n\r": _translate("line end", r"LF+CR (\n\r)"),
+            "\x85": _translate("line end", "next line (U+0085)"),
+            "\u2028": _translate("line end", "line separator (U+2028)"),
+            "\u2029": _translate("line end", "paragraph separator (U+2029)"),
         }
-        self.CSV_SEPARATORS = {
+        if os.linesep not in self._line_ends:
+            self._line_ends[os.linesep] = _translate("line end", "system ({0})").format(
+                repr(os.linesep)[1:-1]
+            )
+        self._csv_separators = {
             ",": _translate("csv separator", r"comma (,)"),
             "\t": _translate("csv separator", r"tab (\t)"),
             ";": _translate("csv separator", r"semicolon (;)"),
@@ -159,10 +173,10 @@ class Settings(QSettings):
             },
             (self.tr("Export"), ("mdi6.file-export",)): {
                 self.tr("Line ending:"): Settings.ComboboxAndCallback(
-                    self.LINE_ENDS, Settings.line_end.fget.__name__
+                    self._line_ends, Settings.line_end.fget.__name__
                 ),
                 self.tr("CSV separator:"): Settings.ComboboxAndCallback(
-                    self.CSV_SEPARATORS, Settings.csv_separator.fget.__name__
+                    self._csv_separators, Settings.csv_separator.fget.__name__
                 ),
             },
             (self.tr("View"), ("mdi6.binoculars",)): {
@@ -177,13 +191,13 @@ class Settings(QSettings):
         self.beginGroup("export")
         v: str = cast(str, self.value("lineEnd", os.linesep, str))
         self.endGroup()
-        if v not in self.LINE_ENDS:
+        if v not in self._line_ends:
             v = os.linesep
         return v
 
     @line_end.setter
     def line_end(self, new_value: str) -> None:
-        if new_value not in self.LINE_ENDS:
+        if new_value not in self._line_ends:
             return
         self.beginGroup("export")
         self.setValue("lineEnd", new_value)
@@ -194,13 +208,13 @@ class Settings(QSettings):
         self.beginGroup("export")
         v: str = cast(str, self.value("csvSeparator", "\t", str))
         self.endGroup()
-        if v not in self.CSV_SEPARATORS:
+        if v not in self._csv_separators:
             v = "\t"
         return v
 
     @csv_separator.setter
     def csv_separator(self, new_value: str) -> None:
-        if new_value not in self.CSV_SEPARATORS:
+        if new_value not in self._csv_separators:
             return
         self.beginGroup("export")
         self.setValue("csvSeparator", new_value)
