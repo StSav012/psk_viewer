@@ -53,7 +53,7 @@ class Settings(QSettings):
         }
 
     @property
-    def dialog(self) -> dict[str, dict[str, (CallbackOnly
+    def dialog(self) -> dict[str | tuple[str, tuple[str, ...]], dict[str, (CallbackOnly
                                              | PathCallbackOnly
                                              | SpinboxAndCallback
                                              | ComboboxAndCallback
@@ -89,11 +89,11 @@ class Settings(QSettings):
             'format': '{value:.{decimals}f}{suffixGap}{suffix}'
         }
         return {
-            self.tr('Processing'): {
+            (self.tr('Processing'), ("mdi6.calculator-variant",)): {
                 self.tr('Jump:'):
                     Settings.SpinboxAndCallback(jump_opts, Settings.jump.fget.__name__)
             } if self.display_processing else {},
-            self.tr('Crosshair'): {
+            (self.tr('Crosshair'), ("mdi6.crosshairs",)): {
                 self.tr('Show crosshair lines'):
                     Settings.CallbackOnly(Settings.show_crosshair.fget.__name__),
                 self.tr('Show coordinates'):
@@ -103,7 +103,7 @@ class Settings(QSettings):
                 self.tr('Thickness:'):
                     Settings.SpinboxAndCallback(line_opts, Settings.crosshair_lines_thickness.fget.__name__)
             },
-            self.tr('Line'): {
+            (self.tr('Line'), ("mdi6.brush",)): {
                 self.tr('Color:'):
                     Settings.CallbackOnly(Settings.line_color.fget.__name__),
                 self.tr('Ghost Color:'):
@@ -111,7 +111,8 @@ class Settings(QSettings):
                 self.tr('Thickness:'):
                     Settings.SpinboxAndCallback(line_opts, Settings.line_thickness.fget.__name__)
             },
-            self.tr('Marks'): {
+            # NB: there should be the same icon as in the toolbar
+            (self.tr('Marks'), ("mdi6.format-color-highlight",)): {
                 self.tr('Copy frequency to clipboard'):
                     Settings.CallbackOnly(Settings.copy_frequency.fget.__name__),
                 self.tr('Fancy exponents in the table'):
@@ -127,7 +128,7 @@ class Settings(QSettings):
                 self.tr('Border thickness:'):
                     Settings.SpinboxAndCallback(line_opts, Settings.mark_pen_thickness.fget.__name__)
             },
-            self.tr('Export'): {
+            (self.tr('Export'), ("mdi6.file-export",)): {
                 self.tr('Line ending:'):
                     Settings.ComboboxAndCallback(self.LINE_ENDS, Settings.line_end.fget.__name__),
                 self.tr('CSV separator:'):
