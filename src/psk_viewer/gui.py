@@ -27,6 +27,7 @@ from qtpy.QtWidgets import (
 from qtpy.compat import getopenfilename, getsavefilename
 
 from . import __version__
+from .data_model import DataModel
 from .found_lines_model import FoundLinesModel
 from .settings import Settings
 from .table_view import TableView
@@ -264,7 +265,13 @@ class GUI(QMainWindow):
         self.button_prev_line.setEnabled(False)
 
         self.box_found_lines.setWindowTitle(self.tr('Found Lines'))
-        self.model_found_lines.set_format([(3, 1e-6), (4, 1e3), (4, np.nan, self.settings.fancy_table_numbers)])
+        self.model_found_lines.set_format(
+            [
+                DataModel.Format(3, 1e-6),
+                DataModel.Format(4, 1e3),
+                DataModel.Format(4, np.nan, self.settings.fancy_table_numbers)
+            ]
+        )
         self.table_found_lines.setModel(self.model_found_lines)
         self.table_found_lines.setMouseTracking(True)
         self.table_found_lines.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)

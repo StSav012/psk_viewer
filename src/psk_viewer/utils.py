@@ -6,7 +6,7 @@ import sys
 from contextlib import suppress
 from os import PathLike
 from pathlib import Path
-from typing import Any, BinaryIO, Collection, Final, Iterator
+from typing import Any, BinaryIO, Collection, Final, Iterable, Iterator, NamedTuple
 
 import numpy as np
 from numpy.typing import NDArray
@@ -16,6 +16,10 @@ from qtpy.QtGui import QColor, QIcon, QPalette, QPixmap
 from qtpy.QtWidgets import QInputDialog, QWidget
 
 _translate = QCoreApplication.translate
+
+__all__ = ['all_cases', 'copy_to_clipboard', 'load_data_csv', 'load_data_fs', 'load_data_scandat', 'resource_path',
+           'superscript_number', 'superscript_tag', 'find_qm_files', 'load_icon', 'mix_colors',
+           'ensure_extension', 'ensure_prefix', 'join_file_dialog_formats', 'HeaderWithUnit']
 
 VOLTAGE_GAIN: Final[float] = 5.0
 
@@ -31,6 +35,11 @@ IMAGE_EXT: str = '.svg'
 
 
 def load_icon(widget: QWidget, icon_name: str) -> QIcon:
+
+    class QTAData(NamedTuple):
+        args: Iterable[str]
+        options: list[dict[str, Any]] = []
+
     def icon_from_data(data: bytes) -> QIcon:
         palette: QPalette = widget.palette()
         pixmap: QPixmap = QPixmap()
@@ -43,18 +52,18 @@ def load_icon(widget: QWidget, icon_name: str) -> QIcon:
 
     filename: Path = resource_path('img') / (icon_name + IMAGE_EXT)
     if not filename.exists():
-        icons: dict[str, bytes | tuple[tuple[str, ...], list[dict[str, Any]]]] = {
+        icons: dict[str, bytes | QTAData] = {
             'open':
-                (('mdi6.folder-open',), []),
+                QTAData(('mdi6.folder-open',), []),
             'delete':
-                (('mdi6.delete-forever',),
+                QTAData(('mdi6.delete-forever',),
                  [{'color': 'red'}, ]),
             'openGhost':
-                (('mdi6.folder-open', 'mdi6.ghost'),
+                QTAData(('mdi6.folder-open', 'mdi6.ghost'),
                  [{'disabled': 'mdi6.folder-open-outline'},
                   {'scale_factor': 0.4, 'offset': (0.05, 0.1), 'color': 'gray'}]),
             'deleteGhost':
-                (('mdi6.delete', 'mdi6.ghost'),
+                QTAData(('mdi6.delete', 'mdi6.ghost'),
                  [{'disabled': 'mdi6.delete-outline', 'color': 'red'},
                   {'scale_factor': 0.4, 'offset': (0.0, 0.0625), 'color': 'gray'}]),
             'secondDerivative': b'''\
@@ -71,38 +80,38 @@ def load_icon(widget: QWidget, icon_name: str) -> QIcon:
                     <use transform="matrix(-1 0 0 1 43 0)" xlink:href="#x"/>
                 </svg>''',
             'saveTable':
-                (('mdi6.content-save', 'mdi6.table'),
+                QTAData(('mdi6.content-save', 'mdi6.table'),
                  [{'disabled': 'mdi6.content-save-outline'},
                   {'scale_factor': 0.5, 'offset': (0.2, 0.2), 'color': 'green'}]),
             'copyImage':
-                (('mdi6.content-copy', 'mdi6.image'),
+                QTAData(('mdi6.content-copy', 'mdi6.image'),
                  [{},
                   {'scale_factor': 0.5, 'offset': (0.2, 0.2), 'color': 'orange'}]),
             'saveImage':
-                (('mdi6.content-save', 'mdi6.image'),
+                QTAData(('mdi6.content-save', 'mdi6.image'),
                  [{'disabled': 'mdi6.content-save-outline'},
                   {'scale_factor': 0.5, 'offset': (0.2, 0.2), 'color': 'orange'}]),
             'selectObject':
-                (('mdi6.marker',),
+                QTAData(('mdi6.marker',),
                  [{'color': 'blue'}, ]),
             'openSelected':
-                (('mdi6.folder-open', 'mdi6.marker'),
+                QTAData(('mdi6.folder-open', 'mdi6.marker'),
                  [{'disabled': 'mdi6.folder-open-outline'},
                   {'scale_factor': 0.4, 'offset': (0.05, 0.1), 'color': 'blue'}]),
             'copySelected':
-                (('mdi6.content-copy', 'mdi6.marker'),
+                QTAData(('mdi6.content-copy', 'mdi6.marker'),
                  [{},
                   {'scale_factor': 0.5, 'offset': (0.2, 0.2), 'color': 'blue'}]),
             'saveSelected':
-                (('mdi6.content-save', 'mdi6.marker'),
+                QTAData(('mdi6.content-save', 'mdi6.marker'),
                  [{'disabled': 'mdi6.content-save-outline'},
                   {'scale_factor': 0.5, 'offset': (0.2, 0.2), 'color': 'blue'}]),
             'clearSelected':
-                (('mdi6.delete', 'mdi6.marker'),
+                QTAData(('mdi6.delete', 'mdi6.marker'),
                  [{'disabled': 'mdi6.delete-outline', 'color': 'red'},
                   {'scale_factor': 0.4, 'offset': (0.0, 0.0625), 'color': 'blue'}]),
             'configure':
-                (('mdi6.cogs',), []),
+                QTAData(('mdi6.cogs',)),
             'qt_logo': b'''\
                 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 158 120" fill="foreground">
                     <path d="M142.6,0h-5.5H21.9v0L0,21.9V95v6v15.2h15.2h5.5h115.2v0l21.9-21.9V21.1v-6V0H142.6z M84,100.2L73.7,105 l-8.9-14.6c-1.3,0.4-3.3,0.6-6.1,0.6c-10.4,0-17.6-2.8-21.7-8.4c-4.1-5.6-6.1-14.4-6.1-26.5c0-12.1,2.1-21.1,6.2-26.9 c4.2-5.9,11.4-8.8,21.6-8.8c10.3,0,17.4,2.9,21.6,8.7c4.1,5.8,6.2,14.8,6.2,26.9c0,8-0.8,14.5-2.5,19.4c-1.7,4.9-4.5,8.7-8.3,11.3 L84,100.2z M115.2,89.7c-5.7,0-9.5-1.3-11.6-3.9c-2.1-2.6-3.1-7.5-3.1-14.7V48h-7.6v-9.3h7.6V24.2h10.8v14.5H125V48h-13.8v22 c0,4.1,0.3,6.8,0.9,8.1c0.6,1.3,2.1,2,4.6,2l8.2-0.3l0.5,8.7C120.9,89.3,117.5,89.7,115.2,89.7z"/>
@@ -110,16 +119,16 @@ def load_icon(widget: QWidget, icon_name: str) -> QIcon:
                 </svg>''',
         }
         with suppress(KeyError):
-            if isinstance(icons[icon_name], bytes):
-                return icon_from_data(icons[icon_name])
-            else:
-                args: tuple[str, ...]
-                options: list[dict[str, Any]]
-                args, options = icons[icon_name]
-                if options:
-                    return icon(*args, options=options)
+            icon_description: bytes | QTAData = icons[icon_name]
+            if isinstance(icon_description, bytes):
+                return icon_from_data(icon_description)
+            elif isinstance(icon_description, QTAData):
+                if icon_description.options:
+                    return icon(*icon_description.args, options=icon_description.options)
                 else:
-                    return icon(*args)
+                    return icon(*icon_description.args)
+            else:
+                raise TypeError("Invalid icon description")
     else:
         with open(filename, 'rb') as f_in:
             return icon_from_data(f_in.read())

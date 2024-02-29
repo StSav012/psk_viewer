@@ -72,8 +72,10 @@ class TableView(QTableView):
         self.settings.endArray()
         self.settings.endGroup()
 
-    def setModel(self, model: QAbstractItemModel) -> None:
+    def setModel(self, model: QAbstractItemModel | None) -> None:
         super().setModel(model)
+        if model is None:
+            return
         model.modelReset.connect(self.adjust_columns_widths)
 
     def adjust_columns_widths(self) -> None:
@@ -100,7 +102,6 @@ class TableView(QTableView):
             for si in self.selectedIndexes():
                 text_matrix[rows.index(si.row())][cols.index(si.column())] = \
                     model.formatted_item(si.row(), si.column())
-        row_texts: list[str]
         text: list[str] = [self.settings.csv_separator.join(row_texts) for row_texts in text_matrix]
         return self.settings.line_end.join(text)
 
@@ -125,7 +126,6 @@ class TableView(QTableView):
             for si in self.selectedIndexes():
                 text_matrix[rows.index(si.row())][cols.index(si.column())] = \
                     '<td>' + model.formatted_item(si.row(), si.column()) + '</td>'
-        row_texts: list[str]
         text: list[str] = [('<tr>' + self.settings.csv_separator.join(row_texts) + '</tr>')
                            for row_texts in text_matrix]
         text.insert(0, '<table>')

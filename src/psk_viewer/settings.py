@@ -71,7 +71,7 @@ class Settings(QSettings):
             ' ': _translate('csv separator', r'space ( )')
         }
 
-        jump_opts: dict[str, bool | int | str] = {
+        jump_opts: dict[str, bool | int | float | str] = {
             'suffix': _translate('unit', 'Hz'),
             'siPrefix': True,
             'decimals': 0,

@@ -5,7 +5,7 @@ from typing import Final, Iterable, NamedTuple, cast
 
 import numpy as np
 from numpy.typing import NDArray
-from qtpy.QtCore import QAbstractTableModel, QModelIndex, QObject, Qt
+from qtpy.QtCore import QAbstractTableModel, QModelIndex, QObject, QPersistentModelIndex, Qt
 
 from .utils import HeaderWithUnit, superscript_tag
 
@@ -46,12 +46,12 @@ class DataModel(QAbstractTableModel):
     def is_empty(self) -> bool:
         return bool(self._data.size == 0)
 
-    def rowCount(self, parent: QModelIndex | None = None, *, available_count: bool = False) -> int:
+    def rowCount(self, parent: QModelIndex | QPersistentModelIndex | None = None, *, available_count: bool = False) -> int:
         if available_count:
             return cast(int, self._data.shape[0])
         return min(cast(int, self._data.shape[0]), self._rows_loaded)
 
-    def columnCount(self, parent: QModelIndex | None = None) -> int:
+    def columnCount(self, parent: QModelIndex | QPersistentModelIndex | None = None) -> int:
         return cast(int, self._data.shape[1])
 
     def formatted_item(self, row: int, column: int, replace_hyphen: bool = False) -> str:
@@ -102,7 +102,7 @@ class DataModel(QAbstractTableModel):
             return f'{value * scale:.{precision}f}'.replace('-', '−')
         return f'{value * scale:.{precision}f}'
 
-    def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> str | None:
+    def data(self, index: QModelIndex | QPersistentModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> str | None:
         if index.isValid() and role == Qt.ItemDataRole.DisplayRole:
             return self.formatted_item(index.row(), index.column(), replace_hyphen=True)
         return None
@@ -127,11 +127,9 @@ class DataModel(QAbstractTableModel):
             return True
         return False
 
-    def set_format(self, new_format: list[tuple[int, float, bool] | tuple[int, float]]) -> None:
+    def set_format(self, new_format: list[Format]) -> None:
         self.beginResetModel()
-        f: tuple[int, float, bool] | tuple[int, float]
-        self._format = [DataModel.Format(precision=int(round(f[0])), scale=float(f[1]),
-                                         fancy=bool(f[2]) if len(f) > 2 else False)
+        self._format = [DataModel.Format(precision=int(round(f.precision)), scale=float(f.scale), fancy=bool(f.fancy))
                         for f in new_format]
         self.endResetModel()
 
@@ -189,10 +187,10 @@ class DataModel(QAbstractTableModel):
         self._data = self._data[sort_indices]
         self.endResetModel()
 
-    def canFetchMore(self, index: QModelIndex = QModelIndex()) -> bool:
+    def canFetchMore(self, index: QModelIndex | QPersistentModelIndex = QModelIndex()) -> bool:
         return cast(bool, self._data.shape[0] > self._rows_loaded)
 
-    def fetchMore(self, index: QModelIndex = QModelIndex()) -> None:
+    def fetchMore(self, index: QModelIndex | QPersistentModelIndex = QModelIndex()) -> None:
         # https://sateeshkumarb.wordpress.com/2012/04/01/paginated-display-of-table-data-in-pyqt/
         remainder: int = self._data.shape[0] - self._rows_loaded
         items_to_fetch: int = min(remainder, self.ROW_BATCH_COUNT)

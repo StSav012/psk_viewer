@@ -84,7 +84,7 @@ class App(GUI):
 
         self._ignore_scale_change: bool = False
 
-        self.model_signal: NDArray[np.float64]
+        self.model_signal: NDArray[np.float_]
         try:
             self.model_signal = pd.read_csv(resource_path('averaged fs signal filtered.csv')).values.ravel()
         except (OSError, BlockingIOError):
@@ -93,8 +93,8 @@ class App(GUI):
         self.box_find_lines.setDisabled(True)
         self.user_found_lines: pg.PlotDataItem = self._canvas.scatterPlot(np.empty(0), symbol='o', pxMode=True)
         self.automatically_found_lines: pg.PlotDataItem = self._canvas.scatterPlot(np.empty(0), symbol='o', pxMode=True)
-        self.user_found_lines_data: NDArray[np.float64] = np.empty(0)
-        self.automatically_found_lines_data: NDArray[np.float64] = np.empty(0)
+        self.user_found_lines_data: NDArray[np.float_] = np.empty(0)
+        self.automatically_found_lines_data: NDArray[np.float_] = np.empty(0)
 
         # cross-hair
         self._crosshair_v_line: pg.InfiniteLine = pg.InfiniteLine(angle=90, movable=False)
@@ -286,7 +286,7 @@ class App(GUI):
         self.set_frequency_range(lower_value=self.spin_frequency_min.value(),
                                  upper_value=self.spin_frequency_max.value())
 
-    def on_ylim_changed(self, ylim: Iterable[float]) -> None:
+    def on_ylim_changed(self, ylim: Iterable[float | np.float_]) -> None:
         min_voltage, max_voltage = min(ylim), max(ylim)
         self._loading = True
         self.spin_voltage_min.setValue(min_voltage)
@@ -307,8 +307,8 @@ class App(GUI):
 
         point: pg.SpotItem
         if ev.modifiers() == Qt.KeyboardModifier.ShiftModifier:
-            items: NDArray[np.float64] = item.scatter.data['item']
-            index: NDArray[np.float64] = np.full(items.shape, True, np.bool_)
+            items: NDArray[np.float_] = item.scatter.data['item']
+            index: NDArray[np.bool_] = np.full(items.shape, True, np.bool_)
             for point in points:
                 index &= (items != point)
                 self.automatically_found_lines_data \
@@ -328,7 +328,7 @@ class App(GUI):
             self.toolbar.clear_trace_action.setEnabled(not self.model_found_lines.is_empty)
 
         elif ev.modifiers() == Qt.KeyboardModifier.NoModifier:
-            found_lines_frequencies: NDArray[np.float64] = self.model_found_lines.all_data[:, 0]
+            found_lines_frequencies: NDArray[np.float_] = self.model_found_lines.all_data[:, 0]
             selected_points: list[int] = [cast(int, np.argmin(np.abs(point.pos().x() - found_lines_frequencies)))
                                           for point in points]
             self.on_points_selected(selected_points)
@@ -384,7 +384,7 @@ class App(GUI):
         point: QPointF = self._canvas.vb.mapSceneToView(pos)
         if self._plot_line.xData is None or not self._plot_line.xData.size:
             return
-        distance: NDArray[np.float64] = np.min(np.hypot((self._plot_line.xData - point.x()) / x_span,
+        distance: NDArray[np.float_] = np.min(np.hypot((self._plot_line.xData - point.x()) / x_span,
                                                (self._plot_line.yData - point.y()) / y_span))
         if distance > 0.01:
             return
@@ -600,10 +600,10 @@ class App(GUI):
     def label(self) -> str | None:
         return self._plot_line.name()
 
-    def set_frequency_range(self, lower_value: float, upper_value: float) -> None:
+    def set_frequency_range(self, lower_value: float | np.float_, upper_value: float | np.float_) -> None:
         self.figure.plotItem.setXRange(lower_value, upper_value, padding=0.0)
 
-    def set_voltage_range(self, lower_value: float, upper_value: float) -> None:
+    def set_voltage_range(self, lower_value: float | np.float_, upper_value: float | np.float_) -> None:
         self.figure.plotItem.setYRange(lower_value, upper_value, padding=0.0)
 
     def set_plot_line_appearance(self) -> None:
@@ -634,19 +634,19 @@ class App(GUI):
 
         from scipy import interpolate  # type: ignore
 
-        x: Final[NDArray[np.float64]] = self._plot_line.xData
-        y: Final[NDArray[np.float64]] = self._plot_line.yData
+        x: Final[NDArray[np.float_]] = self._plot_line.xData
+        y: Final[NDArray[np.float_]] = self._plot_line.yData
         if x.size < 2 or y.size < 2:
             return 0
 
-        found_lines: NDArray[np.float64]
+        found_lines: NDArray[np.float_]
         if self._data_mode == self.FS_DATA_MODE:
             # re-scale the signal to the actual frequency mesh
-            x_model: NDArray[np.float64] = np.arange(self.model_signal.size, dtype=x.dtype) * 0.1
+            x_model: NDArray[np.float_] = np.arange(self.model_signal.size, dtype=x.dtype) * 0.1
             interpol = interpolate.interp1d(x_model, self.model_signal, kind=2)
-            x_model_new: NDArray[np.float64] = np.arange(x_model[0], x_model[-1],
+            x_model_new: NDArray[np.float_] = np.arange(x_model[0], x_model[-1],
                                                          x[1] - x[0])
-            y_model_new: NDArray[np.float64] = interpol(x_model_new)
+            y_model_new: NDArray[np.float_] = interpol(x_model_new)
             found_lines = peaks_positions(x,
                                           correlation(y_model_new,
                                                       x,
@@ -676,9 +676,9 @@ class App(GUI):
         self.toolbar.save_trace_action.setEnabled(not self.model_found_lines.is_empty)
         self.toolbar.clear_trace_action.setEnabled(not self.model_found_lines.is_empty)
 
-        self.button_clear_lines.setEnabled(found_lines.size)
-        self.button_next_line.setEnabled(found_lines.size)
-        self.button_prev_line.setEnabled(found_lines.size)
+        self.button_clear_lines.setEnabled(bool(found_lines.size))
+        self.button_next_line.setEnabled(bool(found_lines.size))
+        self.button_prev_line.setEnabled(bool(found_lines.size))
 
         self._ignore_scale_change = False
 
@@ -690,7 +690,7 @@ class App(GUI):
 
         init_frequency: float = self.spin_frequency_center.value()
 
-        line_data: NDArray[np.float64] = self.automatically_found_lines.xData
+        line_data: NDArray[np.float_] = self.automatically_found_lines.xData
         if line_data is None or not line_data.size:
             return
         i: int = cast(int, np.searchsorted(line_data, init_frequency, side='right') - 2)
@@ -704,7 +704,7 @@ class App(GUI):
 
         init_frequency: float = self.spin_frequency_center.value()
 
-        line_data: NDArray[np.float64] = self.automatically_found_lines.xData
+        line_data: NDArray[np.float_] = self.automatically_found_lines.xData
         if line_data is None or not line_data.size:
             return
         i: int = cast(int, np.searchsorted(line_data, init_frequency, side='left') + 1)
@@ -723,19 +723,19 @@ class App(GUI):
             return
         x: pg.AxisItem = self._canvas.getAxis('bottom')
         y: pg.AxisItem = self._canvas.getAxis('left')
-        visible_points: NDArray[np.float64] \
+        visible_points: NDArray[np.float_] \
             = self._plot_line.yData[(self._plot_line.xData >= min(x.range)) & (self._plot_line.xData <= max(x.range))]
         if np.any(visible_points < min(y.range)):
-            minimum: float = np.min(visible_points)
+            minimum: np.float_ = np.min(visible_points)
             self.set_voltage_range(minimum - 0.05 * (max(y.range) - minimum), max(y.range))
         if np.any(visible_points > max(y.range)):
-            maximum: float = np.max(visible_points)
+            maximum: np.float_ = np.max(visible_points)
             self.set_voltage_range(min(y.range), maximum + 0.05 * (maximum - min(y.range)))
 
     def load_found_lines(self) -> None:
         def load_csv(fn: Path) -> Sequence[float]:
             sep: str = self.settings.csv_separator
-            data: NDArray[np.float64] = np.loadtxt(fn, delimiter=sep, usecols=(0,), encoding='utf-8') * 1e6
+            data: NDArray[np.float_] = np.loadtxt(fn, delimiter=sep, usecols=(0,), encoding='utf-8') * 1e6
             data = data[(data >= self._plot_data.min_frequency) & (data <= self._plot_data.max_frequency)]
             return data
 
@@ -764,7 +764,7 @@ class App(GUI):
             if not data:
                 return []
 
-            data_: NDArray[np.float64] = np.array(data, dtype=np.float64) * 1e6
+            data_: NDArray[np.float_] = np.asarray(data, dtype=np.float_) * 1e6
             data_ = data_[(data_ >= self._plot_data.min_frequency) & (data_ <= self._plot_data.max_frequency)]
             return data_
 
@@ -796,8 +796,8 @@ class App(GUI):
         if filename is None:
             return
 
-        file_type: str = mimetypes.guess_type(filename)[0]
-        if file_type not in supported_formats_callbacks:
+        file_type: str | None = mimetypes.guess_type(filename)[0]
+        if file_type is None or file_type not in supported_formats_callbacks:
             return
         new_lines: Sequence[float] = supported_formats_callbacks[file_type](filename)
         if not len(new_lines):
@@ -861,10 +861,10 @@ class App(GUI):
         if filename is None:
             return
 
-        f: NDArray[np.float64] = self.model_found_lines.all_data[:, 0] * 1e-6
-        v: NDArray[np.float64] = self.model_found_lines.all_data[:, 1] * 1e3
-        g: NDArray[np.float64] = self.model_found_lines.all_data[:, 2]
-        data: NDArray[np.float64] = np.column_stack((f, v, g))
+        f: NDArray[np.float_] = self.model_found_lines.all_data[:, 0] * 1e-6
+        v: NDArray[np.float_] = self.model_found_lines.all_data[:, 1] * 1e3
+        g: NDArray[np.float_] = self.model_found_lines.all_data[:, 2]
+        data: NDArray[np.float_] = np.column_stack((f, v, g))
 
         filename_ext: str = filename.suffix.casefold()
         if filename_ext in supported_formats_callbacks:
@@ -954,9 +954,9 @@ class App(GUI):
         if filename is None:
             return False
 
-        v: NDArray[np.float64]
-        f: NDArray[np.float64]
-        g: NDArray[np.float64] = np.empty(0)
+        v: NDArray[np.float_]
+        f: NDArray[np.float_]
+        g: NDArray[np.float_] = np.empty(0)
         jump: float
         if filename.suffix.casefold() == '.scandat':
             f, v, g, jump = load_data_scandat(filename, self)
@@ -993,8 +993,8 @@ class App(GUI):
                                 name=str(filename.parent / filename.stem))
         self._plot_data.set_data(frequency_data=f, gamma_data=g, voltage_data=v)
 
-        min_frequency: float = f[0]
-        max_frequency: float = f[-1]
+        min_frequency: np.float_ = f[0]
+        max_frequency: np.float_ = f[-1]
 
         self.toolbar.clear_action.setEnabled(True)
         step: int = int(round(self.settings.jump / ((max_frequency - min_frequency) / (f.size - 1))))
@@ -1041,9 +1041,9 @@ class App(GUI):
         if filename is None:
             return False
 
-        v: NDArray[np.float64]
-        f: NDArray[np.float64]
-        g: NDArray[np.float64] = np.empty(0)
+        v: NDArray[np.float_]
+        f: NDArray[np.float_]
+        g: NDArray[np.float_] = np.empty(0)
         jump: float
         if filename.suffix.casefold() == '.scandat':
             f, v, g, jump = load_data_scandat(filename, self)
@@ -1123,9 +1123,9 @@ class App(GUI):
             self._plot_line.setData(self._plot_data.x_data, self._plot_data.y_data)
 
             self._loading = True
-            y_data: NDArray[np.float64] = self._plot_data.y_data
-            min_y: float = np.min(y_data)
-            max_y: float = np.max(y_data)
+            y_data: NDArray[np.float_] = self._plot_data.y_data
+            min_y: np.float_ = np.min(y_data)
+            max_y: np.float_ = np.max(y_data)
             if not self.check_voltage_persists.isChecked():
                 self.on_ylim_changed((min_y, max_y))
             self.spin_voltage_min.setMaximum(max(max_y, self.spin_voltage_min.value()))
@@ -1191,7 +1191,7 @@ class App(GUI):
             return
 
         def save_csv(fn: Path) -> None:
-            data: NDArray[np.float64]
+            data: NDArray[np.float_]
             sep: str = self.settings.csv_separator
             if self.switch_data_action.isChecked():
                 data = np.column_stack((x * 1e-6, y))
@@ -1217,7 +1217,7 @@ class App(GUI):
                            fmt=('%.3f', '%.6f'), encoding='utf-8')
 
         def save_xlsx(fn: Path) -> None:
-            data: NDArray[np.float64]
+            data: NDArray[np.float_]
             with pd.ExcelWriter(fn) as writer:
                 df: pd.DataFrame
                 if self.switch_data_action.isChecked():
@@ -1250,12 +1250,12 @@ class App(GUI):
         filename, _filter = self.save_file_dialog(formats=supported_formats)
         if filename is None:
             return
-        x: NDArray[np.float64] = self._plot_line.xData
-        y: NDArray[np.float64] = self._plot_line.yData
+        x: NDArray[np.float_] = self._plot_line.xData
+        y: NDArray[np.float_] = self._plot_line.yData
         max_mark: float
         min_mark: float
         min_mark, max_mark = self._canvas.axes['bottom']['item'].range
-        good: NDArray[np.float64] = (min_mark <= x) & (x <= max_mark)
+        good: NDArray[np.bool_] = (min_mark <= x) & (x <= max_mark)
         x = x[good]
         y = y[good]
         del good
@@ -1274,10 +1274,10 @@ class App(GUI):
         formats: dict[tuple[str, ...], str] = {
             tuple(exporter.getSupportedImageFormats()): _translate('file dialog', 'Image files')
         }
-        filename: str
+        filename: Path | None
         _filter: str
         filename, _filter = self.save_file_dialog(formats=formats)
-        if not filename:
+        if filename is None:
             return
         self.hide_cursors()
         exporter.export(filename)
