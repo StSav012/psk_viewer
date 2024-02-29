@@ -226,12 +226,10 @@ def main() -> int:
     args: argparse.Namespace = ap.parse_intermixed_args()
 
     try:
-        from qtpy.QtCore import QLibraryInfo, QLocale, QTranslator
         from qtpy.QtWidgets import QApplication
 
         _make_old_qt_compatible_again()
 
-        from .utils import resource_path
         from .app import App
 
     except Exception as ex:
@@ -276,27 +274,6 @@ def main() -> int:
 
     else:
         app: QApplication = QApplication(sys.argv)
-
-        languages: frozenset[str] = frozenset(QLocale().uiLanguages() + [QLocale().bcp47Name(), QLocale().name()])
-        language: str
-        qt_translator: QTranslator = QTranslator()
-        for language in languages:
-            if qt_translator.load('qt_' + language,
-                                  QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)):
-                QApplication.installTranslator(qt_translator)
-                break
-        qtbase_translator: QTranslator = QTranslator()
-        for language in languages:
-            if qtbase_translator.load('qtbase_' + language,
-                                      QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)):
-                QApplication.installTranslator(qtbase_translator)
-                break
-        my_translator: QTranslator = QTranslator()
-        for language in languages:
-            if my_translator.load(language, str(resource_path('translations'))):
-                QApplication.installTranslator(my_translator)
-                break
-
         windows: list[App] = []
         for a in args.file:
             window: App = App(a)
