@@ -564,7 +564,9 @@ class App(GUI):
 
     def edit_parameters(self) -> None:
         preferences_dialog: Preferences = Preferences(self.settings, self)
-        preferences_dialog.exec()
+        if preferences_dialog.exec() == Preferences.DialogCode.Rejected:
+            return
+        self._install_translation()
         self.set_plot_line_appearance()
         self.set_marks_appearance()
         self.set_crosshair_lines_appearance()
