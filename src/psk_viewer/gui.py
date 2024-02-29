@@ -2,22 +2,36 @@
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 from typing import Any, Type
 
 import numpy as np
 import pyqtgraph as pg  # type: ignore
 from pyqtgraph import functions as fn
-from qtpy.QtCore import QCoreApplication, Qt
-from qtpy.QtWidgets import (QAbstractItemView, QCheckBox, QDockWidget, QFormLayout, QGridLayout, QMainWindow,
-                            QPushButton, QStatusBar, QVBoxLayout, QWidget)
+from qtpy.QtCore import QCoreApplication, QLibraryInfo, QLocale, QTranslator, Qt
+from qtpy.QtGui import QAction
+from qtpy.QtWidgets import (
+    QAbstractItemView,
+    QApplication,
+    QCheckBox,
+    QDockWidget,
+    QFormLayout,
+    QGridLayout,
+    QMainWindow,
+    QPushButton,
+    QStatusBar,
+    QVBoxLayout,
+    QWidget,
+)
 from qtpy.compat import getopenfilename, getsavefilename
 
 from . import __version__
 from .found_lines_model import FoundLinesModel
 from .settings import Settings
 from .table_view import TableView
-from .utils import ensure_extension, join_file_dialog_formats, load_icon
+from .toolbar import NavigationToolbar
+from .utils import ensure_extension, find_qm_files, join_file_dialog_formats, load_icon
 from .valuelabel import ValueLabel
 
 __all__ = ['GUI']
@@ -135,10 +149,10 @@ class GUI(QMainWindow):
         self.setWindowIcon(load_icon(self, 'main'))
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.toolbar)
 
-        self.form_layout_frequency.addRow(_translate('main window', 'Minimum') + ':', self.spin_frequency_min)
-        self.form_layout_frequency.addRow(_translate('main window', 'Maximum') + ':', self.spin_frequency_max)
-        self.form_layout_frequency.addRow(_translate('main window', 'Center') + ':', self.spin_frequency_center)
-        self.form_layout_frequency.addRow(_translate('main window', 'Span') + ':', self.spin_frequency_span)
+        self.form_layout_frequency.addRow(self.tr('Minimum:'), self.spin_frequency_min)
+        self.form_layout_frequency.addRow(self.tr('Maximum:'), self.spin_frequency_max)
+        self.form_layout_frequency.addRow(self.tr('Center:'), self.spin_frequency_center)
+        self.form_layout_frequency.addRow(self.tr('Span:'), self.spin_frequency_span)
 
         self.grid_layout_frequency.addWidget(self.check_frequency_persists, 0, 0, 1, 4)
         self.grid_layout_frequency.addWidget(self.button_zoom_x_out_coarse, 1, 0)
@@ -154,8 +168,8 @@ class GUI(QMainWindow):
         self.v_layout_frequency.addLayout(self.form_layout_frequency)
         self.v_layout_frequency.addLayout(self.grid_layout_frequency)
 
-        self.form_layout_voltage.addRow(_translate('main window', 'Minimum') + ':', self.spin_voltage_min)
-        self.form_layout_voltage.addRow(_translate('main window', 'Maximum') + ':', self.spin_voltage_max)
+        self.form_layout_voltage.addRow(self.tr('Minimum:'), self.spin_voltage_min)
+        self.form_layout_voltage.addRow(self.tr('Maximum:'), self.spin_voltage_max)
 
         self.grid_layout_voltage.addWidget(self.check_voltage_persists, 0, 0, 1, 4)
         self.grid_layout_voltage.addWidget(self.button_zoom_y_out_coarse, 1, 0)
@@ -167,14 +181,13 @@ class GUI(QMainWindow):
         self.switch_data_action.setEnabled(False)
         self.switch_data_action.setCheckable(True)
         self.switch_data_action.setShortcut('Ctrl+`')
-        self.switch_data_action.setText(_translate('main window', 'Show Absorption'))
-        self.switch_data_action.setToolTip(_translate('main window',
-                                                      'Switch Y data between absorption and voltage'))
+        self.switch_data_action.setText(self.tr('Show Absorption'))
+        self.switch_data_action.setToolTip(self.tr('Switch Y data between absorption and voltage'))
 
         self.v_layout_voltage.addLayout(self.form_layout_voltage)
         self.v_layout_voltage.addLayout(self.grid_layout_voltage)
 
-        self.form_layout_find_lines.addRow(_translate('main window', 'Search threshold') + ':', self.spin_threshold)
+        self.form_layout_find_lines.addRow(self.tr('Search threshold:'), self.spin_threshold)
         self.grid_layout_find_lines.addWidget(self.button_find_lines, 0, 0, 1, 2)
         self.grid_layout_find_lines.addWidget(self.button_clear_lines, 1, 0, 1, 2)
         self.grid_layout_find_lines.addWidget(self.button_prev_line, 2, 0)
@@ -208,9 +221,9 @@ class GUI(QMainWindow):
 
         self.setCentralWidget(self.central_widget)
         if __version__:
-            self.setWindowTitle(_translate('main window', 'Spectrometer Data Viewer (version {0})').format(__version__))
+            self.setWindowTitle(self.tr('Spectrometer Data Viewer (version {0})').format(__version__))
         else:
-            self.setWindowTitle(_translate('main window', 'Spectrometer Data Viewer'))
+            self.setWindowTitle(self.tr('Spectrometer Data Viewer'))
         self.setStatusBar(self.status_bar)
 
         self.status_bar.addWidget(self._cursor_x)
@@ -219,39 +232,38 @@ class GUI(QMainWindow):
         self._cursor_x.suffix = _translate('unit', 'Hz')
         self._cursor_y.suffix = _translate('unit', 'V')
 
-        self.box_frequency.setWindowTitle(_translate('main window', 'Frequency'))
-        self.check_frequency_persists.setText(_translate('main window', 'Keep frequency range'))
+        self.box_frequency.setWindowTitle(self.tr('Frequency'))
+        self.check_frequency_persists.setText(self.tr('Keep frequency range'))
 
-        self.button_zoom_x_out_coarse.setText(_translate('main window', '−50%'))
-        self.button_zoom_x_out_fine.setText(_translate('main window', '−10%'))
-        self.button_zoom_x_in_fine.setText(_translate('main window', '+10%'))
-        self.button_zoom_x_in_coarse.setText(_translate('main window', '+50%'))
+        self.button_zoom_x_out_coarse.setText(self.tr('−50%'))
+        self.button_zoom_x_out_fine.setText(self.tr('−10%'))
+        self.button_zoom_x_in_fine.setText(self.tr('+10%'))
+        self.button_zoom_x_in_coarse.setText(self.tr('+50%'))
 
         self.button_move_x_left_coarse.setText('−' + pg.siFormat(5e8, suffix=_translate('unit', 'Hz')))
         self.button_move_x_left_fine.setText('−' + pg.siFormat(5e7, suffix=_translate('unit', 'Hz')))
         self.button_move_x_right_fine.setText('+' + pg.siFormat(5e7, suffix=_translate('unit', 'Hz')))
         self.button_move_x_right_coarse.setText('+' + pg.siFormat(5e8, suffix=_translate('unit', 'Hz')))
 
-        self.box_voltage.setWindowTitle(_translate('main window', 'Vertical Axis'))
-        self.check_voltage_persists.setText(_translate('main window', 'Keep voltage range'))
+        self.box_voltage.setWindowTitle(self.tr('Vertical Axis'))
+        self.check_voltage_persists.setText(self.tr('Keep voltage range'))
 
-        self.button_zoom_y_out_coarse.setText(_translate('main window', '−50%'))
-        self.button_zoom_y_out_fine.setText(_translate('main window', '−10%'))
-        self.button_zoom_y_in_fine.setText(_translate('main window', '+10%'))
-        self.button_zoom_y_in_coarse.setText(_translate('main window', '+50%'))
+        self.button_zoom_y_out_coarse.setText(self.tr('−50%'))
+        self.button_zoom_y_out_fine.setText(self.tr('−10%'))
+        self.button_zoom_y_in_fine.setText(self.tr('+10%'))
+        self.button_zoom_y_in_coarse.setText(self.tr('+50%'))
 
-        self.box_find_lines.setWindowTitle(_translate('main window', 'Find Lines Automatically'))
-        self.group_find_lines.setToolTip(_translate('main window',
-                                                    'Try to detect lines automatically'))
-        self.button_find_lines.setText(_translate('main window', 'Find Lines Automatically'))
-        self.button_clear_lines.setText(_translate('main window', 'Clear Automatically Found Lines'))
-        self.button_prev_line.setText(_translate('main window', 'Previous Line'))
-        self.button_next_line.setText(_translate('main window', 'Next Line'))
+        self.box_find_lines.setWindowTitle(self.tr('Find Lines Automatically'))
+        self.group_find_lines.setToolTip(self.tr('Try to detect lines automatically'))
+        self.button_find_lines.setText(self.tr('Find Lines Automatically'))
+        self.button_clear_lines.setText(self.tr('Clear Automatically Found Lines'))
+        self.button_prev_line.setText(self.tr('Previous Line'))
+        self.button_next_line.setText(self.tr('Next Line'))
         self.button_clear_lines.setEnabled(False)
         self.button_next_line.setEnabled(False)
         self.button_prev_line.setEnabled(False)
 
-        self.box_found_lines.setWindowTitle(_translate('main window', 'Found Lines'))
+        self.box_found_lines.setWindowTitle(self.tr('Found Lines'))
         self.model_found_lines.set_format([(3, 1e-6), (4, 1e3), (4, np.nan, self.settings.fancy_table_numbers)])
         self.table_found_lines.setModel(self.model_found_lines)
         self.table_found_lines.setMouseTracking(True)

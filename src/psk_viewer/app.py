@@ -168,10 +168,10 @@ class App(GUI):
     def closeEvent(self, event: QCloseEvent) -> None:
         """ senseless joke in the loop """
         close: QMessageBox = QMessageBox()
-        close.setText(_translate('main window', 'Are you sure?'))
+        close.setText(self.tr('Are you sure?'))
         close.setIcon(QMessageBox.Icon.Question)
         close.setWindowIcon(self.windowIcon())
-        close.setWindowTitle(_translate('main window', 'Spectrometer Data Viewer'))
+        close.setWindowTitle(self.tr('Spectrometer Data Viewer'))
         close.setStandardButtons(QMessageBox.StandardButton.Yes
                                  | QMessageBox.StandardButton.No
                                  | QMessageBox.StandardButton.Cancel)
@@ -899,10 +899,10 @@ class App(GUI):
 
     def clear(self) -> None:
         close: QMessageBox = QMessageBox()
-        close.setText(_translate('main window', 'Are you sure?'))
+        close.setText(self.tr('Are you sure?'))
         close.setIcon(QMessageBox.Icon.Question)
         close.setWindowIcon(self.windowIcon())
-        close.setWindowTitle(_translate('main window', 'Spectrometer Data Viewer'))
+        close.setWindowTitle(self.tr('Spectrometer Data Viewer'))
         close.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel)
         if close.exec() != QMessageBox.StandardButton.Yes:
             return
@@ -933,7 +933,7 @@ class App(GUI):
         self._cursor_y.setVisible(True)
         self._canvas.replot()
         self.status_bar.clearMessage()
-        self.setWindowTitle(_translate('main window', 'Spectrometer Data Viewer'))
+        self.setWindowTitle(self.tr('Spectrometer Data Viewer'))
 
     def clear_ghost(self) -> None:
         self._ghost_line.clear()
@@ -1024,7 +1024,7 @@ class App(GUI):
         self.set_voltage_range(lower_value=self.spin_voltage_min.value(),
                                upper_value=self.spin_voltage_max.value())
 
-        self.setWindowTitle(_translate('main window', '%s — Spectrometer Data Viewer') % filename)
+        self.setWindowTitle(self.tr('%s — Spectrometer Data Viewer') % filename)
 
         self.toolbar.open_ghost_action.setEnabled(True)
 
@@ -1115,9 +1115,9 @@ class App(GUI):
             self._ghost_data.jump = np.nan
 
         if display_gamma:
-            self.box_voltage.setWindowTitle(_translate('main window', 'Absorption'))
+            self.box_voltage.setWindowTitle(self.tr('Absorption'))
         else:
-            self.box_voltage.setWindowTitle(_translate('main window', 'Voltage'))
+            self.box_voltage.setWindowTitle(self.tr('Voltage'))
 
         if self._plot_data:  # something is loaded
             self._plot_line.setData(self._plot_data.x_data, self._plot_data.y_data)
@@ -1148,7 +1148,7 @@ class App(GUI):
 
         a: pg.AxisItem = self._canvas.getAxis('left')
         if display_gamma:
-            self.check_voltage_persists.setText(_translate('main window', 'Keep absorption range'))
+            self.check_voltage_persists.setText(self.tr('Keep absorption range'))
 
             a.enableAutoSIPrefix(False)
             a.setLabel(text=_translate("plot axes labels", 'Absorption'),
@@ -1166,7 +1166,7 @@ class App(GUI):
             }
 
         else:
-            self.check_voltage_persists.setText(_translate('main window', 'Keep voltage range'))
+            self.check_voltage_persists.setText(self.tr('Keep voltage range'))
 
             a.enableAutoSIPrefix(True)
             a.setLabel(text=_translate("plot axes labels", 'Voltage'),
