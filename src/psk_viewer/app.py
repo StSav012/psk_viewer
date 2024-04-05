@@ -953,14 +953,21 @@ class App(GUI):
     def load_found_lines(self) -> None:
         def load_csv(fn: Path) -> Sequence[float]:
             sep: str = self.settings.csv_separator
-            data: NDArray[np.float_] = (
-                np.loadtxt(fn, delimiter=sep, usecols=(0,), encoding="utf-8") * 1e6
-            )
-            data = data[
-                (data >= self._plot_data.min_frequency)
-                & (data <= self._plot_data.max_frequency)
-            ]
-            return data
+            try:
+                data: NDArray[np.float_] = (
+                    np.loadtxt(
+                        fn, delimiter=sep, usecols=(0,), encoding="utf-8", dtype=np.complex_
+                    ).real
+                    * 1e6
+                )
+            except ValueError:
+                return []
+            else:
+                data = data[
+                    (data >= self._plot_data.min_frequency)
+                    & (data <= self._plot_data.max_frequency)
+                ]
+                return data
 
         def load_xlsx(fn: Path) -> Sequence[float]:
             from openpyxl.reader.excel import load_workbook
@@ -1068,31 +1075,23 @@ class App(GUI):
     def save_found_lines(self) -> None:
         def save_csv(fn: Path) -> None:
             sep: str = self.settings.csv_separator
-            # noinspection PyTypeChecker
-            np.savetxt(
-                fn,
-                data,
-                delimiter=sep,
-                header=(
-                    sep.join(
-                        (
-                            self.model_found_lines.header[0].name,
-                            self.model_found_lines.header[1].name,
-                            self.model_found_lines.header[2].name,
-                        )
+            with open(fn, "wt", encoding="utf-8") as f_out:
+                f_out.writelines(
+                    map(
+                        lambda s: "# " + s + "\n",
+                        [
+                            sep.join(h.name for h in self.model_found_lines.header),
+                            sep.join(h.unit for h in self.model_found_lines.header),
+                        ],
                     )
-                    + "\n"
-                    + sep.join(
-                        (
-                            self.model_found_lines.header[0].unit,
-                            self.model_found_lines.header[1].unit,
-                            self.model_found_lines.header[2].unit,
+                )
+                for row in data:
+                    f_out.write(
+                        sep.join(
+                            map(lambda x: str(x.real if x.imag == 0.0 else x), row)
                         )
+                        + "\n"
                     )
-                ),
-                fmt=("%.3f", "%.6f", "%.6e"),
-                encoding="utf-8",
-            )
 
         def save_xlsx(fn: Path) -> None:
             with pd.ExcelWriter(fn) as writer:
@@ -1127,8 +1126,16 @@ class App(GUI):
 
         f: NDArray[np.float_] = self.model_found_lines.all_data[:, 0] * 1e-6
         v: NDArray[np.float_] = self.model_found_lines.all_data[:, 1] * 1e3
-        g: NDArray[np.float_] = self.model_found_lines.all_data[:, 2]
-        data: NDArray[np.float_] = np.column_stack((f, v, g))
+        data: NDArray[np.complex_] | NDArray[np.float_]
+        if self.model_found_lines.all_data.shape[1] > 2:
+            g: NDArray[np.complex_] | NDArray[np.float_] = (
+                self.model_found_lines.all_data[:, 2]
+            )
+            data = np.column_stack((f, v, g))
+        else:
+            data = np.column_stack((f, v))
+        if np.all(data.imag == 0.0):
+            data = data.real
 
         filename_ext: str = filename.suffix.casefold()
         if filename_ext in supported_formats_callbacks:
