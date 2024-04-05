@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd  # type: ignore
 import pyqtgraph as pg  # type: ignore
 from numpy.typing import NDArray
-from pyqtgraph import PlotWidget
+from pyqtgraph import GraphicsScene, PlotWidget
 from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent  # type: ignore
 from pyqtgraph.exporters.ImageExporter import ImageExporter
 from qtpy.QtCore import (
@@ -139,7 +139,7 @@ class App(GUI):
         self.figure.addItem(self._cursor_balloon)
 
         self._mouse_moved_signal_proxy: pg.SignalProxy = pg.SignalProxy(
-            self.figure.scene().sigMouseMoved, rateLimit=10, slot=self.on_mouse_moved
+            cast(GraphicsScene, self.figure.scene()).sigMouseMoved, rateLimit=10, slot=self.on_mouse_moved
         )
         self._axis_range_changed_signal_proxy: pg.SignalProxy = pg.SignalProxy(
             self.figure.sigRangeChanged, rateLimit=20, slot=self.on_lim_changed
