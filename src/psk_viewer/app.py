@@ -1216,6 +1216,7 @@ class App(GUI):
 
     def load_data(self, filename: Path | None = None) -> bool:
         self.clear_ghost()
+        self.clear_found_lines()
 
         if filename is None:
             _filter: str
