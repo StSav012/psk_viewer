@@ -161,13 +161,13 @@ class App(GUI):
         ax: pg.AxisItem
         label: str
         if self._is_dark:
-            self.figure.setBackground(QBrush(pg.mkColor(0, 0, 0)))
+            self.figure.setBackground(pg.mkBrush(0, 0, 0))
             for label, ax_d in self._canvas.axes.items():
                 ax = ax_d["item"]
                 ax.setPen("d")
                 ax.setTextPen("d")
         else:
-            self.figure.setBackground(QBrush(pg.mkColor(255, 255, 255)))
+            self.figure.setBackground(pg.mkBrush(255, 255, 255))
             for label, ax_d in self._canvas.axes.items():
                 ax = ax_d["item"]
                 ax.setPen("k")
