@@ -42,7 +42,9 @@ _translate = QCoreApplication.translate
 
 class GUI(QMainWindow):
     def __init__(
-        self, parent: QWidget | None = None, flags: Qt.WindowType = Qt.WindowType.Window
+        self,
+        parent: QWidget | None = None,
+        flags: Qt.WindowType = Qt.WindowType.Window,
     ) -> None:
         super().__init__(parent, flags)
         self.setObjectName("mainWindow")

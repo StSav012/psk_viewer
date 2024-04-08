@@ -139,7 +139,9 @@ class App(GUI):
         self.figure.addItem(self._cursor_balloon)
 
         self._mouse_moved_signal_proxy: pg.SignalProxy = pg.SignalProxy(
-            cast(GraphicsScene, self.figure.scene()).sigMouseMoved, rateLimit=10, slot=self.on_mouse_moved
+            cast(GraphicsScene, self.figure.scene()).sigMouseMoved,
+            rateLimit=10,
+            slot=self.on_mouse_moved,
         )
         self._axis_range_changed_signal_proxy: pg.SignalProxy = pg.SignalProxy(
             self.figure.sigRangeChanged, rateLimit=20, slot=self.on_lim_changed
@@ -964,7 +966,11 @@ class App(GUI):
             try:
                 data: NDArray[np.float_] = (
                     np.loadtxt(
-                        fn, delimiter=sep, usecols=(0,), encoding="utf-8", dtype=np.complex_
+                        fn,
+                        delimiter=sep,
+                        usecols=(0,),
+                        encoding="utf-8",
+                        dtype=np.complex_,
                     ).real
                     * 1e6
                 )

@@ -5,14 +5,7 @@ from pathlib import Path
 from typing import ClassVar
 
 from qtpy.QtCore import Signal, Slot
-from qtpy.QtWidgets import (
-    QFileDialog,
-    QHBoxLayout,
-    QLineEdit,
-    QToolButton,
-    QWidget,
-)
-
+from qtpy.QtWidgets import QFileDialog, QHBoxLayout, QLineEdit, QToolButton, QWidget
 
 __all__ = ["OpenFilePathEntry"]
 
