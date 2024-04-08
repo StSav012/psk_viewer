@@ -191,6 +191,7 @@ class PreferencesBody(BaseLogger, QSplitter):
 
     def __init__(self, settings: Settings, parent: QWidget | None = None) -> None:
         QSplitter.__init__(self, parent)
+        self.setObjectName("preferencesBody")
 
         self.setOrientation(Qt.Orientation.Horizontal)
         self.setChildrenCollapsible(False)
@@ -260,6 +261,7 @@ class Preferences(QDialog):
 
     def __init__(self, settings: Settings, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setObjectName("preferencesDialog")
 
         self._settings: Settings = settings
         self.setModal(True)
@@ -283,26 +285,18 @@ class Preferences(QDialog):
         self.adjustSize()
         self.resize(self.width() + 4, self.height())
 
-        self._settings.beginGroup("geometry")
-        self.restoreGeometry(
-            cast(QByteArray, self._settings.value("preferencesDialog", QByteArray()))
-        )
-        self._settings.endGroup()
-        self._settings.beginGroup("state")
-        self._preferences_body.restoreState(
-            cast(QByteArray, self._settings.value("preferencesDialog", QByteArray()))
-        )
-        self._settings.endGroup()
+        self._settings.restore(self)
+        self._settings.restore(self._preferences_body)
 
-    def closeEvent(self, event: QCloseEvent) -> None:
-        self._settings.beginGroup("geometry")
-        self._settings.setValue("preferencesDialog", self.saveGeometry())
-        self._settings.endGroup()
-        self._settings.beginGroup("state")
-        self._settings.setValue("preferencesDialog", self._preferences_body.saveState())
-        self._settings.endGroup()
+    def reject(self) -> None:
+        self._settings.save(self)
+        self._settings.save(self._preferences_body)
+        return super().reject()
 
     def accept(self) -> None:
+        self._settings.save(self)
+        self._settings.save(self._preferences_body)
+
         for key, value in self._preferences_body.changed_settings.items():
             setattr(self._settings, key, value)
         return super().accept()
