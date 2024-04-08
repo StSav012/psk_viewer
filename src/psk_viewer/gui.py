@@ -45,6 +45,8 @@ class GUI(QMainWindow):
         self, parent: QWidget | None = None, flags: Qt.WindowType = Qt.WindowType.Window
     ) -> None:
         super().__init__(parent, flags)
+        self.setObjectName("mainWindow")
+
         self.settings: Settings = Settings("SavSoft", "Spectrometer Viewer", self)
 
         # prevent config from being re-written while loading
@@ -551,67 +553,20 @@ class GUI(QMainWindow):
     ) -> Any:
         if section not in self.settings.childGroups():
             return default
-        self.settings.beginGroup(section)
-        # print(section, key)
-        try:
-            v = self.settings.value(key, default, _type)
-        except TypeError:
-            v = default
-        self.settings.endGroup()
-        return v
+        with self.settings.section(section):
+            # print(section, key)
+            try:
+                return self.settings.value(key, default, _type)
+            except TypeError:
+                return default
 
     def set_config_value(self, section: str, key: str, value: Any) -> None:
         if self._loading:
             return
-        self.settings.beginGroup(section)
-        if isinstance(value, np.float64):
-            value = float(value)
-        if isinstance(value, Path):
-            value = str(value)
-        # print(section, key, value, type(value))
-        self.settings.setValue(key, value)
-        self.settings.endGroup()
-
-    def open_file_dialog(
-        self, formats: dict[tuple[str, ...], str]
-    ) -> tuple[Path | None, str]:
-        directory: str = self.get_config_value("open", "location", "", str)
-        _filename: str
-        _filter: str
-        _filename, _filter = getopenfilename(
-            self, filters=join_file_dialog_formats(formats), basedir=directory
-        )
-        filename: Path | None = None
-        if _filename:
-            filename = Path(_filename)
-            self.set_config_value("open", "location", filename.parent)
-        return filename, _filter
-
-    def save_file_dialog(
-        self, formats: dict[tuple[str, ...], str]
-    ) -> tuple[Path | None, str]:
-        directory: str = self.get_config_value("save", "location", "", str)
-        initial_filter: str = self.get_config_value("save", "filter", "", str)
-        _filename: str
-        _filter: str
-        _filename, _filter = getsavefilename(
-            self,
-            filters=join_file_dialog_formats(formats),
-            basedir=directory,
-            selectedfilter=initial_filter,
-        )
-        if not _filename:
-            return None, _filter
-
-        filename: Path = Path(_filename)
-
-        # set the extension from the format picked (if any)
-        e: tuple[str, ...]
-        for e in formats:
-            if _filter == formats[e]:
-                filename = ensure_extension(filename, e[0].casefold())
-                break
-
-        self.set_config_value("save", "location", filename.parent)
-        self.set_config_value("save", "filter", _filter)
-        return filename, _filter
+        with self.settings.section(section):
+            if isinstance(value, np.float64):
+                value = float(value)
+            if isinstance(value, Path):
+                value = str(value)
+            # print(section, key, value, type(value))
+            self.settings.setValue(key, value)

@@ -13,18 +13,18 @@ from pyqtgraph import GraphicsScene, PlotWidget
 from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent  # type: ignore
 from pyqtgraph.exporters.ImageExporter import ImageExporter
 from qtpy.QtCore import (
-    QByteArray,
     QCoreApplication,
     QItemSelectionModel,
     QModelIndex,
-    QPoint,
     QPointF,
-    QRect,
     QRectF,
     Qt,
 )
 from qtpy.QtGui import QBrush, QCloseEvent, QGuiApplication, QPalette, QPen
+from qtpy.QtGui import QBrush, QCloseEvent, QPalette, QPen
+from qtpy.QtGui import QScreen
 from qtpy.QtWidgets import QAction, QMessageBox, QWidget
+from qtpy.QtWidgets import QApplication
 
 from .detection import correlation, peaks_positions
 from .gui import GUI
@@ -223,8 +223,7 @@ class App(GUI):
             close_code = close.exec()
 
         if close_code == QMessageBox.StandardButton.Yes:
-            self.settings.setValue("windowGeometry", self.saveGeometry())
-            self.settings.setValue("windowState", self.saveState())
+            self.settings.save(self)
             self.settings.sync()
             event.accept()
         elif close_code == QMessageBox.StandardButton.Cancel:
@@ -249,6 +248,15 @@ class App(GUI):
         self.restoreState(
             cast(QByteArray, self.settings.value("windowState", QByteArray()))
         )
+
+        # Fallback: Center the window
+        screen: QScreen = QApplication.primaryScreen()
+        self.move(
+            round(0.5 * (screen.size().width() - self.size().width())),
+            round(0.5 * (screen.size().height() - self.size().height())),
+        )
+
+        self.settings.restore(self)
 
         self.check_frequency_persists.setChecked(
             self.get_config_value("frequency", "persists", False, bool)
