@@ -24,7 +24,6 @@ from qtpy.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from qtpy.compat import getopenfilename, getsavefilename
 
 from . import __version__
 from .data_model import DataModel
@@ -32,7 +31,7 @@ from .found_lines_model import FoundLinesModel
 from .settings import Settings
 from .table_view import TableView
 from .toolbar import NavigationToolbar
-from .utils import ensure_extension, find_qm_files, join_file_dialog_formats, load_icon
+from .utils import find_qm_files, load_icon
 from .valuelabel import ValueLabel
 
 __all__ = ["GUI"]

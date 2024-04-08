@@ -1,6 +1,7 @@
 ﻿# -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import mimetypes
 from numbers import Number
 from pathlib import Path
 from typing import Any, Callable, Final, Iterable, Sequence, cast
@@ -20,18 +21,17 @@ from qtpy.QtCore import (
     QRectF,
     Qt,
 )
-from qtpy.QtGui import QBrush, QCloseEvent, QGuiApplication, QPalette, QPen
 from qtpy.QtGui import QBrush, QCloseEvent, QPalette, QPen
 from qtpy.QtGui import QScreen
 from qtpy.QtWidgets import QAction, QMessageBox, QWidget
 from qtpy.QtWidgets import QApplication
 
 from .detection import correlation, peaks_positions
+from .file_dialog import OpenFileDialog, SaveFileDialog
 from .gui import GUI
 from .plot_data_item import PlotDataItem
 from .preferences import Preferences
 from .utils import (
-    all_cases,
     copy_to_clipboard,
     load_data_csv,
     load_data_fs,
@@ -159,6 +159,66 @@ class App(GUI):
             if loaded:
                 self.set_config_value("open", "location", file_path.parent)
 
+        self._open_table_dialog: OpenFileDialog = OpenFileDialog(
+            settings=self.settings,
+            supported_mimetype_filters=[
+                OpenFileDialog.SupportedMimetypeItem(
+                    required_packages=[],
+                    file_extension=".txt",
+                ),
+                OpenFileDialog.SupportedMimetypeItem(
+                    required_packages=[],
+                    file_extension=".csv",
+                ),
+                OpenFileDialog.SupportedMimetypeItem(
+                    required_packages=["openpyxl"],
+                    file_extension=".xlsx",
+                ),
+            ],
+            parent=self,
+        )
+        self._open_data_dialog: OpenFileDialog = OpenFileDialog(
+            settings=self.settings,
+            supported_name_filters=[
+                OpenFileDialog.SupportedNameFilterItem(
+                    required_packages=[],
+                    file_extensions=[".conf", ".scandat"],
+                    name=_translate("file type", "PSK Spectrometer"),
+                ),
+                OpenFileDialog.SupportedNameFilterItem(
+                    required_packages=[],
+                    file_extensions=[".fmd"],
+                    name=_translate("file type", "Fast Sweep Spectrometer"),
+                ),
+            ],
+            parent=self,
+        )
+        self._save_table_dialog: SaveFileDialog = SaveFileDialog(
+            settings=self.settings,
+            supported_mimetype_filters=[
+                SaveFileDialog.SupportedMimetypeItem(
+                    required_packages=[],
+                    file_extension=".csv",
+                ),
+                SaveFileDialog.SupportedMimetypeItem(
+                    required_packages=["openpyxl"],
+                    file_extension=".xlsx",
+                ),
+            ],
+            parent=self,
+        )
+        self._save_image_dialog: SaveFileDialog = SaveFileDialog(
+            settings=self.settings,
+            supported_mimetype_filters=[
+                SaveFileDialog.SupportedMimetypeItem(
+                    required_packages=[],
+                    file_extension=ext.lstrip("*"),
+                )
+                for ext in ImageExporter.getSupportedImageFormats()
+            ],
+            parent=self,
+        )
+
     def setup_ui(self) -> None:
         ax: pg.AxisItem
         label: str
@@ -233,23 +293,6 @@ class App(GUI):
 
     def load_config(self) -> None:
         self._loading = True
-        # common settings
-        if self.settings.contains("windowGeometry"):
-            self.restoreGeometry(
-                cast(QByteArray, self.settings.value("windowGeometry", QByteArray()))
-            )
-        else:
-            app: QCoreApplication | None = QCoreApplication.instance()
-            if isinstance(app, QGuiApplication):
-                window_frame: QRect = self.frameGeometry()
-                desktop_center: QPoint = (
-                    app.primaryScreen().availableGeometry().center()
-                )
-                window_frame.moveCenter(desktop_center)
-                self.move(window_frame.topLeft())
-        self.restoreState(
-            cast(QByteArray, self.settings.value("windowState", QByteArray()))
-        )
 
         # Fallback: Center the window
         screen: QScreen = QApplication.primaryScreen()
@@ -1017,37 +1060,15 @@ class App(GUI):
             ]
             return data_
 
-        import importlib.util
-        import mimetypes
-        from itertools import chain
-
         mimetypes.init()
 
-        supported_formats: dict[tuple[str, ...], str] = {
-            tuple(all_cases(".csv")): _translate("file type", "Text with separators"),
-            tuple(all_cases(".txt")): _translate("file type", "Plain text"),
-        }
         supported_formats_callbacks: dict[str, Callable[[Path], Sequence[float]]] = {
             mimetypes.types_map[".csv"]: load_csv,
             mimetypes.types_map[".txt"]: load_csv,
-        }
-        if importlib.util.find_spec("openpyxl") is not None:
-            supported_formats[tuple(all_cases(".xlsx"))] = _translate(
-                "file type", "Microsoft Excel"
-            )
-            supported_formats_callbacks[mimetypes.types_map[".xlsx"]] = load_xlsx
-
-        # reorder the dict
-        supported_formats = {
-            tuple(chain.from_iterable(supported_formats.keys())): _translate(
-                "file type", "Supported formats"
-            ),
-            **supported_formats,
-            (".*",): _translate("file type", "All files"),
+            mimetypes.types_map[".xlsx"]: load_xlsx,
         }
 
-        filename, _filter = self.open_file_dialog(formats=supported_formats)
-        if filename is None:
+        if not (filename := self._open_table_dialog.get_open_filename()):
             return
 
         file_type: str | None = mimetypes.guess_type(filename)[0]
@@ -1118,24 +1139,12 @@ class App(GUI):
                     or _translate("workbook", "Sheet1"),
                 )
 
-        import importlib.util
-
-        supported_formats: dict[tuple[str, ...], str] = {
-            tuple(all_cases(".csv")): _translate("file type", "Text with separators")
-        }
         supported_formats_callbacks: dict[str, Callable[[Path], None]] = {
-            ".csv": save_csv
+            ".csv": save_csv,
+            ".xlsx": save_xlsx,
         }
-        if importlib.util.find_spec("openpyxl") is not None:
-            supported_formats[tuple(all_cases(".xlsx"))] = _translate(
-                "file type", "Microsoft Excel"
-            )
-            supported_formats_callbacks[".xlsx"] = save_xlsx
 
-        filename: Path | None
-        _filter: str
-        filename, _filter = self.save_file_dialog(formats=supported_formats)
-        if filename is None:
+        if not (filename := self._save_table_dialog.get_save_filename()):
             return
 
         f: NDArray[np.float_] = self.model_found_lines.all_data[:, 0] * 1e-6
@@ -1232,19 +1241,9 @@ class App(GUI):
         self.clear_ghost()
         self.clear_found_lines()
 
-        if filename is None:
-            _filter: str
-            _formats: dict[tuple[str, ...], str] = {
-                (*all_cases(".conf"), *all_cases(".scandat")): _translate(
-                    "file type", "PSK Spectrometer"
-                ),
-                tuple(all_cases(".fmd")): _translate(
-                    "file type", "Fast Sweep Spectrometer"
-                ),
-            }
-            filename, _filter = self.open_file_dialog(formats=_formats)
-        if filename is None:
-            return False
+        if not filename:
+            if not (filename := self._open_data_dialog.get_open_filename()):
+                return False
 
         v: NDArray[np.float_]
         f: NDArray[np.float_]
@@ -1338,19 +1337,9 @@ class App(GUI):
         return True
 
     def load_ghost_data(self, filename: Path | None = None) -> bool:
-        if filename is None:
-            _filter: str
-            _formats: dict[tuple[str, ...], str] = {
-                (*all_cases(".conf"), *all_cases(".scandat")): _translate(
-                    "file type", "PSK Spectrometer"
-                ),
-                tuple(all_cases(".fmd")): _translate(
-                    "file type", "Fast Sweep Spectrometer"
-                ),
-            }
-            filename, _filter = self.open_file_dialog(formats=_formats)
-        if filename is None:
-            return False
+        if not filename:
+            if not (filename := self._open_data_dialog.get_open_filename()):
+                return False
 
         v: NDArray[np.float_]
         f: NDArray[np.float_]
@@ -1601,24 +1590,12 @@ class App(GUI):
                         or _translate("workbook", "Sheet1"),
                     )
 
-        import importlib.util
-
-        supported_formats: dict[tuple[str, ...], str] = {
-            tuple(all_cases(".csv")): _translate("file type", "Text with separators")
-        }
         supported_formats_callbacks: dict[str, Callable[[Path], None]] = {
-            ".csv": save_csv
+            ".csv": save_csv,
+            ".xlsx": save_xlsx,
         }
-        if importlib.util.find_spec("openpyxl") is not None:
-            supported_formats[tuple(all_cases(".xlsx"))] = _translate(
-                "file type", "Microsoft Excel"
-            )
-            supported_formats_callbacks[".xlsx"] = save_xlsx
 
-        filename: Path | None
-        _filter: str
-        filename, _filter = self.save_file_dialog(formats=supported_formats)
-        if filename is None:
+        if not (filename := self._save_table_dialog.get_save_filename()):
             return
         x: NDArray[np.float_] = self._plot_line.xData
         y: NDArray[np.float_] = self._plot_line.yData
@@ -1641,15 +1618,7 @@ class App(GUI):
 
     def save_figure(self) -> None:
         exporter: ImageExporter = ImageExporter(self._canvas)
-        formats: dict[tuple[str, ...], str] = {
-            tuple(exporter.getSupportedImageFormats()): _translate(
-                "file dialog", "Image files"
-            )
-        }
-        filename: Path | None
-        _filter: str
-        filename, _filter = self.save_file_dialog(formats=formats)
-        if filename is None:
+        if not (filename := self._save_image_dialog.get_save_filename()):
             return
         self.hide_cursors()
         exporter.export(filename)
