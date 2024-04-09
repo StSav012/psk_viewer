@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
-import itertools
 import sys
 from contextlib import suppress
 from os import PathLike
@@ -18,7 +17,6 @@ from qtpy.QtWidgets import QInputDialog, QWidget
 _translate = QCoreApplication.translate
 
 __all__ = [
-    "all_cases",
     "copy_to_clipboard",
     "load_data_csv",
     "load_data_fs",
@@ -29,9 +27,6 @@ __all__ = [
     "find_qm_files",
     "load_icon",
     "mix_colors",
-    "ensure_extension",
-    "ensure_prefix",
-    "join_file_dialog_formats",
     "HeaderWithUnit",
 ]
 
@@ -441,63 +436,6 @@ def load_data_csv(
             )
         return x, y, g, frequency_jump
     return np.empty(0), np.empty(0), np.empty(0), np.nan
-
-
-def ensure_extension(fn: Path, ext: str) -> Path:
-    return fn.with_suffix(ext)
-
-
-def ensure_prefix(text: str, prefix: str) -> str:
-    if text.startswith(prefix):
-        return text
-    else:
-        return prefix + text
-
-
-def join_file_dialog_formats(formats: dict[tuple[str, ...], str]) -> str:
-    format_lines: list[str] = []
-    f: tuple[str, ...]
-    n: str
-    for f, n in formats.items():
-        format_lines.append(
-            n + "(" + " ".join(ensure_prefix(_f, "*") for _f in f) + ")"
-        )
-    return ";;".join(format_lines)
-
-
-def all_cases(text: str) -> Iterator[str]:
-    """return all cases of the text given"""
-
-    cases: list[str] = list(
-        {
-            text.lower(),
-            text.upper(),
-            text.capitalize(),
-            text.swapcase(),
-            text.casefold(),
-        }
-    )
-
-    if len(cases) < 2:
-        # don't bother
-        yield from cases
-        return
-
-    length: int = len(cases[0])
-    if not all(len(c) == length for c in cases):
-        # don't know what to do with cases of different lengths
-        yield from cases
-        return
-    # now, all the cases are of the same length
-
-    # get all possible variants of characters at each position
-    variants: Iterator[list[str]] = (
-        sorted(set(c[i] for c in cases), reverse=True) for i in range(length)
-    )
-
-    combination: tuple[str, ...]
-    for combination in itertools.product(*variants):
-        yield "".join(combination)
 
 
 class HeaderWithUnit:
