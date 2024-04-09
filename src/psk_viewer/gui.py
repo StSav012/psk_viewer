@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 import sys
 from pathlib import Path
-from typing import Any, Type
+from typing import Any, Type, cast
 
 import numpy as np
 import pyqtgraph as pg  # type: ignore
@@ -18,6 +18,7 @@ from qtpy.QtWidgets import (
     QDockWidget,
     QFormLayout,
     QGridLayout,
+    QLabel,
     QMainWindow,
     QPushButton,
     QStatusBar,
@@ -376,34 +377,34 @@ class GUI(QMainWindow):
         if _translate("si prefix alternative micro", "u"):
             fn.SI_PREFIX_EXPONENTS[_translate("si prefix alternative micro", "u")] = -6
 
-        self.form_layout_frequency.labelForField(self.spin_frequency_min).setText(
-            self.tr("Minimum:")
-        )
-        self.form_layout_frequency.labelForField(self.spin_frequency_max).setText(
-            self.tr("Maximum:")
-        )
-        self.form_layout_frequency.labelForField(self.spin_frequency_center).setText(
-            self.tr("Center:")
-        )
-        self.form_layout_frequency.labelForField(self.spin_frequency_span).setText(
-            self.tr("Span:")
-        )
+        cast(
+            QLabel, self.form_layout_frequency.labelForField(self.spin_frequency_min)
+        ).setText(self.tr("Minimum:"))
+        cast(
+            QLabel, self.form_layout_frequency.labelForField(self.spin_frequency_max)
+        ).setText(self.tr("Maximum:"))
+        cast(
+            QLabel, self.form_layout_frequency.labelForField(self.spin_frequency_center)
+        ).setText(self.tr("Center:"))
+        cast(
+            QLabel, self.form_layout_frequency.labelForField(self.spin_frequency_span)
+        ).setText(self.tr("Span:"))
 
-        self.form_layout_voltage.labelForField(self.spin_voltage_min).setText(
-            self.tr("Minimum:")
-        )
-        self.form_layout_voltage.labelForField(self.spin_voltage_max).setText(
-            self.tr("Maximum:")
-        )
+        cast(
+            QLabel, self.form_layout_voltage.labelForField(self.spin_voltage_min)
+        ).setText(self.tr("Minimum:"))
+        cast(
+            QLabel, self.form_layout_voltage.labelForField(self.spin_voltage_max)
+        ).setText(self.tr("Maximum:"))
 
         self.switch_data_action.setText(self.tr("Show Absorption"))
         self.switch_data_action.setToolTip(
             self.tr("Switch Y data between absorption and voltage")
         )
 
-        self.form_layout_find_lines.labelForField(self.spin_threshold).setText(
-            self.tr("Search threshold:")
-        )
+        cast(
+            QLabel, self.form_layout_find_lines.labelForField(self.spin_threshold)
+        ).setText(self.tr("Search threshold:"))
 
         if __version__:
             self.setWindowTitle(

@@ -1286,8 +1286,8 @@ class App(GUI):
         )
         self._plot_data.set_data(frequency_data=f, gamma_data=g, voltage_data=v)
 
-        min_frequency: np.float_ = f[0]
-        max_frequency: np.float_ = f[-1]
+        min_frequency: np.float_ = cast(np.float_, f[0])
+        max_frequency: np.float_ = cast(np.float_, f[-1])
 
         self.toolbar.clear_action.setEnabled(True)
         step: int = int(
