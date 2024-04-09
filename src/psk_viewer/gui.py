@@ -4,12 +4,19 @@ from __future__ import annotations
 import re
 import sys
 from pathlib import Path
-from typing import Any, Type, cast
+from typing import Any, Final, TypeVar, cast
 
 import numpy as np
 import pyqtgraph as pg  # type: ignore
 from pyqtgraph import functions as fn
-from qtpy.QtCore import QCoreApplication, QLibraryInfo, QLocale, QTranslator, Qt
+from qtpy.QtCore import (
+    QCoreApplication,
+    QLibraryInfo,
+    QLocale,
+    QObject,
+    QTranslator,
+    Qt,
+)
 from qtpy.QtGui import QAction
 from qtpy.QtWidgets import (
     QAbstractItemView,
@@ -38,6 +45,8 @@ from .valuelabel import ValueLabel
 __all__ = ["GUI"]
 
 _translate = QCoreApplication.translate
+_T = TypeVar("_T")
+_sentinel: Final[object] = object()
 
 
 class GUI(QMainWindow):
@@ -551,15 +560,28 @@ class GUI(QMainWindow):
         self._setup_translation()
 
     def get_config_value(
-        self, section: str, key: str, default: Any, _type: Type[Any]
-    ) -> Any:
+        self,
+        section: str,
+        key: str,
+        default: _T,
+        _type: type[_T] | _sentinel = _sentinel,
+    ) -> _T:
         if section not in self.settings.childGroups():
             return default
+        if _type is _sentinel:
+            _type = type(default)
         with self.settings.section(section):
             # print(section, key)
             try:
-                return self.settings.value(key, default, _type)
-            except TypeError:
+                v: Any
+                if issubclass(_type, QObject):
+                    v = self.settings.value(key, default)
+                else:
+                    v = self.settings.value(key, default, _type)
+                if not isinstance(v, _type):
+                    v = _type(v)
+                return v
+            except (TypeError, ValueError):
                 return default
 
     def set_config_value(self, section: str, key: str, value: Any) -> None:
