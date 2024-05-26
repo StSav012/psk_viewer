@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from numbers import Number
 from pathlib import Path
-from typing import Any, Callable, Final, Iterable, Sequence, cast
+from typing import Any, Callable, Final, Iterable, Sequence, TYPE_CHECKING, cast
 
 import numpy as np
 import pandas as pd  # type: ignore
@@ -22,8 +22,9 @@ from qtpy.QtCore import (
     QRect,
     QRectF,
     Qt,
+    Slot,
 )
-from qtpy.QtGui import QBrush, QCloseEvent, QGuiApplication, QPalette, QPen
+from qtpy.QtGui import QBrush, QColor, QCloseEvent, QGuiApplication, QPalette, QPen
 from qtpy.QtWidgets import QAction, QMessageBox, QWidget
 
 from .detection import correlation, peaks_positions
@@ -96,10 +97,6 @@ class App(GUI):
 
         self._data_mode: int = 0
 
-        self._is_dark: bool = (
-            self.palette().color(QPalette.ColorRole.Window).lightness() < 128
-        )
-
         self._ghost_line: pg.PlotDataItem = self.figure.plot(np.empty(0), name="")
         self._plot_line: pg.PlotDataItem = self.figure.plot(np.empty(0), name="")
         self._ghost_data: PlotDataItem = PlotDataItem()
@@ -133,9 +130,7 @@ class App(GUI):
             angle=0, movable=False
         )
 
-        self._cursor_balloon: pg.TextItem = pg.TextItem(
-            color="#ccc" if self._is_dark else "#333"
-        )
+        self._cursor_balloon: pg.TextItem = pg.TextItem()
         self.figure.addItem(self._cursor_balloon)
 
         self._mouse_moved_signal_proxy: pg.SignalProxy = pg.SignalProxy(
@@ -146,10 +141,14 @@ class App(GUI):
         )
 
         self.setup_ui()
+        self.setup_colors()
 
         self.load_config()
 
         self.setup_ui_actions()
+        QGuiApplication.styleHints().colorSchemeChanged.connect(
+            self.on_color_scheme_changed
+        )
 
         if file_path is not None and file_path.exists():
             loaded: bool = self.load_data(file_path)
@@ -158,21 +157,6 @@ class App(GUI):
                 self.set_config_value("open", "location", file_path.parent)
 
     def setup_ui(self) -> None:
-        ax: pg.AxisItem
-        label: str
-        if self._is_dark:
-            self.figure.setBackground(pg.mkBrush(0, 0, 0))
-            for label, ax_d in self._canvas.axes.items():
-                ax = ax_d["item"]
-                ax.setPen("d")
-                ax.setTextPen("d")
-        else:
-            self.figure.setBackground(pg.mkBrush(255, 255, 255))
-            for label, ax_d in self._canvas.axes.items():
-                ax = ax_d["item"]
-                ax.setPen("k")
-                ax.setTextPen("k")
-
         self.figure.plotItem.addItem(self._crosshair_v_line, ignoreBounds=True)
         self.figure.plotItem.addItem(self._crosshair_h_line, ignoreBounds=True)
         self.hide_cursors()
@@ -201,6 +185,30 @@ class App(GUI):
         self.figure.sceneObj.contextMenu = None
 
         self._install_translation()
+
+    @Slot(Qt.ColorScheme)
+    def on_color_scheme_changed(self, _: Qt.ColorScheme) -> None:
+        self.setup_colors()
+
+    def setup_colors(self) -> None:
+        if TYPE_CHECKING:
+            from typing import TypedDict
+
+            class AxisDict(TypedDict):
+                item: pg.AxisItem
+                pos: tuple[int, int]
+
+        palette: QPalette = self.palette()
+        base_color: QColor = palette.base().color()
+        text_color: QColor = palette.text().color()
+        self.figure.setBackground(pg.mkBrush(base_color))
+        label: str
+        ax_d: AxisDict
+        for label, ax_d in self._canvas.axes.items():
+            ax: pg.AxisItem = ax_d["item"]
+            ax.setPen(text_color)
+            ax.setTextPen(text_color)
+        self._cursor_balloon.setColor(text_color)
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """senseless joke in the loop"""
