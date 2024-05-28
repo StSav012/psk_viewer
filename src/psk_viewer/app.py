@@ -344,86 +344,98 @@ class App(GUI):
         return
 
     def setup_ui_actions(self) -> None:
-        self.toolbar.open_action.triggered.connect(self.on_open_action_clicked)
-        self.toolbar.clear_action.triggered.connect(self.clear)
+        self.toolbar.open_action.triggered.connect(self.on_open_action_triggered)
+        self.toolbar.clear_action.triggered.connect(self.on_clear_action_triggered)
         self.toolbar.open_ghost_action.triggered.connect(
-            lambda: cast(None, self.load_ghost_data())
+            self.on_open_ghost_action_triggered
         )
-        self.toolbar.clear_ghost_action.triggered.connect(self.clear_ghost)
+        self.toolbar.clear_ghost_action.triggered.connect(
+            self.on_clear_ghost_action_triggered
+        )
         self.toolbar.differentiate_action.toggled.connect(
-            self.calculate_second_derivative
+            self.on_differentiate_action_toggled
         )
-        self.toolbar.save_data_action.triggered.connect(self.save_data)
-        self.toolbar.copy_figure_action.triggered.connect(self.copy_figure)
-        self.toolbar.save_figure_action.triggered.connect(self.save_figure)
-        self.toolbar.load_trace_action.triggered.connect(self.load_found_lines)
-        self.toolbar.copy_trace_action.triggered.connect(self.copy_found_lines)
-        self.toolbar.save_trace_action.triggered.connect(self.save_found_lines)
-        self.toolbar.clear_trace_action.triggered.connect(self.clear_found_lines)
-        self.toolbar.configure_action.triggered.connect(self.edit_parameters)
+        self.toolbar.save_data_action.triggered.connect(self.on_save_data_triggered)
+        self.toolbar.copy_figure_action.triggered.connect(self.on_copy_figure_triggered)
+        self.toolbar.save_figure_action.triggered.connect(self.on_save_figure_triggered)
+        self.toolbar.load_trace_action.triggered.connect(
+            self.on_load_found_lines_triggered
+        )
+        self.toolbar.copy_trace_action.triggered.connect(
+            self.on_copy_found_lines_triggered
+        )
+        self.toolbar.save_trace_action.triggered.connect(
+            self.on_save_found_lines_triggered
+        )
+        self.toolbar.clear_trace_action.triggered.connect(
+            self.on_clear_found_lines_triggered
+        )
+        self.toolbar.configure_action.triggered.connect(
+            self.on_configure_action_triggered
+        )
 
-        self.spin_frequency_min.valueChanged.connect(self.spin_frequency_min_changed)
-        self.spin_frequency_max.valueChanged.connect(self.spin_frequency_max_changed)
+        self.spin_frequency_min.valueChanged.connect(self.on_spin_frequency_min_changed)
+        self.spin_frequency_max.valueChanged.connect(self.on_spin_frequency_max_changed)
         self.spin_frequency_center.valueChanged.connect(
-            self.spin_frequency_center_changed
+            self.on_spin_frequency_center_changed
         )
-        self.spin_frequency_span.valueChanged.connect(self.spin_frequency_span_changed)
+        self.spin_frequency_span.valueChanged.connect(
+            self.on_spin_frequency_span_changed
+        )
         self.button_zoom_x_out_coarse.clicked.connect(
-            lambda: self.button_zoom_x_clicked(1.0 / 0.5)
+            self.on_button_zoom_x_out_coarse_clicked
         )
         self.button_zoom_x_out_fine.clicked.connect(
-            lambda: self.button_zoom_x_clicked(1.0 / 0.9)
+            self.on_button_zoom_x_out_fine_clicked
         )
         self.button_zoom_x_in_fine.clicked.connect(
-            lambda: self.button_zoom_x_clicked(0.9)
+            self.on_button_zoom_x_in_fine_clicked
         )
         self.button_zoom_x_in_coarse.clicked.connect(
-            lambda: self.button_zoom_x_clicked(0.5)
+            self.on_button_zoom_x_in_coarse_clicked
         )
         self.button_move_x_left_coarse.clicked.connect(
-            lambda: self.button_move_x_clicked(-500.0)
+            self.on_button_move_x_left_coarse_clicked
         )
         self.button_move_x_left_fine.clicked.connect(
-            lambda: self.button_move_x_clicked(-50.0)
+            self.on_button_move_x_left_fine_clicked
         )
         self.button_move_x_right_fine.clicked.connect(
-            lambda: self.button_move_x_clicked(50.0)
+            self.on_button_move_x_right_fine_clicked
         )
         self.button_move_x_right_coarse.clicked.connect(
-            lambda: self.button_move_x_clicked(500.0)
+            self.on_button_move_x_right_coarse_clicked
         )
         self.check_frequency_persists.toggled.connect(
-            self.check_frequency_persists_toggled
+            self.on_check_frequency_persists_toggled
         )
 
         self.switch_data_action.toggled.connect(self.on_switch_data_action_toggled)
-        self.spin_voltage_min.valueChanged.connect(self.spin_voltage_min_changed)
-        self.spin_voltage_max.valueChanged.connect(self.spin_voltage_max_changed)
+        self.spin_voltage_min.valueChanged.connect(self.on_spin_voltage_min_changed)
+        self.spin_voltage_max.valueChanged.connect(self.on_spin_voltage_max_changed)
         self.button_zoom_y_out_coarse.clicked.connect(
-            lambda: self.button_zoom_y_clicked(1.0 / 0.5)
+            self.on_button_zoom_y_out_coarse_clicked
         )
         self.button_zoom_y_out_fine.clicked.connect(
-            lambda: self.button_zoom_y_clicked(1.0 / 0.9)
+            self.on_button_zoom_y_out_fine_clicked
         )
         self.button_zoom_y_in_fine.clicked.connect(
-            lambda: self.button_zoom_y_clicked(0.9)
+            self.on_button_zoom_y_in_fine_clicked
         )
         self.button_zoom_y_in_coarse.clicked.connect(
-            lambda: self.button_zoom_y_clicked(0.5)
+            self.on_button_zoom_y_in_coarse_clicked
         )
         self.check_voltage_persists.toggled.connect(
             self.on_check_voltage_persists_toggled
         )
 
-        self.spin_threshold.valueChanged.connect(
-            lambda new_value: self.set_config_value(
-                "lineSearch", "threshold", new_value
-            )
-        )
+        self.spin_threshold.valueChanged.connect(self.on_spin_threshold_changed)
         self.button_find_lines.clicked.connect(self.on_button_find_lines_clicked)
-        self.button_clear_lines.clicked.connect(self.clear_automatically_found_lines)
-        self.button_prev_line.clicked.connect(self.prev_found_line)
-        self.button_next_line.clicked.connect(self.next_found_line)
+        self.button_clear_automatically_found_lines.clicked.connect(
+            self.on_clear_automatically_found_lines_clicked
+        )
+        self.button_prev_found_line.clicked.connect(self.on_prev_found_line_clicked)
+        self.button_next_found_line.clicked.connect(self.on_next_found_line_clicked)
 
         self.table_found_lines.doubleClicked.connect(self.on_table_cell_double_clicked)
 
@@ -431,9 +443,7 @@ class App(GUI):
         for line in (self.automatically_found_lines, self.user_found_lines):
             line.sigPointsClicked.connect(self.on_points_clicked)
 
-        self._view_all_action.triggered.connect(
-            lambda: cast(None, self._canvas.vb.autoRange(padding=0.0))
-        )
+        self._view_all_action.triggered.connect(self.on_view_all_triggered)
 
         self.figure.sceneObj.sigMouseClicked.connect(self.on_plot_clicked)
 
@@ -462,6 +472,7 @@ class App(GUI):
         self._loading = False
         self.set_voltage_range(lower_value=min_voltage, upper_value=max_voltage)
 
+    @Slot(pg.PlotDataItem, np.ndarray, MouseClickEvent)
     def on_points_clicked(
         self, item: pg.PlotDataItem, points: Iterable[pg.SpotItem], ev: MouseClickEvent
     ) -> None:
@@ -515,11 +526,17 @@ class App(GUI):
             ]
             self.on_points_selected(selected_points)
 
+    @Slot(float)
+    def on_spin_threshold_changed(self, new_value: float) -> None:
+        self.set_config_value("lineSearch", "threshold", new_value)
+
+    @Slot()
     def on_button_find_lines_clicked(self) -> None:
         self.status_bar.showMessage(
             f"Found {self.find_lines(self.spin_threshold.value())} lines"
         )
 
+    @Slot(tuple)
     def on_mouse_moved(self, event: tuple[QPointF]) -> None:
         if self._plot_line.xData is None and self._plot_line.yData is None:
             return
@@ -568,6 +585,11 @@ class App(GUI):
         else:
             self.hide_cursors()
 
+    @Slot()
+    def on_view_all_triggered(self) -> None:
+        self._canvas.vb.autoRange(padding=0.0)
+
+    @Slot(MouseClickEvent)
     def on_plot_clicked(self, event: MouseClickEvent) -> None:
         pos: QPointF = event.scenePos()
         if not self.trace_mode:
@@ -681,7 +703,8 @@ class App(GUI):
             )
             self.table_found_lines.scrollTo(index)
 
-    def spin_frequency_min_changed(self, new_value: float) -> None:
+    @Slot(float)
+    def on_spin_frequency_min_changed(self, new_value: float) -> None:
         if self._loading:
             return
         self._loading = True
@@ -695,7 +718,8 @@ class App(GUI):
         )
         self._loading = False
 
-    def spin_frequency_max_changed(self, new_value: float) -> None:
+    @Slot(float)
+    def on_spin_frequency_max_changed(self, new_value: float) -> None:
         if self._loading:
             return
         self._loading = True
@@ -709,7 +733,8 @@ class App(GUI):
         )
         self._loading = False
 
-    def spin_frequency_center_changed(self, new_value: float) -> None:
+    @Slot(float)
+    def on_spin_frequency_center_changed(self, new_value: float) -> None:
         if self._loading:
             return
         freq_span = self.spin_frequency_span.value()
@@ -723,7 +748,8 @@ class App(GUI):
         self.set_frequency_range(upper_value=max_freq, lower_value=min_freq)
         self._loading = False
 
-    def spin_frequency_span_changed(self, new_value: float) -> None:
+    @Slot(float)
+    def on_spin_frequency_span_changed(self, new_value: float) -> None:
         if self._loading:
             return
         freq_center = self.spin_frequency_center.value()
@@ -737,7 +763,23 @@ class App(GUI):
         self.set_frequency_range(upper_value=max_freq, lower_value=min_freq)
         self._loading = False
 
-    def button_zoom_x_clicked(self, factor: float) -> None:
+    @Slot()
+    def on_button_zoom_x_out_coarse_clicked(self) -> None:
+        self.zoom_x(1.0 / 0.5)
+
+    @Slot()
+    def on_button_zoom_x_out_fine_clicked(self) -> None:
+        self.zoom_x(1.0 / 0.9)
+
+    @Slot()
+    def on_button_zoom_x_in_fine_clicked(self) -> None:
+        self.zoom_x(0.9)
+
+    @Slot()
+    def on_button_zoom_x_in_coarse_clicked(self) -> None:
+        self.zoom_x(0.5)
+
+    def zoom_x(self, factor: float) -> None:
         if self._loading:
             return
         freq_span = self.spin_frequency_span.value() * factor
@@ -753,7 +795,23 @@ class App(GUI):
         self.set_frequency_range(upper_value=max_freq, lower_value=min_freq)
         self._loading = False
 
-    def button_move_x_clicked(self, shift: float) -> None:
+    @Slot()
+    def on_button_move_x_left_coarse_clicked(self) -> None:
+        self.move_x(-500.0)
+
+    @Slot()
+    def on_button_move_x_left_fine_clicked(self) -> None:
+        self.move_x(-50.0)
+
+    @Slot()
+    def on_button_move_x_right_fine_clicked(self) -> None:
+        self.move_x(50.0)
+
+    @Slot()
+    def on_button_move_x_right_coarse_clicked(self) -> None:
+        self.move_x(500.0)
+
+    def move_x(self, shift: float) -> None:
         if self._loading:
             return
         freq_span = self.spin_frequency_span.value()
@@ -769,12 +827,14 @@ class App(GUI):
         self.set_frequency_range(upper_value=max_freq, lower_value=min_freq)
         self._loading = False
 
-    def check_frequency_persists_toggled(self, new_value: bool) -> None:
+    @Slot(bool)
+    def on_check_frequency_persists_toggled(self, new_value: bool) -> None:
         if self._loading:
             return
         self.set_config_value("frequency", "persists", new_value)
 
-    def spin_voltage_min_changed(self, new_value: float) -> None:
+    @Slot(float)
+    def on_spin_voltage_min_changed(self, new_value: float) -> None:
         if self._loading:
             return
         self._loading = True
@@ -784,7 +844,8 @@ class App(GUI):
         )
         self._loading = False
 
-    def spin_voltage_max_changed(self, new_value: float) -> None:
+    @Slot(float)
+    def on_spin_voltage_max_changed(self, new_value: float) -> None:
         if self._loading:
             return
         self._loading = True
@@ -794,7 +855,23 @@ class App(GUI):
         )
         self._loading = False
 
-    def button_zoom_y_clicked(self, factor: float) -> None:
+    @Slot()
+    def on_button_zoom_y_out_coarse_clicked(self) -> None:
+        self.zoom_y(1.0 / 0.5)
+
+    @Slot()
+    def on_button_zoom_y_out_fine_clicked(self) -> None:
+        self.zoom_y(1.0 / 0.9)
+
+    @Slot()
+    def on_button_zoom_y_in_fine_clicked(self) -> None:
+        self.zoom_y(0.9)
+
+    @Slot()
+    def on_button_zoom_y_in_coarse_clicked(self) -> None:
+        self.zoom_y(0.5)
+
+    def zoom_y(self, factor: float) -> None:
         if self._loading:
             return
         min_voltage = self.spin_voltage_min.value()
@@ -811,12 +888,14 @@ class App(GUI):
         self.set_voltage_range(upper_value=max_voltage, lower_value=min_voltage)
         self._loading = False
 
+    @Slot(bool)
     def on_check_voltage_persists_toggled(self, new_value: bool) -> None:
         if self._loading:
             return
         self.set_config_value("voltage", "persists", new_value)
 
-    def edit_parameters(self) -> None:
+    @Slot()
+    def on_configure_action_triggered(self) -> None:
         preferences_dialog: Preferences = Preferences(self.settings, self)
         if preferences_dialog.exec() == Preferences.DialogCode.Rejected:
             return
@@ -850,7 +929,8 @@ class App(GUI):
         self._cursor_y.setVisible(False)
         self._cursor_balloon.setVisible(False)
 
-    def on_open_action_clicked(self) -> None:
+    @Slot()
+    def on_open_action_triggered(self) -> None:
         loaded: bool = self.load_data()
         self.toolbar.load_trace_action.setEnabled(
             loaded or self.toolbar.load_trace_action.isEnabled()
@@ -955,15 +1035,16 @@ class App(GUI):
         self.toolbar.save_trace_action.setEnabled(not self.model_found_lines.is_empty)
         self.toolbar.clear_trace_action.setEnabled(not self.model_found_lines.is_empty)
 
-        self.button_clear_lines.setEnabled(bool(found_lines.size))
-        self.button_next_line.setEnabled(bool(found_lines.size))
-        self.button_prev_line.setEnabled(bool(found_lines.size))
+        self.button_clear_automatically_found_lines.setEnabled(bool(found_lines.size))
+        self.button_next_found_line.setEnabled(bool(found_lines.size))
+        self.button_prev_found_line.setEnabled(bool(found_lines.size))
 
         self._ignore_scale_change = False
 
         return found_lines.size
 
-    def prev_found_line(self) -> None:
+    @Slot()
+    def on_prev_found_line_clicked(self) -> None:
         if self.model_signal.size < 2:
             return
 
@@ -977,7 +1058,8 @@ class App(GUI):
             self.spin_frequency_center.setValue(line_data[i])
             self.ensure_y_fits()
 
-    def next_found_line(self) -> None:
+    @Slot()
+    def on_next_found_line_clicked(self) -> None:
         if self.model_signal.size < 2:
             return
 
@@ -991,6 +1073,7 @@ class App(GUI):
             self.spin_frequency_center.setValue(line_data[i])
             self.ensure_y_fits()
 
+    @Slot(QModelIndex)
     def on_table_cell_double_clicked(self, index: QModelIndex) -> None:
         self.spin_frequency_center.setValue(self.model_found_lines.item(index.row(), 0))
         self.ensure_y_fits()
@@ -1017,7 +1100,8 @@ class App(GUI):
                 min(y.range), maximum + 0.05 * (maximum - min(y.range))
             )
 
-    def load_found_lines(self) -> None:
+    @Slot()
+    def on_load_found_lines_triggered(self) -> None:
         def load_csv(fn: Path) -> Sequence[float]:
             sep: str = self.settings.csv_separator
             try:
@@ -1114,14 +1198,16 @@ class App(GUI):
         self.toolbar.save_trace_action.setEnabled(True)
         self.toolbar.clear_trace_action.setEnabled(True)
 
-    def copy_found_lines(self) -> None:
+    @Slot()
+    def on_copy_found_lines_triggered(self) -> None:
         copy_to_clipboard(
             self.table_found_lines.stringify_table_plain_text(),
             self.table_found_lines.stringify_table_html(),
             Qt.TextFormat.RichText,
         )
 
-    def save_found_lines(self) -> None:
+    @Slot()
+    def on_save_found_lines_triggered(self) -> None:
         def save_csv(fn: Path) -> None:
             sep: str = self.settings.csv_separator
             with open(fn, "wt", encoding="utf-8") as f_out:
@@ -1178,7 +1264,8 @@ class App(GUI):
         if filename_ext in supported_formats_callbacks:
             supported_formats_callbacks[filename_ext](filename)
 
-    def clear_automatically_found_lines(self) -> None:
+    @Slot()
+    def on_clear_automatically_found_lines_clicked(self) -> None:
         self.automatically_found_lines.clear()
         self.automatically_found_lines_data = np.empty(0)
         self._canvas.replot()
@@ -1187,9 +1274,13 @@ class App(GUI):
         self.toolbar.copy_trace_action.setEnabled(self.model_found_lines.is_empty)
         self.toolbar.save_trace_action.setEnabled(self.model_found_lines.is_empty)
         self.toolbar.clear_trace_action.setEnabled(self.model_found_lines.is_empty)
-        self.button_clear_lines.setEnabled(False)
-        self.button_next_line.setEnabled(False)
-        self.button_prev_line.setEnabled(False)
+        self.button_clear_automatically_found_lines.setEnabled(False)
+        self.button_next_found_line.setEnabled(False)
+        self.button_prev_found_line.setEnabled(False)
+
+    @Slot()
+    def on_clear_found_lines_triggered(self) -> None:
+        self.clear_found_lines()
 
     def clear_found_lines(self) -> None:
         self.automatically_found_lines.clear()
@@ -1200,12 +1291,13 @@ class App(GUI):
         self.toolbar.copy_trace_action.setEnabled(False)
         self.toolbar.save_trace_action.setEnabled(False)
         self.toolbar.clear_trace_action.setEnabled(False)
-        self.button_clear_lines.setEnabled(False)
-        self.button_next_line.setEnabled(False)
-        self.button_prev_line.setEnabled(False)
+        self.button_clear_automatically_found_lines.setEnabled(False)
+        self.button_next_found_line.setEnabled(False)
+        self.button_prev_found_line.setEnabled(False)
         self._canvas.replot()
 
-    def clear(self) -> None:
+    @Slot()
+    def on_clear_action_triggered(self) -> None:
         close: QMessageBox = QMessageBox()
         close.setText(self.tr("Are you sure?"))
         close.setIcon(QMessageBox.Icon.Question)
@@ -1244,6 +1336,14 @@ class App(GUI):
         self._canvas.replot()
         self.status_bar.clearMessage()
         self.setWindowTitle(self.tr("Spectrometer Data Viewer"))
+
+    @Slot()
+    def on_open_ghost_action_triggered(self) -> None:
+        self.load_ghost_data()
+
+    @Slot()
+    def on_clear_ghost_action_triggered(self) -> None:
+        self.clear_ghost()
 
     def clear_ghost(self) -> None:
         self._ghost_line.clear()
@@ -1408,11 +1508,13 @@ class App(GUI):
     def actions_off(self) -> None:
         self.toolbar.trace_action.setChecked(False)
 
-    def calculate_second_derivative(self) -> None:
+    @Slot()
+    def on_differentiate_action_toggled(self, _: bool) -> None:
         self._data_mode = self.PSK_WITH_JUMP_DATA_MODE
         self.display_gamma_or_voltage()
         self.model_found_lines.refresh()
 
+    @Slot(bool)
     def on_switch_data_action_toggled(self, new_state: bool) -> None:
         self._plot_data.data_type = (
             PlotDataItem.GAMMA_DATA if new_state else PlotDataItem.VOLTAGE_DATA
@@ -1521,7 +1623,8 @@ class App(GUI):
 
         self.hide_cursors()
 
-    def save_data(self) -> None:
+    @Slot()
+    def on_save_data_triggered(self) -> None:
         if self._plot_line.yData is None:
             return
 
@@ -1625,12 +1728,14 @@ class App(GUI):
         if filename_ext in supported_formats_callbacks:
             supported_formats_callbacks[filename_ext](filename)
 
-    def copy_figure(self) -> None:
+    @Slot()
+    def on_copy_figure_triggered(self) -> None:
         exporter: ImageExporter = ImageExporter(self._canvas)
         self.hide_cursors()
         exporter.export(copy=True)
 
-    def save_figure(self) -> None:
+    @Slot()
+    def on_save_figure_triggered(self) -> None:
         exporter: ImageExporter = ImageExporter(self._canvas)
         if not (filename := self._save_image_dialog.get_save_filename()):
             return

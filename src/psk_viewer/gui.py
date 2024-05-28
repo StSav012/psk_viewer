@@ -126,9 +126,11 @@ class GUI(QMainWindow):
         self.spin_threshold.setMinimum(1.0)
         self.spin_threshold.setMaximum(10000.0)
         self.button_find_lines: QPushButton = QPushButton(self.group_find_lines)
-        self.button_clear_lines: QPushButton = QPushButton(self.group_find_lines)
-        self.button_prev_line: QPushButton = QPushButton(self.group_find_lines)
-        self.button_next_line: QPushButton = QPushButton(self.group_find_lines)
+        self.button_clear_automatically_found_lines: QPushButton = QPushButton(
+            self.group_find_lines
+        )
+        self.button_prev_found_line: QPushButton = QPushButton(self.group_find_lines)
+        self.button_next_found_line: QPushButton = QPushButton(self.group_find_lines)
 
         # Found Lines table
         self.box_found_lines: QDockWidget = QDockWidget(self.central_widget)
@@ -224,9 +226,11 @@ class GUI(QMainWindow):
             self.tr("Search threshold:"), self.spin_threshold
         )
         self.grid_layout_find_lines.addWidget(self.button_find_lines, 0, 0, 1, 2)
-        self.grid_layout_find_lines.addWidget(self.button_clear_lines, 1, 0, 1, 2)
-        self.grid_layout_find_lines.addWidget(self.button_prev_line, 2, 0)
-        self.grid_layout_find_lines.addWidget(self.button_next_line, 2, 1)
+        self.grid_layout_find_lines.addWidget(
+            self.button_clear_automatically_found_lines, 1, 0, 1, 2
+        )
+        self.grid_layout_find_lines.addWidget(self.button_prev_found_line, 2, 0)
+        self.grid_layout_find_lines.addWidget(self.button_next_found_line, 2, 1)
 
         self.v_layout_find_lines.addLayout(self.form_layout_find_lines)
         self.v_layout_find_lines.addLayout(self.grid_layout_find_lines)
@@ -309,12 +313,14 @@ class GUI(QMainWindow):
         self.box_find_lines.setWindowTitle(self.tr("Find Lines Automatically"))
         self.group_find_lines.setToolTip(self.tr("Try to detect lines automatically"))
         self.button_find_lines.setText(self.tr("Find Lines Automatically"))
-        self.button_clear_lines.setText(self.tr("Clear Automatically Found Lines"))
-        self.button_prev_line.setText(self.tr("Previous Line"))
-        self.button_next_line.setText(self.tr("Next Line"))
-        self.button_clear_lines.setEnabled(False)
-        self.button_next_line.setEnabled(False)
-        self.button_prev_line.setEnabled(False)
+        self.button_clear_automatically_found_lines.setText(
+            self.tr("Clear Automatically Found Lines")
+        )
+        self.button_prev_found_line.setText(self.tr("Previous Line"))
+        self.button_next_found_line.setText(self.tr("Next Line"))
+        self.button_clear_automatically_found_lines.setEnabled(False)
+        self.button_next_found_line.setEnabled(False)
+        self.button_prev_found_line.setEnabled(False)
 
         self.box_found_lines.setWindowTitle(self.tr("Found Lines"))
         self.model_found_lines.set_format(
@@ -457,9 +463,11 @@ class GUI(QMainWindow):
         self.box_find_lines.setWindowTitle(self.tr("Find Lines Automatically"))
         self.group_find_lines.setToolTip(self.tr("Try to detect lines automatically"))
         self.button_find_lines.setText(self.tr("Find Lines Automatically"))
-        self.button_clear_lines.setText(self.tr("Clear Automatically Found Lines"))
-        self.button_prev_line.setText(self.tr("Previous Line"))
-        self.button_next_line.setText(self.tr("Next Line"))
+        self.button_clear_automatically_found_lines.setText(
+            self.tr("Clear Automatically Found Lines")
+        )
+        self.button_prev_found_line.setText(self.tr("Previous Line"))
+        self.button_next_found_line.setText(self.tr("Next Line"))
 
         self.box_found_lines.setWindowTitle(self.tr("Found Lines"))
 
