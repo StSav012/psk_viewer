@@ -22,10 +22,16 @@ from qtpy.QtCore import (
     Qt,
     Slot,
 )
-from qtpy.QtGui import QBrush, QColor, QCloseEvent, QPalette, QPen
-from qtpy.QtGui import QScreen
-from qtpy.QtWidgets import QAction, QMessageBox, QWidget
-from qtpy.QtWidgets import QApplication
+from qtpy.QtGui import (
+    QBrush,
+    QCloseEvent,
+    QColor,
+    QGuiApplication,
+    QPalette,
+    QPen,
+    QScreen,
+)
+from qtpy.QtWidgets import QAction, QApplication, QMessageBox, QWidget
 
 from .detection import correlation, peaks_positions
 from .file_dialog import OpenFileDialog, SaveFileDialog
