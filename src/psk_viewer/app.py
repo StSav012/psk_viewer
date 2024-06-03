@@ -1235,8 +1235,7 @@ class App(GUI):
                     writer,
                     index=False,
                     header=self.model_found_lines.header,
-                    sheet_name=self._plot_line.name()
-                    or _translate("workbook", "Sheet1"),
+                    sheet_name=_translate("workbook", "Sheet1"),
                 )
 
         supported_formats_callbacks: dict[str, Callable[[Path], None]] = {
