@@ -58,9 +58,9 @@ def _warn_about_outdated_package(
     package_name: str, package_version: str, release_time: datetime
 ) -> None:
     """Display a warning about an outdated package a year after the package released"""
-    if datetime.utcnow().replace(
-        tzinfo=timezone(timedelta())
-    ) - release_time > timedelta(days=366):
+    if datetime.now().replace(tzinfo=timezone(timedelta())) - release_time > timedelta(
+        days=366
+    ):
         import tkinter.messagebox
 
         tkinter.messagebox.showwarning(
