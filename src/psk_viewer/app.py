@@ -1230,7 +1230,9 @@ class App(GUI):
 
         def save_xlsx(fn: Path) -> None:
             with pd.ExcelWriter(fn) as writer:
-                df: pd.DataFrame = pd.DataFrame(data)
+                df: pd.DataFrame = pd.DataFrame(
+                    [[(x.real if x.imag == 0.0 else x) for x in col] for col in data]
+                )
                 df.to_excel(
                     writer,
                     index=False,
