@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import mimetypes
+from contextlib import suppress
 from numbers import Number
 from pathlib import Path
 from typing import Any, Callable, Final, Iterable, Sequence, TYPE_CHECKING, cast
@@ -154,9 +155,11 @@ class App(GUI):
         self.load_config()
 
         self.setup_ui_actions()
-        QGuiApplication.styleHints().colorSchemeChanged.connect(
-            self.on_color_scheme_changed
-        )
+        with suppress(AttributeError):
+            # `colorSchemeChanged` exists starting from Qt6
+            QGuiApplication.styleHints().colorSchemeChanged.connect(
+                self.on_color_scheme_changed
+            )
 
         if file_path is not None and file_path.exists():
             loaded: bool = self.load_data(file_path)

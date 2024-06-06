@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import enum
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -70,7 +71,7 @@ def _warn_about_outdated_package(
 
 
 def _make_old_qt_compatible_again() -> None:
-    from qtpy import QT6, PYSIDE2
+    from qtpy import PYQT5, PYQT6, PYSIDE2, QT5, QT6
     from qtpy.QtCore import QLibraryInfo, Qt, qVersion
     from qtpy.QtWidgets import QApplication, QDialog
 
@@ -133,6 +134,9 @@ def _make_old_qt_compatible_again() -> None:
     if not QT6:
         QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
         QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
+
+    if QT5:
+        Qt.ColorScheme = enum.IntEnum("ColorScheme", ["Unknown", "Light", "Dark"])
 
     from qtpy import __version__
 
@@ -269,6 +273,23 @@ def _make_old_qt_compatible_again() -> None:
                     )
                 )
             )
+    if PYQT5 or PYQT6:
+        # They check the parameters of the slots,
+        # but the parameters are `object` for every argument of every signal.
+        # The stub essentially disables the `Slot` decorators.
+
+        from typing import Callable
+
+        from qtpy import QtCore
+
+        class Slot:
+            def __init__(self, *_: type, **__: str | None) -> None:
+                pass
+
+            def __call__(self, fn: Callable):
+                return fn
+
+        QtCore.Slot = Slot
 
 
 def main() -> int:
