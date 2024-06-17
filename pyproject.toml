@@ -53,4 +53,6 @@ write_to = 'src/psk_viewer/_version.py'
 version = {attr = 'psk_viewer._version.__version__'}
 
 [tool.ruff.lint]
+fixable = ["ALL"]
+unfixable = []
 select = ["NPY201"]
