@@ -51,3 +51,6 @@ write_to = 'src/psk_viewer/_version.py'
 
 [tool.setuptools.dynamic]
 version = {attr = 'psk_viewer._version.__version__'}
+
+[tool.ruff.lint]
+select = ["NPY201"]

@@ -152,7 +152,7 @@ class FoundLinesModel(DataModel):
                         (
                             np.log10(
                                 plot_data.gamma_data[frequency_indices].astype(
-                                    np.complex_
+                                    np.complex128
                                 )
                             )
                             if self._log10_gamma

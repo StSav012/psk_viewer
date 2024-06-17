@@ -193,7 +193,7 @@ class DataModel(QAbstractTableModel):
     def append_data(self, new_data_line: list[float] | NDArray[np.float64]) -> None:
         self.beginResetModel()
         if self._data.shape[1] == len(new_data_line):
-            self._data = np.row_stack((self._data, new_data_line))
+            self._data = np.vstack((self._data, new_data_line))
             if self._sort_column < self._data.shape[1]:
                 sort_indices: NDArray[np.float64] = np.argsort(
                     self._data[:, self._sort_column], kind="heapsort"
@@ -211,7 +211,7 @@ class DataModel(QAbstractTableModel):
         self.beginResetModel()
         for new_data_line in new_data_lines:
             if self._data.shape[1] == len(new_data_line):
-                self._data = np.row_stack((self._data, new_data_line))
+                self._data = np.vstack((self._data, new_data_line))
         if self._sort_column < self._data.shape[1]:
             sort_indices: NDArray[np.float64] = np.argsort(
                 self._data[:, self._sort_column], kind="heapsort"

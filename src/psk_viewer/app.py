@@ -111,7 +111,7 @@ class App(GUI):
 
         self._ignore_scale_change: bool = False
 
-        self.model_signal: NDArray[np.float_]
+        self.model_signal: NDArray[np.float64]
         try:
             self.model_signal = pd.read_csv(
                 resource_path("averaged fs signal filtered.csv")
@@ -126,8 +126,8 @@ class App(GUI):
         self.automatically_found_lines: pg.PlotDataItem = self._canvas.scatterPlot(
             np.empty(0), symbol="o", pxMode=True
         )
-        self.user_found_lines_data: NDArray[np.float_] = np.empty(0)
-        self.automatically_found_lines_data: NDArray[np.float_] = np.empty(0)
+        self.user_found_lines_data: NDArray[np.float64] = np.empty(0)
+        self.automatically_found_lines_data: NDArray[np.float64] = np.empty(0)
 
         # cross-hair
         self._crosshair_v_line: pg.InfiniteLine = pg.InfiniteLine(
@@ -465,7 +465,7 @@ class App(GUI):
             upper_value=self.spin_frequency_max.value(),
         )
 
-    def on_ylim_changed(self, ylim: Iterable[float | np.float_]) -> None:
+    def on_ylim_changed(self, ylim: Iterable[float | np.float64]) -> None:
         min_voltage, max_voltage = min(ylim), max(ylim)
         self._loading = True
         self.spin_voltage_min.setValue(min_voltage)
@@ -488,7 +488,7 @@ class App(GUI):
 
         point: pg.SpotItem
         if ev.modifiers() == Qt.KeyboardModifier.ShiftModifier:
-            items: NDArray[np.float_] = item.scatter.data["item"]
+            items: NDArray[np.float64] = item.scatter.data["item"]
             index: NDArray[np.bool_] = np.full(items.shape, True, np.bool_)
             for point in points:
                 index &= items != point
@@ -520,7 +520,7 @@ class App(GUI):
             )
 
         elif ev.modifiers() == Qt.KeyboardModifier.NoModifier:
-            found_lines_frequencies: NDArray[np.float_] = (
+            found_lines_frequencies: NDArray[np.float64] = (
                 self.model_found_lines.all_data[:, 0]
             )
             selected_points: list[int] = [
@@ -609,7 +609,7 @@ class App(GUI):
         point: QPointF = self._canvas.vb.mapSceneToView(pos)
         if self._plot_line.xData is None or not self._plot_line.xData.size:
             return
-        distance: NDArray[np.float_] = np.min(
+        distance: NDArray[np.float64] = np.min(
             np.hypot(
                 (self._plot_line.xData - point.x()) / x_span,
                 (self._plot_line.yData - point.y()) / y_span,
@@ -948,12 +948,12 @@ class App(GUI):
         return self._plot_line.name()
 
     def set_frequency_range(
-        self, lower_value: float | np.float_, upper_value: float | np.float_
+        self, lower_value: float | np.float64, upper_value: float | np.float64
     ) -> None:
         self.figure.plotItem.setXRange(lower_value, upper_value, padding=0.0)
 
     def set_voltage_range(
-        self, lower_value: float | np.float_, upper_value: float | np.float_
+        self, lower_value: float | np.float64, upper_value: float | np.float64
     ) -> None:
         self.figure.plotItem.setYRange(lower_value, upper_value, padding=0.0)
 
@@ -996,22 +996,22 @@ class App(GUI):
 
         from scipy import interpolate  # type: ignore
 
-        x: Final[NDArray[np.float_]] = self._plot_line.xData
-        y: Final[NDArray[np.float_]] = self._plot_line.yData
+        x: Final[NDArray[np.float64]] = self._plot_line.xData
+        y: Final[NDArray[np.float64]] = self._plot_line.yData
         if x.size < 2 or y.size < 2:
             return 0
 
-        found_lines: NDArray[np.float_]
+        found_lines: NDArray[np.float64]
         if self._data_mode == self.FS_DATA_MODE:
             # re-scale the signal to the actual frequency mesh
-            x_model: NDArray[np.float_] = (
+            x_model: NDArray[np.float64] = (
                 np.arange(self.model_signal.size, dtype=x.dtype) * 0.1
             )
             interpol = interpolate.interp1d(x_model, self.model_signal, kind=2)
-            x_model_new: NDArray[np.float_] = np.arange(
+            x_model_new: NDArray[np.float64] = np.arange(
                 x_model[0], x_model[-1], x[1] - x[0]
             )
-            y_model_new: NDArray[np.float_] = interpol(x_model_new)
+            y_model_new: NDArray[np.float64] = interpol(x_model_new)
             found_lines = peaks_positions(
                 x, correlation(y_model_new, x, y), threshold=1.0 / threshold
             )
@@ -1053,7 +1053,7 @@ class App(GUI):
 
         init_frequency: float = self.spin_frequency_center.value()
 
-        line_data: NDArray[np.float_] = self.automatically_found_lines.xData
+        line_data: NDArray[np.float64] = self.automatically_found_lines.xData
         if line_data is None or not line_data.size:
             return
         i: int = cast(int, np.searchsorted(line_data, init_frequency, side="right") - 2)
@@ -1068,7 +1068,7 @@ class App(GUI):
 
         init_frequency: float = self.spin_frequency_center.value()
 
-        line_data: NDArray[np.float_] = self.automatically_found_lines.xData
+        line_data: NDArray[np.float64] = self.automatically_found_lines.xData
         if line_data is None or not line_data.size:
             return
         i: int = cast(int, np.searchsorted(line_data, init_frequency, side="left") + 1)
@@ -1088,17 +1088,17 @@ class App(GUI):
             return
         x: pg.AxisItem = self._canvas.getAxis("bottom")
         y: pg.AxisItem = self._canvas.getAxis("left")
-        visible_points: NDArray[np.float_] = self._plot_line.yData[
+        visible_points: NDArray[np.float64] = self._plot_line.yData[
             (self._plot_line.xData >= min(x.range))
             & (self._plot_line.xData <= max(x.range))
         ]
         if np.any(visible_points < min(y.range)):
-            minimum: np.float_ = np.min(visible_points)
+            minimum: np.float64 = np.min(visible_points)
             self.set_voltage_range(
                 minimum - 0.05 * (max(y.range) - minimum), max(y.range)
             )
         if np.any(visible_points > max(y.range)):
-            maximum: np.float_ = np.max(visible_points)
+            maximum: np.float64 = np.max(visible_points)
             self.set_voltage_range(
                 min(y.range), maximum + 0.05 * (maximum - min(y.range))
             )
@@ -1108,13 +1108,13 @@ class App(GUI):
         def load_csv(fn: Path) -> Sequence[float]:
             sep: str = self.settings.csv_separator
             try:
-                data: NDArray[np.float_] = (
+                data: NDArray[np.float64] = (
                     np.loadtxt(
                         fn,
                         delimiter=sep,
                         usecols=(0,),
                         encoding="utf-8",
-                        dtype=np.complex_,
+                        dtype=np.complex128,
                     ).real
                     * 1e6
                 )
@@ -1154,7 +1154,7 @@ class App(GUI):
             if not data:
                 return []
 
-            data_: NDArray[np.float_] = np.asarray(data, dtype=np.float_) * 1e6
+            data_: NDArray[np.float64] = np.asarray(data, dtype=np.float64) * 1e6
             data_ = data_[
                 (data_ >= self._plot_data.min_frequency)
                 & (data_ <= self._plot_data.max_frequency)
@@ -1251,11 +1251,11 @@ class App(GUI):
         if not (filename := self._save_table_dialog.get_save_filename()):
             return
 
-        f: NDArray[np.float_] = self.model_found_lines.all_data[:, 0] * 1e-6
-        v: NDArray[np.float_] = self.model_found_lines.all_data[:, 1] * 1e3
-        data: NDArray[np.complex_] | NDArray[np.float_]
+        f: NDArray[np.float64] = self.model_found_lines.all_data[:, 0] * 1e-6
+        v: NDArray[np.float64] = self.model_found_lines.all_data[:, 1] * 1e3
+        data: NDArray[np.complex128] | NDArray[np.float64]
         if self.model_found_lines.all_data.shape[1] > 2:
-            g: NDArray[np.complex_] | NDArray[np.float_] = (
+            g: NDArray[np.complex128] | NDArray[np.float64] = (
                 self.model_found_lines.all_data[:, 2]
             )
             data = np.column_stack((f, v, g))
@@ -1363,9 +1363,9 @@ class App(GUI):
             if not (filename := self._open_data_dialog.get_open_filename()):
                 return False
 
-        v: NDArray[np.float_]
-        f: NDArray[np.float_]
-        g: NDArray[np.float_] = np.empty(0)
+        v: NDArray[np.float64]
+        f: NDArray[np.float64]
+        g: NDArray[np.float64] = np.empty(0)
         jump: float
         if filename.suffix.casefold() == ".scandat":
             f, v, g, jump = load_data_scandat(filename, self)
@@ -1404,8 +1404,8 @@ class App(GUI):
         )
         self._plot_data.set_data(frequency_data=f, gamma_data=g, voltage_data=v)
 
-        min_frequency: np.float_ = cast(np.float_, f[0])
-        max_frequency: np.float_ = cast(np.float_, f[-1])
+        min_frequency: np.float64 = cast(np.float64, f[0])
+        max_frequency: np.float64 = cast(np.float64, f[-1])
 
         self.toolbar.clear_action.setEnabled(True)
         step: int = int(
@@ -1459,9 +1459,9 @@ class App(GUI):
             if not (filename := self._open_data_dialog.get_open_filename()):
                 return False
 
-        v: NDArray[np.float_]
-        f: NDArray[np.float_]
-        g: NDArray[np.float_] = np.empty(0)
+        v: NDArray[np.float64]
+        f: NDArray[np.float64]
+        g: NDArray[np.float64] = np.empty(0)
         jump: float
         if filename.suffix.casefold() == ".scandat":
             f, v, g, jump = load_data_scandat(filename, self)
@@ -1549,9 +1549,9 @@ class App(GUI):
             self._plot_line.setData(self._plot_data.x_data, self._plot_data.y_data)
 
             self._loading = True
-            y_data: NDArray[np.float_] = self._plot_data.y_data
-            min_y: np.float_ = np.min(y_data)
-            max_y: np.float_ = np.max(y_data)
+            y_data: NDArray[np.float64] = self._plot_data.y_data
+            min_y: np.float64 = np.min(y_data)
+            max_y: np.float64 = np.max(y_data)
             if not self.check_voltage_persists.isChecked():
                 self.on_ylim_changed((min_y, max_y))
             self.spin_voltage_min.setMaximum(max(max_y, self.spin_voltage_min.value()))
@@ -1633,7 +1633,7 @@ class App(GUI):
             return
 
         def save_csv(fn: Path) -> None:
-            data: NDArray[np.float_]
+            data: NDArray[np.float64]
             sep: str = self.settings.csv_separator
             if self.switch_data_action.isChecked():
                 data = np.column_stack((x * 1e-6, y))
@@ -1681,7 +1681,7 @@ class App(GUI):
                 )
 
         def save_xlsx(fn: Path) -> None:
-            data: NDArray[np.float_]
+            data: NDArray[np.float64]
             with pd.ExcelWriter(fn) as writer:
                 df: pd.DataFrame
                 if self.switch_data_action.isChecked():
@@ -1718,8 +1718,8 @@ class App(GUI):
 
         if not (filename := self._save_table_dialog.get_save_filename()):
             return
-        x: NDArray[np.float_] = self._plot_line.xData
-        y: NDArray[np.float_] = self._plot_line.yData
+        x: NDArray[np.float64] = self._plot_line.xData
+        y: NDArray[np.float64] = self._plot_line.yData
         max_mark: float
         min_mark: float
         min_mark, max_mark = self._canvas.axes["bottom"]["item"].range
