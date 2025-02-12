@@ -510,9 +510,10 @@ def find_qm_files(
         files: set[Path] = set()
         if path not in exclude:
             if path.is_dir():
-                for child in path.iterdir():
-                    if (child := child.resolve()) not in files:
-                        files.update(list_files(child))
+                with suppress(PermissionError):
+                    for child in path.iterdir():
+                        if (child := child.resolve()) not in files:
+                            files.update(list_files(child))
             elif path.is_file():
                 files.add(path.resolve())
         return files
