@@ -557,7 +557,8 @@ class GUI(QMainWindow):
                 ):
                     QApplication.installTranslator(qt_translator)
             for qm_file in find_qm_files(
-                exclude=[qt_translations_path, sys.exec_prefix]
+                root=Path(__file__).parent,
+                exclude=[qt_translations_path, sys.exec_prefix],
             ):
                 translator = QTranslator(self)
                 if (
