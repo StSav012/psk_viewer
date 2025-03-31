@@ -4,12 +4,12 @@ from __future__ import annotations
 from functools import partial
 from logging import Logger, getLogger
 from pathlib import Path
-from typing import Any, ClassVar, ParamSpec, cast
+from typing import Any, cast
 
 import pyqtgraph as pg  # type: ignore
 from qtawesome import icon
-from qtpy.QtCore import QByteArray, Qt
-from qtpy.QtGui import QCloseEvent, QColor
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QColor
 from qtpy.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -33,7 +33,26 @@ __all__ = ["Preferences"]
 
 
 class BaseLogger:
+    from typing import ClassVar
+
     logger: ClassVar[Logger]
+
+    try:
+        from typing import ParamSpec
+    except ImportError:
+        # noinspection PyUnusedLocal
+        class ParamSpec:
+            def __init__(
+                self,
+                name: str,
+                *,
+                bound: Any | None = None,
+                contravariant: bool = False,
+                covariant: bool = False,
+                infer_variance: bool = False,
+                default: Any = ...,
+            ) -> None: ...
+
     _P = ParamSpec("_P")
 
     def __new__(cls, *args: _P.args, **kwargs: _P.kwargs):
