@@ -1512,7 +1512,7 @@ class App(GUI):
     def actions_off(self) -> None:
         self.toolbar.trace_action.setChecked(False)
 
-    @Slot()
+    @Slot(bool)
     def on_differentiate_action_toggled(self, _: bool) -> None:
         self._data_mode = self.PSK_WITH_JUMP_DATA_MODE
         self.display_gamma_or_voltage()
