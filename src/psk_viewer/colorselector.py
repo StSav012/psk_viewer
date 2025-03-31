@@ -1,7 +1,4 @@
-# -*- coding: utf-8 -*-
-from __future__ import annotations
-
-from qtpy.QtCore import Signal
+from qtpy.QtCore import Signal, Slot
 from qtpy.QtGui import QColor, QPalette
 from qtpy.QtWidgets import QColorDialog, QPushButton, QWidget
 
@@ -26,10 +23,12 @@ class ColorSelector(QPushButton):
 
         self.clicked.connect(self.on_button_clicked)
 
+    @Slot()
     def on_button_clicked(self) -> None:
         self.color_dialog.setCurrentColor(self.color)
         self.color_dialog.exec()
 
+    @Slot(QColor)
     def on_color_changed(self, color: QColor) -> None:
         self.color = color
         self.setText(self.color.name())
