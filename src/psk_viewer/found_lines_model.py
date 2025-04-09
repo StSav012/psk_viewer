@@ -125,7 +125,7 @@ class FoundLinesModel(DataModel):
 
     def frequency_indices(
         self, plot_data: PlotDataItem, frequencies: NDArray[np.float64] | None = None
-    ) -> NDArray[np.float64]:
+    ) -> np.int64 | NDArray[np.int64]:
         if frequencies is None:
             frequencies = self._frequencies
         return np.searchsorted(plot_data.x_data, frequencies)
@@ -138,7 +138,7 @@ class FoundLinesModel(DataModel):
         else:
             self._last_plot_data = plot_data
 
-        frequency_indices: NDArray[np.float64] = self.frequency_indices(plot_data)
+        frequency_indices: NDArray[np.int64] = self.frequency_indices(plot_data)
         if not frequency_indices.size:
             self.clear()
             return

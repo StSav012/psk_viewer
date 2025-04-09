@@ -604,8 +604,8 @@ class App(GUI):
             return
         if not self.figure.sceneBoundingRect().contains(pos):
             return
-        x_span: float = cast(float, np.ptp(self._canvas.axes["bottom"]["item"].range))
-        y_span: float = cast(float, np.ptp(self._canvas.axes["left"]["item"].range))
+        x_span: np.float64 = np.ptp(self._canvas.axes["bottom"]["item"].range)
+        y_span: np.float64 = np.ptp(self._canvas.axes["left"]["item"].range)
         point: QPointF = self._canvas.vb.mapSceneToView(pos)
         if self._plot_line.xData is None or not self._plot_line.xData.size:
             return
@@ -617,14 +617,11 @@ class App(GUI):
         )
         if distance > 0.01:
             return
-        closest_point_index: int = cast(
-            int,
-            np.argmin(
-                np.hypot(
-                    (self._plot_line.xData - point.x()) / x_span,
-                    (self._plot_line.yData - point.y()) / y_span,
-                )
-            ),
+        closest_point_index: np.int64 = np.argmin(
+            np.hypot(
+                (self._plot_line.xData - point.x()) / x_span,
+                (self._plot_line.yData - point.y()) / y_span,
+            )
         )
 
         # avoid the same point to be marked several times
