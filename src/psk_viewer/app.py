@@ -1,11 +1,9 @@
-﻿# -*- coding: utf-8 -*-
-from __future__ import annotations
-
-import mimetypes
+﻿import mimetypes
+from collections.abc import Iterable, Sequence
 from contextlib import suppress
 from numbers import Number
 from pathlib import Path
-from typing import Any, Callable, Final, Iterable, Sequence, TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, Callable, Final, cast
 
 import numpy as np
 import pandas as pd  # type: ignore
@@ -58,8 +56,7 @@ pg.ViewBox.suggestPadding = lambda *_: 0.0
 def tick_strings(
     self: pg.AxisItem, values: Iterable[float], scale: float, spacing: float
 ) -> list[str]:
-    """improve formatting of `AxisItem.tickStrings`"""
-
+    """Improve formatting of `AxisItem.tickStrings`."""
     if self.logMode:
         return cast(list[str], self.logTickStrings(values, scale, spacing))
 
@@ -273,16 +270,15 @@ class App(GUI):
         base_color: QColor = palette.base().color()
         text_color: QColor = palette.text().color()
         self.figure.setBackground(pg.mkBrush(base_color))
-        label: str
         ax_d: AxisDict
-        for label, ax_d in self._canvas.axes.items():
+        for ax_d in self._canvas.axes.values():
             ax: pg.AxisItem = ax_d["item"]
             ax.setPen(text_color)
             ax.setTextPen(text_color)
         self._cursor_balloon.setColor(text_color)
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        """senseless joke in the loop"""
+        """Senseless joke in the loop."""
         close: QMessageBox = QMessageBox()
         close.setText(self.tr("Are you sure?"))
         close.setIcon(QMessageBox.Icon.Question)
@@ -1118,11 +1114,10 @@ class App(GUI):
             except ValueError:
                 return []
             else:
-                data = data[
+                return data[
                     (data >= self._plot_data.min_frequency)
                     & (data <= self._plot_data.max_frequency)
                 ]
-                return data
 
         def load_xlsx(fn: Path) -> Sequence[float]:
             from openpyxl.reader.excel import load_workbook
@@ -1152,11 +1147,10 @@ class App(GUI):
                 return []
 
             data_: NDArray[np.float64] = np.asarray(data, dtype=np.float64) * 1e6
-            data_ = data_[
+            return data_[
                 (data_ >= self._plot_data.min_frequency)
                 & (data_ <= self._plot_data.max_frequency)
             ]
-            return data_
 
         mimetypes.init()
 
@@ -1210,7 +1204,7 @@ class App(GUI):
     def on_save_found_lines_triggered(self) -> None:
         def save_csv(fn: Path) -> None:
             sep: str = self.settings.csv_separator
-            with open(fn, "wt", encoding="utf-8") as f_out:
+            with open(fn, "w", encoding="utf-8") as f_out:
                 f_out.writelines(
                     map(
                         lambda s: "# " + s + "\n",
@@ -1356,9 +1350,10 @@ class App(GUI):
         self.clear_ghost()
         self.clear_found_lines()
 
-        if not filename:
-            if not (filename := self._open_data_dialog.get_open_filename()):
-                return False
+        if not filename and not (
+            filename := self._open_data_dialog.get_open_filename()
+        ):
+            return False
 
         v: NDArray[np.float64]
         f: NDArray[np.float64]
@@ -1452,9 +1447,10 @@ class App(GUI):
         return True
 
     def load_ghost_data(self, filename: Path | None = None) -> bool:
-        if not filename:
-            if not (filename := self._open_data_dialog.get_open_filename()):
-                return False
+        if not filename and not (
+            filename := self._open_data_dialog.get_open_filename()
+        ):
+            return False
 
         v: NDArray[np.float64]
         f: NDArray[np.float64]
@@ -1480,9 +1476,8 @@ class App(GUI):
                         return False
         elif filename.suffix.casefold() in (".fmd", ".frd"):
             f, v = load_data_fs(filename)
-            if f.size and v.size:
-                if self._data_mode != self.FS_DATA_MODE:
-                    return False
+            if f.size and v.size and self._data_mode != self.FS_DATA_MODE:
+                return False
         else:
             return False
 

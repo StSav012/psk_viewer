@@ -1,10 +1,8 @@
-# -*- coding: utf-8 -*-
-from __future__ import annotations
-
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager, suppress
 from os import PathLike, linesep
 from pathlib import Path
-from typing import NamedTuple, Sequence, cast
+from typing import NamedTuple, cast
 
 import pyqtgraph as pg  # type: ignore
 from qtpy.QtCore import QByteArray, QCoreApplication, QObject, QSettings
@@ -17,7 +15,7 @@ _translate = QCoreApplication.translate
 
 
 class Settings(QSettings):
-    """convenient internal representation of the application settings"""
+    """convenient internal representation of the application settings."""
 
     class CallbackOnly(NamedTuple):
         callback: str
@@ -68,13 +66,11 @@ class Settings(QSettings):
         str | tuple[str, tuple[str, ...]],
         dict[
             str,
-            (
-                CallbackOnly
-                | PathCallbackOnly
-                | SpinboxAndCallback
-                | ComboboxAndCallback
-                | EditableComboboxAndCallback
-            ),
+            CallbackOnly
+            | PathCallbackOnly
+            | SpinboxAndCallback
+            | ComboboxAndCallback
+            | EditableComboboxAndCallback,
         ],
     ]:
         self._line_ends = {
@@ -189,7 +185,7 @@ class Settings(QSettings):
         }
 
     @contextmanager
-    def section(self, section: str) -> None:
+    def section(self, section: str) -> Iterator[None]:
         try:
             self.beginGroup(section)
             yield None

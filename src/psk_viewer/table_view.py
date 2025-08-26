@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import annotations
-
 from typing import cast
 
 from qtpy.QtCore import QAbstractItemModel, QModelIndex, QPoint, Qt
@@ -22,9 +19,8 @@ class TableView(QTableView):
         def popup(pos: QPoint) -> None:
             menu: QMenu = QMenu()
             model: FoundLinesModel = cast(FoundLinesModel, self.model())
-            actions: list[QAction] = (
-                []
-            )  # store the actions not to lose all of them but the last
+            # store the actions not to lose all of them but the last
+            actions: list[QAction] = []
             index: int
             column: str | HeaderWithUnit
             for index, column in enumerate(model.header):
@@ -91,8 +87,8 @@ class TableView(QTableView):
         self.resizeColumnsToContents()
 
     def stringify_table_plain_text(self, whole_table: bool = True) -> str:
-        """
-        Convert selected cells to string for copying as plain text
+        """Convert selected cells to string for copying as plain text.
+
         :return: the plain text representation of the selected table lines
         """
         model: FoundLinesModel = cast(FoundLinesModel, self.model())
@@ -121,8 +117,8 @@ class TableView(QTableView):
         return self.settings.line_end.join(text)
 
     def stringify_table_html(self, whole_table: bool = True) -> str:
-        """
-        Convert selected cells to string for copying as rich text
+        """Convert selected cells to string for copying as rich text.
+
         :return: the rich text representation of the selected table lines
         """
         model: FoundLinesModel = cast(FoundLinesModel, self.model())

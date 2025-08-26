@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import annotations
-
 from functools import partial
 from logging import Logger, getLogger
 from pathlib import Path
@@ -46,34 +43,32 @@ class BaseLogger:
                 self,
                 name: str,
                 *,
-                bound: Any | None = None,
+                bound: object | None = None,
                 contravariant: bool = False,
                 covariant: bool = False,
                 infer_variance: bool = False,
-                default: Any = ...,
+                default: object = ...,
             ) -> None: ...
 
     _P = ParamSpec("_P")
 
-    def __new__(cls, *args: _P.args, **kwargs: _P.kwargs):
+    def __new__(cls, *args: _P.args, **kwargs: _P.kwargs) -> "BaseLogger":
         cls.logger = getLogger(cls.__name__)
         return super().__new__(cls)
 
 
 class PreferencePage(BaseLogger, QScrollArea):
-    """A page of the Preferences dialog"""
+    """A page of the Preferences dialog."""
 
     def __init__(
         self,
         value: dict[
             str,
-            (
-                Settings.CallbackOnly
-                | Settings.PathCallbackOnly
-                | Settings.SpinboxAndCallback
-                | Settings.ComboboxAndCallback
-                | Settings.EditableComboboxAndCallback
-            ),
+            Settings.CallbackOnly
+            | Settings.PathCallbackOnly
+            | Settings.SpinboxAndCallback
+            | Settings.ComboboxAndCallback
+            | Settings.EditableComboboxAndCallback,
         ],
         settings: Settings,
         parent: QWidget | None = None,
@@ -164,7 +159,7 @@ class PreferencePage(BaseLogger, QScrollArea):
                 layout.addRow(key2, spin_box)
             elif isinstance(value2, Settings.ComboboxAndCallback):
                 combo_box = QComboBox(self)
-                for index, (data, item) in enumerate(value2.combobox_data.items()):
+                for data, item in value2.combobox_data.items():
                     combo_box.addItem(item, data)
                 combo_box.setCurrentText(
                     value2.combobox_data[getattr(settings, value2.callback)]
@@ -206,7 +201,7 @@ class PreferencePage(BaseLogger, QScrollArea):
 
 
 class PreferencesBody(BaseLogger, QSplitter):
-    """The main area of the GUI preferences dialog"""
+    """The main area of the GUI preferences dialog."""
 
     def __init__(self, settings: Settings, parent: QWidget | None = None) -> None:
         QSplitter.__init__(self, parent)
@@ -223,13 +218,11 @@ class PreferencesBody(BaseLogger, QSplitter):
         )
         value: dict[
             str,
-            (
-                Settings.CallbackOnly
-                | Settings.PathCallbackOnly
-                | Settings.SpinboxAndCallback
-                | Settings.ComboboxAndCallback
-                | Settings.EditableComboboxAndCallback
-            ),
+            Settings.CallbackOnly
+            | Settings.PathCallbackOnly
+            | Settings.SpinboxAndCallback
+            | Settings.ComboboxAndCallback
+            | Settings.EditableComboboxAndCallback,
         ]
         for key, value in settings.dialog.items():
             if not isinstance(value, dict):
@@ -276,7 +269,7 @@ class PreferencesBody(BaseLogger, QSplitter):
 
 
 class Preferences(QDialog):
-    """GUI preferences dialog"""
+    """GUI preferences dialog."""
 
     def __init__(self, settings: Settings, parent: QWidget | None = None) -> None:
         super().__init__(parent)

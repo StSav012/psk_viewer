@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import annotations
-
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QColor, QKeySequence, QPalette
 from qtpy.QtWidgets import QAction, QApplication, QToolBar, QWidget
@@ -11,7 +8,7 @@ __all__ = ["NavigationToolbar"]
 
 
 class NavigationToolbar(QToolBar):
-    def __init__(self, parent: QWidget):
+    def __init__(self, parent: QWidget) -> None:
         super().__init__("Navigation Toolbar", parent)
         self.setObjectName("NavigationToolbar")
 

@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import annotations
-
 from typing import Final
 
 import numpy as np
@@ -31,8 +28,10 @@ class PlotDataItem:
         self,
         frequency_data: NDArray[np.float64],
         voltage_data: NDArray[np.float64],
-        gamma_data: NDArray[np.float64] = np.empty(0),
+        gamma_data: NDArray[np.float64] | None = None,
     ) -> None:
+        if gamma_data is None:
+            gamma_data = np.empty(0, dtype=np.float64)
         if frequency_data.size != voltage_data.size:
             raise ValueError(
                 "Frequency and voltage data must be of the same size, but the sizes are "
@@ -179,7 +178,6 @@ class PlotDataItem:
     def y_data(self) -> NDArray[np.float64]:
         if self.data_type == PlotDataItem.VOLTAGE_DATA:
             return self.voltage_data
-        elif self.data_type == PlotDataItem.GAMMA_DATA:
+        if self.data_type == PlotDataItem.GAMMA_DATA:
             return self.gamma_data
-        else:
-            raise ValueError(f"Unknown data type: {self.data_type}")
+        raise ValueError(f"Unknown data type: {self.data_type}")

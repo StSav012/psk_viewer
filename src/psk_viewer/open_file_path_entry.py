@@ -1,6 +1,3 @@
-# coding: utf-8
-from __future__ import annotations
-
 from pathlib import Path
 from typing import ClassVar
 
@@ -38,8 +35,12 @@ class OpenFilePathEntry(QWidget):
         self._dialog: QFileDialog = QFileDialog(self)
         self._dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptOpen)
         self._dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
-        _space_before_extensions: str = " " * (not self._dialog.testOption(QFileDialog.Option.HideNameFilterDetails))
-        self._dialog.setNameFilter("".join((self.tr("Translations"), _space_before_extensions, "(*.qm)")))
+        _space_before_extensions: str = " " * (
+            not self._dialog.testOption(QFileDialog.Option.HideNameFilterDetails)
+        )
+        self._dialog.setNameFilter(
+            "".join((self.tr("Translations"), _space_before_extensions, "(*.qm)"))
+        )
         self._dialog.setDefaultSuffix(".qm")
         if self._path is not None:
             self._dialog.selectFile(str(self._path))
@@ -63,7 +64,6 @@ class OpenFilePathEntry(QWidget):
     def _on_browse_button_clicked(self) -> None:
         if self._dialog.exec() == QFileDialog.DialogCode.Accepted:
             selected_files: list[str] = self._dialog.selectedFiles()
-            if selected_files:
-                if Path(selected_files[0]) != self._path:
-                    self.path = Path(selected_files[0])
-                    self.changed.emit(self._path)
+            if selected_files and Path(selected_files[0]) != self._path:
+                self.path = Path(selected_files[0])
+                self.changed.emit(self._path)

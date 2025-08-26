@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import annotations
-
 import re
 import sys
 from pathlib import Path
@@ -593,7 +590,7 @@ class GUI(QMainWindow):
             except (TypeError, ValueError):
                 return default
 
-    def set_config_value(self, section: str, key: str, value: Any) -> None:
+    def set_config_value(self, section: str, key: str, value: object) -> None:
         if self._loading:
             return
         with self.settings.section(section):

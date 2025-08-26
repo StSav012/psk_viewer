@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import annotations
-
 from typing import Final, cast
 
 import numpy as np
@@ -18,8 +15,7 @@ def remove_spikes(
 
     sequence = ndimage.binary_dilation(sequence, iterations=iterations)
     sequence = ndimage.binary_erosion(sequence, iterations=iterations + 1)
-    sequence = ndimage.binary_dilation(sequence, iterations=1)
-    return sequence
+    return ndimage.binary_dilation(sequence, iterations=1)
 
 
 def correlation(
@@ -84,10 +80,10 @@ def peaks_positions(
         .std()
         .to_numpy()
     )
-    match: NDArray[np.float64] = np.array((std >= np.nanquantile(std, 1.0 - threshold)))
+    match: NDArray[np.float64] = np.array(std >= np.nanquantile(std, 1.0 - threshold))
     match = remove_spikes(match, iterations=8)
     match[0] = match[-1] = False
-    islands: NDArray[np.float64] = np.argwhere(np.diff(match)).reshape(-1, 2)
+    islands: NDArray[np.int64] = np.argwhere(np.diff(match)).reshape(-1, 2)
     peaks: NDArray[np.float64] = np.array(
         [
             i[0] + np.argmax(data_y[i[0] : i[1]])

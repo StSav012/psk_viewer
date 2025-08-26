@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
-from __future__ import annotations
-
 import sys
+from collections.abc import Collection, Iterable, Iterator
 from contextlib import suppress
 from os import PathLike
 from pathlib import Path
-from typing import Any, BinaryIO, Collection, Final, Iterable, Iterator, NamedTuple
+from typing import Any, BinaryIO, Final, NamedTuple
 
 import numpy as np
 from numpy.typing import NDArray
@@ -36,7 +34,7 @@ VOLTAGE_GAIN: Final[float] = 5.0
 # https://www.reddit.com/r/learnpython/comments/4kjie3/how_to_include_gui_images_with_pyinstaller/d3gjmom
 def resource_path(relative_path: str | Path) -> Path:
     if hasattr(sys, "_MEIPASS"):
-        return Path(getattr(sys, "_MEIPASS")) / relative_path
+        return Path(sys._MEIPASS) / relative_path
     return Path(__file__).parent / relative_path
 
 
@@ -44,7 +42,6 @@ IMAGE_EXT: str = ".svg"
 
 
 def load_icon(widget: QWidget, icon_name: str) -> QIcon:
-
     class QTAData(NamedTuple):
         args: Iterable[str]
         options: list[dict[str, Any]] = []
@@ -160,15 +157,13 @@ def load_icon(widget: QWidget, icon_name: str) -> QIcon:
             icon_description: bytes | QTAData = icons[icon_name]
             if isinstance(icon_description, bytes):
                 return icon_from_data(icon_description)
-            elif isinstance(icon_description, QTAData):
+            if isinstance(icon_description, QTAData):
                 if icon_description.options:
                     return icon(
                         *icon_description.args, options=icon_description.options
                     )
-                else:
-                    return icon(*icon_description.args)
-            else:
-                raise TypeError("Invalid icon description")
+                return icon(*icon_description.args)
+            raise TypeError("Invalid icon description")
     else:
         with open(filename, "rb") as f_in:
             return icon_from_data(f_in.read())
@@ -205,7 +200,7 @@ def superscript_number(number: str) -> str:
 
 
 def superscript_tag(html: str) -> str:
-    """replace numbers within <sup></sup> with their Unicode superscript analogs"""
+    """Replace numbers within <sup></sup> with their Unicode superscript analogs."""
     text: str = html
     j: int = 0
     while j >= 0:
@@ -225,8 +220,8 @@ def copy_to_clipboard(
     rich_text: str = "",
     text_type: Qt.TextFormat | str = Qt.TextFormat.PlainText,
 ) -> None:
-    from qtpy.QtGui import QClipboard
     from qtpy.QtCore import QMimeData
+    from qtpy.QtGui import QClipboard
     from qtpy.QtWidgets import QApplication
 
     clipboard: QClipboard = QApplication.clipboard()
@@ -245,7 +240,7 @@ def load_data_fs(filename: Path) -> tuple[NDArray[np.float64], NDArray[np.float6
     min_frequency: float = np.nan
     max_frequency: float = np.nan
     if (filename_fmd := filename.with_suffix(".fmd")).exists():
-        with open(filename_fmd, "rt") as f_in:
+        with open(filename_fmd) as f_in:
             line: str
             for line in f_in:
                 if line and not line.startswith("*"):
@@ -273,7 +268,7 @@ def load_data_fs(filename: Path) -> tuple[NDArray[np.float64], NDArray[np.float6
 def load_data_scandat(
     filename: Path, parent: QWidget
 ) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64], float]:
-    with open(filename, "rt") as f_in:
+    with open(filename) as f_in:
         lines: list[str] = f_in.readlines()
 
     min_frequency: float
@@ -411,7 +406,7 @@ def load_data_csv(
     if (filename_csv := filename.with_suffix(".csv")).exists() and (
         filename_conf := filename.with_suffix(".conf")
     ).exists():
-        with open(filename_csv, "rt") as f_in:
+        with open(filename_csv) as f_in:
             lines: list[str] = list(
                 filter(lambda line: line[0].isdigit(), f_in.readlines())
             )
@@ -422,7 +417,7 @@ def load_data_csv(
             np.array([float(line.split()[2]) for line in lines]) * 1e-3
         )
         g: NDArray[np.float64] = np.array([float(line.split()[4]) for line in lines])
-        with open(filename_conf, "rt") as f_in:
+        with open(filename_conf) as f_in:
             frequency_jump: float = (
                 float(
                     next(
@@ -480,10 +475,12 @@ class HeaderWithUnit:
 
 
 def find_qm_files(
-    root: str | PathLike[str] = Path.cwd(),
+    root: str | PathLike[str] | None = None,
     *,
     exclude: Collection[str | PathLike[str]] = frozenset(),
 ) -> Iterator[Path]:
+    if root in None:
+        root = Path.cwd()
     magic: Final[bytes] = bytes(
         [
             0x3C,

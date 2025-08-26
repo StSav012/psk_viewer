@@ -14,15 +14,16 @@
 
 They should install at the first application start automatically.
 
-**Required Python:** >= 3.8
+**Required Python:** >= 3.9
 
 **Notes:** 
-  - only Python <= 3.8 is available for MS Windows 7, so, there is not much choice for those who use it;
+  - to run on MS Windows 7, you can install Python from [adang1345/PythonWin7](https://github.com/adang1345/PythonWin7/);
   - `PySide2` requires Python < 3.11; 
     there is [a port](https://anaconda.org/conda-forge/pyside2) of `PySide2` on Python 3.11 by `conda-forge`, 
     but it's unclear whether it's stable;
   - `PyQt6` and `PySide6` require pretty modern OS, e.g., 64-bit MS Windows 10 21H2 or later;
-  - `pyqtgraph<0.13.3` is incompatible with `Qt6>=6.5.0`.
+  - `pyqtgraph<0.13.3` is incompatible with `Qt6>=6.5.0`;
+  - `PySide6==6.9.1` doesn't draw anything, it's a known bug.
 
 ### Getting Python
 Python might already been installed on your system.

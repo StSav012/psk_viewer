@@ -13,7 +13,7 @@ Optional packages:
   • bottleneck: for accelerating certain types of nan evaluations;
   • openpyxl: for saving MS Excel files.
 
-Required Python: >= 3.8
+Required Python: >= 3.9
 
 For developers. To add a translation, use
    pyside6-lupdate -noobsolete -tr-function-alias translate="_translate" *.py -ts translations/xy.ts

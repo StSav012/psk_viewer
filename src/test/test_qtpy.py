@@ -1,4 +1,3 @@
-# coding=utf-8
 import ast
 import mimetypes
 from pathlib import Path
@@ -6,7 +5,7 @@ from pathlib import Path
 import qtpy
 
 
-def test_only_qtpy_imported():
+def test_only_qtpy_imported() -> None:
     mimetypes.init()
 
     imported_packages: set[str] = set()
@@ -15,7 +14,7 @@ def test_only_qtpy_imported():
         if mimetypes.guess_type(src) != ("text/x-python", None):
             continue
         text: str = src.read_text()
-        if text.startswith(("\uFEFF", "\uFFFE")):
+        if text.startswith(("\ufeff", "\ufffe")):
             text = text[1:]
         module: ast.Module = ast.parse(text, src, type_comments=True)
         for s in module.body:

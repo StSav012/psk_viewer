@@ -1,33 +1,9 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-from __future__ import annotations
 
 import enum
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-
-if sys.version_info < (3, 8):
-    message = (
-        "The Python version "
-        + ".".join(map(str, sys.version_info[:3]))
-        + " is not supported.\n"
-        + "Use Python 3.8 or newer."
-    )
-    print(message, file=sys.stderr)
-
-    try:
-        import tkinter
-        import tkinter.messagebox
-    except (ImportError, ModuleNotFoundError):
-        input(message)
-    else:
-        _root = tkinter.Tk()
-        _root.withdraw()
-        tkinter.messagebox.showerror(title="Outdated Python", message=message)
-        _root.destroy()
-    exit(1)
-
 from typing import AnyStr, Final
 
 __author__: Final[str] = "StSav012"
@@ -58,7 +34,7 @@ def _version_tuple(version_string: AnyStr) -> tuple[int | AnyStr, ...]:
 def _warn_about_outdated_package(
     package_name: str, package_version: str, release_time: datetime
 ) -> None:
-    """Display a warning about an outdated package a year after the package released"""
+    """Display a warning about an outdated package a year after the package released."""
     if datetime.now().replace(tzinfo=timezone(timedelta())) - release_time > timedelta(
         days=366
     ):
@@ -71,14 +47,15 @@ def _warn_about_outdated_package(
 
 
 def _make_old_qt_compatible_again() -> None:
-    from qtpy import QT6, PYSIDE2, PYQT_VERSION
+    from typing import Callable
+
+    from qtpy import PYQT_VERSION, PYSIDE2, QT6
     from qtpy.QtCore import QLibraryInfo, Qt, qVersion
     from qtpy.QtWidgets import QApplication, QDialog
 
     def to_iso_format(s: str) -> str:
-        if sys.version_info < (3, 11):
+        if sys.version_info < (3, 11, 0):
             import re
-            from typing import Callable
 
             if s.endswith("Z"):
                 # '2011-11-04T00:05:23Z'
@@ -87,8 +64,12 @@ def _make_old_qt_compatible_again() -> None:
             def from_iso_datetime(m: re.Match[str]) -> str:
                 groups: dict[str, str] = m.groupdict("")
                 date: str = f"{m['year']}-{m['month']}-{m['day']}"
-                time: str = (
-                    f"{groups['hour']:0>2}:{groups['minute']:0>2}:{groups['second']:0>2}.{groups['fraction']:0<6}"
+                time: str = ":".join(
+                    (
+                        f"{groups['hour']:0>2}",
+                        f"{groups['minute']:0>2}",
+                        f"{groups['second']:0>2}.{groups['fraction']:0<6}",
+                    )
                 )
                 return date + "T" + time + groups["offset"]
 
@@ -99,8 +80,12 @@ def _make_old_qt_compatible_again() -> None:
                 date: str = date.fromisocalendar(
                     year=int(m["year"]), week=int(m["week"]), day=int(m["dof"])
                 ).isoformat()
-                time: str = (
-                    f"{groups['hour']:0>2}:{groups['minute']:0>2}:{groups['second']:0>2}.{groups['fraction']:0<6}"
+                time: str = ":".join(
+                    (
+                        f"{groups['hour']:0>2}",
+                        f"{groups['minute']:0>2}",
+                        f"{groups['second']:0>2}.{groups['fraction']:0<6}",
+                    )
                 )
                 return date + "T" + time + groups["offset"]
 
@@ -144,10 +129,10 @@ def _make_old_qt_compatible_again() -> None:
         from qtpy import QtCore
 
         class Slot:
-            def __init__(self, *_: type):
+            def __init__(self, *_: type) -> None:
                 pass
 
-            def __call__(self, fn: Callable):
+            def __call__(self, fn: Callable) -> Callable:
                 return fn
 
         QtCore.Slot = Slot
@@ -193,7 +178,20 @@ def _make_old_qt_compatible_again() -> None:
             from qtpy.QtGui import QIcon, QKeySequence
             from qtpy.QtWidgets import QAction, QMenu, QToolBar, QWidget
 
-            def add_action(self: QWidget, *args, old_add_action) -> QAction:
+            def add_action(
+                self: QWidget,
+                *args: object,
+                old_add_action: (
+                    Callable[[QWidget, str], QAction]
+                    | Callable[[QWidget, str, QObject, bytes], QAction]
+                    | Callable[[QWidget, QIcon, str, QObject], QAction]
+                    | Callable[[QWidget, str, QObject, bytes, QKeySequence], QAction]
+                    | Callable[
+                        [QWidget, QIcon, str, QObject, bytes, QKeySequence], QAction
+                    ]
+                    | Callable[[QWidget, object, ...], QAction | None]
+                ),
+            ) -> QAction:
                 action: QAction
                 icon: QIcon
                 text: str
@@ -226,7 +224,7 @@ def _make_old_qt_compatible_again() -> None:
                     else:
                         return old_add_action(self, *args)
                     return action
-                elif all(
+                if all(
                     isinstance(arg, t)
                     for arg, t in zip(
                         args,
@@ -318,7 +316,6 @@ def main() -> int:
 
     except Exception as ex:
         import traceback
-        from contextlib import suppress
 
         traceback.print_exc()
 
@@ -350,19 +347,23 @@ def main() -> int:
         else:
             print(error_message, file=sys.stderr)
 
-            root: tkinter.Tk = tkinter.Tk()
-            root.withdraw()
-            if isinstance(ex, SyntaxError):
-                tkinter.messagebox.showerror(
-                    title="Syntax Error", message=error_message
-                )
-            elif isinstance(ex, ImportError):
-                tkinter.messagebox.showerror(
-                    title="Package Missing", message=error_message
-                )
+            try:
+                root: tkinter.Tk = tkinter.Tk()
+            except tkinter.TclError:
+                pass
             else:
-                tkinter.messagebox.showerror(title="Error", message=error_message)
-            root.destroy()
+                root.withdraw()
+                if isinstance(ex, SyntaxError):
+                    tkinter.messagebox.showerror(
+                        title="Syntax Error", message=error_message
+                    )
+                elif isinstance(ex, ImportError):
+                    tkinter.messagebox.showerror(
+                        title="Package Missing", message=error_message
+                    )
+                else:
+                    tkinter.messagebox.showerror(title="Error", message=error_message)
+                root.destroy()
 
         return 1
 

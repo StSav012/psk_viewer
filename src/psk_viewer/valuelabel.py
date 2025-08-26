@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from __future__ import annotations
-
 import math
 import time
 
@@ -12,10 +9,9 @@ __all__ = ["ValueLabel"]
 
 
 class ValueLabel(QLabel):
-    """
-    QLabel specifically for displaying numerical values.
-    Extends QLabel adding some extra functionality:
+    """QLabel specifically for displaying numerical values.
 
+    Extends QLabel adding some extra functionality:
     - displaying units with si prefix
     - built-in exponential averaging
 
@@ -37,7 +33,8 @@ class ValueLabel(QLabel):
         averageTime: float = 0.0,
         formatStr: str | None = None,
     ) -> None:
-        """
+        """QLabel specifically for displaying numerical values.
+
         ==============      ==================================================================================
         **Arguments:**
         suffix              (str or None) The suffix to place after the value
@@ -80,8 +77,7 @@ class ValueLabel(QLabel):
     def averageValue(self) -> float:
         if self.values:
             return sum(v[1] for v in self.values) / float(len(self.values))
-        else:
-            return math.nan
+        return math.nan
 
     def paintEvent(self, ev: QPaintEvent) -> None:
         self.setText(self.generateText())

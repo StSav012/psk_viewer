@@ -1,7 +1,5 @@
-# -*- coding: utf-8 -*-
-from __future__ import annotations
-
-from typing import Final, Iterable, NamedTuple, cast
+from collections.abc import Iterable
+from typing import Final, NamedTuple, cast
 
 import numpy as np
 from numpy.typing import NDArray
@@ -105,14 +103,11 @@ class DataModel(QAbstractTableModel):
                     im_s: str = fancy_format(value.imag)
                     if value.imag < 0:
                         return re_s + im_s + "j"
-                    else:
-                        return re_s + "+" + im_s + "j"
-                else:
-                    return fancy_format(value)
-            else:
-                if replace_hyphen:
-                    return f"{value:.{precision}e}".replace("-", "−")
-                return f"{value:.{precision}e}"
+                    return re_s + "+" + im_s + "j"
+                return fancy_format(value)
+            if replace_hyphen:
+                return f"{value:.{precision}e}".replace("-", "−")
+            return f"{value:.{precision}e}"
         if replace_hyphen:
             return f"{value * scale:.{precision}f}".replace("-", "−")
         return f"{value * scale:.{precision}f}"
@@ -132,8 +127,7 @@ class DataModel(QAbstractTableModel):
             and 0 <= column_index < self._data.shape[1]
         ):
             return cast(float, self._data[row_index, column_index])
-        else:
-            return cast(float, np.nan)
+        return cast(float, np.nan)
 
     def headerData(
         self,
@@ -182,7 +176,7 @@ class DataModel(QAbstractTableModel):
         self._data = np.array(new_data)
         self._rows_loaded = self.ROW_BATCH_COUNT
         if self._sort_column < self._data.shape[1]:
-            sort_indices: NDArray[np.float64] = np.argsort(
+            sort_indices: NDArray[np.int64] = np.argsort(
                 self._data[:, self._sort_column], kind="heapsort"
             )
             if self._sort_order == Qt.SortOrder.DescendingOrder:
@@ -195,7 +189,7 @@ class DataModel(QAbstractTableModel):
         if self._data.shape[1] == len(new_data_line):
             self._data = np.vstack((self._data, new_data_line))
             if self._sort_column < self._data.shape[1]:
-                sort_indices: NDArray[np.float64] = np.argsort(
+                sort_indices: NDArray[np.int64] = np.argsort(
                     self._data[:, self._sort_column], kind="heapsort"
                 )
                 if self._sort_order == Qt.SortOrder.DescendingOrder:
@@ -206,14 +200,15 @@ class DataModel(QAbstractTableModel):
         self.endResetModel()
 
     def extend_data(
-        self, new_data_lines: list[list[float]] | NDArray[np.float64]
+        self,
+        new_data_lines: list[list[float]] | NDArray[np.float64],
     ) -> None:
         self.beginResetModel()
         for new_data_line in new_data_lines:
             if self._data.shape[1] == len(new_data_line):
                 self._data = np.vstack((self._data, new_data_line))
         if self._sort_column < self._data.shape[1]:
-            sort_indices: NDArray[np.float64] = np.argsort(
+            sort_indices: NDArray[np.int64] = np.argsort(
                 self._data[:, self._sort_column], kind="heapsort"
             )
             if self._sort_order == Qt.SortOrder.DescendingOrder:
@@ -228,11 +223,13 @@ class DataModel(QAbstractTableModel):
         self.endResetModel()
 
     def sort(
-        self, column: int, order: Qt.SortOrder = Qt.SortOrder.AscendingOrder
+        self,
+        column: int,
+        order: Qt.SortOrder = Qt.SortOrder.AscendingOrder,
     ) -> None:
         if column >= self._data.shape[1]:
             return
-        sort_indices: NDArray[np.float64] = np.argsort(
+        sort_indices: NDArray[np.int64] = np.argsort(
             self._data[:, column], kind="heapsort"
         )
         if order == Qt.SortOrder.DescendingOrder:
@@ -244,12 +241,14 @@ class DataModel(QAbstractTableModel):
         self.endResetModel()
 
     def canFetchMore(
-        self, index: QModelIndex | QPersistentModelIndex = QModelIndex()
+        self,
+        index: QModelIndex | QPersistentModelIndex | None = None,
     ) -> bool:
         return cast(bool, self._data.shape[0] > self._rows_loaded)
 
     def fetchMore(
-        self, index: QModelIndex | QPersistentModelIndex = QModelIndex()
+        self,
+        index: QModelIndex | QPersistentModelIndex | None = None,
     ) -> None:
         # https://sateeshkumarb.wordpress.com/2012/04/01/paginated-display-of-table-data-in-pyqt/
         remainder: int = self._data.shape[0] - self._rows_loaded
