@@ -1,7 +1,7 @@
 import re
 import sys
 from pathlib import Path
-from typing import Any, Final, TypeVar, cast
+from typing import Any, Final, Literal, TypeVar, cast
 
 import numpy as np
 import pyqtgraph as pg  # type: ignore
@@ -570,7 +570,7 @@ class GUI(QMainWindow):
         section: str,
         key: str,
         default: _T,
-        _type: type[_T] | _sentinel = _sentinel,
+        _type: type[_T] | Literal[_sentinel] = _sentinel,
     ) -> _T:
         if section not in self.settings.childGroups():
             return default
