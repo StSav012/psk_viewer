@@ -259,7 +259,7 @@ def load_data_fs(filename: Path) -> tuple[NDArray[np.float64], NDArray[np.float6
     ):
         y: NDArray[np.float64] = np.loadtxt(filename_frd, usecols=(0,))
         x: NDArray[np.float64] = np.linspace(
-            min_frequency, max_frequency, num=y.size, endpoint=False
+            min_frequency, max_frequency, num=y.size, endpoint=False, dtype=np.float64
         )
         return x, y
     return np.empty(0), np.empty(0)
