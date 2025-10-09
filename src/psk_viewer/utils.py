@@ -479,7 +479,7 @@ def find_qm_files(
     *,
     exclude: Collection[str | PathLike[str]] = frozenset(),
 ) -> Iterator[Path]:
-    if root in None:
+    if root is None:
         root = Path.cwd()
     magic: Final[bytes] = bytes(
         [
