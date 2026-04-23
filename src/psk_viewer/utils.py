@@ -257,7 +257,7 @@ def load_data_fs(filename: Path) -> tuple[NDArray[np.float64], NDArray[np.float6
         and not np.isnan(max_frequency)
         and (filename_frd := filename.with_suffix(".frd")).exists()
     ):
-        y: NDArray[np.float64] = np.loadtxt(filename_frd, usecols=(0,))
+        y: NDArray[np.float64] = np.loadtxt(filename_frd, usecols=(0,)) * 1e-3
         x: NDArray[np.float64] = np.linspace(
             min_frequency, max_frequency, num=y.size, endpoint=False, dtype=np.float64
         )
