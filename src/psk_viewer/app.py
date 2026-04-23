@@ -1,4 +1,4 @@
-﻿import mimetypes
+import mimetypes
 from collections.abc import Iterable, Sequence
 from contextlib import suppress
 from numbers import Number
@@ -279,7 +279,7 @@ class App(GUI):
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """Senseless joke in the loop."""
-        close: QMessageBox = QMessageBox()
+        close: QMessageBox = QMessageBox(self)
         close.setText(self.tr("Are you sure?"))
         close.setIcon(QMessageBox.Icon.Question)
         close.setWindowIcon(self.windowIcon())
