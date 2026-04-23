@@ -42,9 +42,6 @@ psk_viewer = 'psk_viewer:main'
 local_scheme = 'no-local-version'
 write_to = 'src/psk_viewer/_version.py'
 
-[tool.setuptools.dynamic]
-version = {attr = 'psk_viewer._version.__version__'}
-
 [tool.ruff.lint]
 fixable = ["ALL"]
 unfixable = []
