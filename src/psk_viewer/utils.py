@@ -224,7 +224,9 @@ def copy_to_clipboard(
     from qtpy.QtGui import QClipboard
     from qtpy.QtWidgets import QApplication
 
-    clipboard: QClipboard = QApplication.clipboard()
+    clipboard: QClipboard | None = QApplication.clipboard()
+    if clipboard is None:
+        return
     mime_data: QMimeData = QMimeData()
     if isinstance(text_type, str):
         mime_data.setData(text_type, plain_text.encode())
