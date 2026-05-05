@@ -304,6 +304,10 @@ def main() -> int:
         description="IPM RAS PSK and FS spectrometer files viewer.\n"
         f"Find more at https://github.com/{__author__}/{__original_name__}.",
     )
+    if __version__:
+        ap.add_argument(
+            "-V", "--version", action="version", version=f"%(prog)s {__version__}"
+        )
     ap.add_argument("file", type=Path, nargs=argparse.ZERO_OR_MORE, default=[None])
     args: argparse.Namespace = ap.parse_intermixed_args()
 
