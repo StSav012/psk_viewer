@@ -3,7 +3,7 @@ from collections.abc import Iterable, Sequence
 from contextlib import suppress
 from numbers import Number
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Final, cast
+from typing import Any, Callable, Final, TYPE_CHECKING, cast
 
 import numpy as np
 import pandas as pd  # type: ignore
@@ -25,6 +25,7 @@ from qtpy.QtGui import (
     QBrush,
     QCloseEvent,
     QColor,
+    QFont,
     QGuiApplication,
     QPalette,
     QPen,
@@ -230,6 +231,7 @@ class App(GUI):
         self.hide_cursors()
 
         self.set_plot_line_appearance()
+        self.set_axis_line_appearance()
         self.set_marks_appearance()
         self.set_crosshair_lines_appearance()
 
@@ -273,7 +275,11 @@ class App(GUI):
         ax_d: AxisDict
         for ax_d in self._canvas.axes.values():
             ax: pg.AxisItem = ax_d["item"]
-            ax.setPen(text_color)
+            pen: QPen = QPen()
+            pen.setColor(text_color)
+            pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+            pen.setWidthF(self.settings.axis_thickness)
+            ax.setPen(pen)
             ax.setTextPen(text_color)
         self._cursor_balloon.setColor(text_color)
 
@@ -897,6 +903,7 @@ class App(GUI):
             return
         self._install_translation()
         self.set_plot_line_appearance()
+        self.set_axis_line_appearance()
         self.set_marks_appearance()
         self.set_crosshair_lines_appearance()
         self.model_found_lines.fancy_table_numbers = self.settings.fancy_table_numbers
@@ -960,6 +967,61 @@ class App(GUI):
             )
         )
         self._canvas.replot()
+
+    def set_axis_line_appearance(self) -> None:
+        def _(axis: pg.AxisItem) -> None:
+            styles: dict[QFont.Style, str] = {
+                QFont.Style.StyleNormal: "normal",
+                QFont.Style.StyleItalic: "italic",
+                QFont.Style.StyleOblique: "oblique",
+            }
+            variants: dict[QFont.Capitalization, str] = {
+                QFont.Capitalization.MixedCase: "normal",
+                QFont.Capitalization.AllUppercase: "normal",  # see transforms below
+                QFont.Capitalization.AllLowercase: "normal",  # see transforms below
+                QFont.Capitalization.SmallCaps: "small-caps",
+                QFont.Capitalization.Capitalize: "titling-caps",
+            }
+            transforms: dict[QFont.Capitalization, str] = {
+                QFont.Capitalization.MixedCase: "none",
+                QFont.Capitalization.AllUppercase: "uppercase",
+                QFont.Capitalization.AllLowercase: "lowercase",
+                QFont.Capitalization.SmallCaps: "none",  # see variants above
+                QFont.Capitalization.Capitalize: "capitalize",
+            }
+            decorations: dict[tuple[bool, bool, bool], str] = {
+                (False, False, False): "none",
+                (False, False, True): "overline",
+                (False, True, False): "underline",
+                (False, True, True): "underline overline",
+                (True, False, False): "line-through",
+                (True, False, True): "overline line-through",
+                (True, True, False): "underline line-through",
+                (True, True, True): "underline overline line-through",
+            }
+            font: QFont = self.settings.axis_label_font
+            axis.labelStyle.update(
+                {
+                    "font-family": font.family(),
+                    "font-size": f"{font.pointSizeF()}pt",
+                    "font-stretch": f"{font.stretch()}%",
+                    "font-style": styles[font.style()],
+                    "font-weight": f"{font.weight()}",
+                    "font-variant-caps": variants[font.capitalization()],
+                    "text-decoration-line": decorations[
+                        (font.strikeOut(), font.underline(), font.overline())
+                    ],
+                    "text-transform": transforms[font.capitalization()],
+                }
+            )
+            axis.setTickFont(self.settings.axis_tick_font)
+            axis.setFont(self.settings.axis_label_font)
+            pen: QPen = axis.pen()
+            pen.setWidthF(self.settings.axis_thickness)
+            axis.setPen(pen)
+
+        _(self._canvas.getAxis("bottom"))
+        _(self._canvas.getAxis("left"))
 
     def set_marks_appearance(self) -> None:
         pen: QPen = pg.mkPen(

@@ -6,7 +6,7 @@ from typing import Any, cast
 import pyqtgraph as pg  # type: ignore
 from qtawesome import icon
 from qtpy.QtCore import Qt
-from qtpy.QtGui import QColor
+from qtpy.QtGui import QColor, QFont
 from qtpy.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -23,6 +23,7 @@ from qtpy.QtWidgets import (
 )
 
 from .colorselector import ColorSelector
+from .font_selector import FontSelector
 from .open_file_path_entry import OpenFilePathEntry
 from .settings import Settings
 
@@ -85,7 +86,7 @@ class PreferencePage(BaseLogger, QScrollArea):
         self._changed_settings: dict[str, Any] = {}
 
         # https://forum.qt.io/post/671245
-        def _on_event(x: bool | int | float | str, *, callback: str) -> None:
+        def _on_event(x: object, *, callback: str) -> None:
             self._changed_settings[callback] = x
 
         def _on_combo_box_current_index_changed(
@@ -110,6 +111,7 @@ class PreferencePage(BaseLogger, QScrollArea):
         spin_box: pg.SpinBox
         combo_box: QComboBox
         color_selector: ColorSelector
+        font_selector: FontSelector
 
         for key2, value2 in value.items():
             current_value: Any = getattr(settings, value2.callback)
@@ -135,6 +137,12 @@ class PreferencePage(BaseLogger, QScrollArea):
                         partial(_on_event, callback=value2.callback)
                     )
                     layout.addRow(key2, color_selector)
+                elif isinstance(current_value, QFont):
+                    font_selector = FontSelector(widget, current_value)
+                    font_selector.fontSelected.connect(
+                        partial(_on_event, callback=value2.callback)
+                    )
+                    layout.addRow(key2, font_selector)
                 else:
                     PreferencePage.logger.error(
                         f"The type of {value2.callback!r} is not supported"

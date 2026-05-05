@@ -6,7 +6,7 @@ from typing import NamedTuple, cast
 
 import pyqtgraph as pg  # type: ignore
 from qtpy.QtCore import QByteArray, QCoreApplication, QObject, QSettings
-from qtpy.QtGui import QColor
+from qtpy.QtGui import QColor, QFont, QGuiApplication
 from qtpy.QtWidgets import QWidget
 
 __all__ = ["Settings"]
@@ -63,7 +63,7 @@ class Settings(QSettings):
     def dialog(
         self,
     ) -> dict[
-        str | tuple[str, tuple[str, ...]],
+        str | tuple[str, tuple[str, ...]] | tuple[str, tuple[str, ...], object],
         dict[
             str,
             CallbackOnly
@@ -143,6 +143,21 @@ class Settings(QSettings):
                 ),
                 self.tr("Thickness:"): Settings.SpinboxAndCallback(
                     line_opts, Settings.line_thickness.fget.__name__
+                ),
+            },
+            (
+                self.tr("Axis"),
+                ("mdi6.arrow-right-thin", "mdi6.arrow-up-thin"),
+                (("options", ((("offset", (0, 0.2)),), (("offset", (-0.2, 0)),))),),
+            ): {
+                self.tr("Thickness:"): Settings.SpinboxAndCallback(
+                    line_opts, Settings.axis_thickness.fget.__name__
+                ),
+                self.tr("Label Font:"): Settings.CallbackOnly(
+                    Settings.axis_label_font.fget.__name__
+                ),
+                self.tr("Number Font:"): Settings.CallbackOnly(
+                    Settings.axis_tick_font.fget.__name__
                 ),
             },
             # NB: there should be the same icon as in the toolbar
@@ -251,6 +266,42 @@ class Settings(QSettings):
     def line_thickness(self, new_value: float) -> None:
         with self.section("plotLine"):
             self.setValue("thickness", new_value)
+
+    @property
+    def axis_thickness(self) -> float:
+        with self.section("axis"):
+            return cast(float, self.value("lineThickness", 1, float))
+
+    @axis_thickness.setter
+    def axis_thickness(self, new_value: float) -> None:
+        with self.section("axis"):
+            self.setValue("lineThickness", new_value)
+
+    @property
+    def axis_label_font(self) -> QFont:
+        with self.section("axis"):
+            return cast(
+                QFont,
+                self.value("labelFont", QGuiApplication.font(), QFont),
+            )
+
+    @axis_label_font.setter
+    def axis_label_font(self, new_value: QFont) -> None:
+        with self.section("axis"):
+            self.setValue("labelFont", new_value)
+
+    @property
+    def axis_tick_font(self) -> QFont:
+        with self.section("axis"):
+            return cast(
+                QFont,
+                self.value("tickFont", QGuiApplication.font(), QFont),
+            )
+
+    @axis_tick_font.setter
+    def axis_tick_font(self, new_value: QFont) -> None:
+        with self.section("axis"):
+            self.setValue("tickFont", new_value)
 
     @property
     def copy_frequency(self) -> bool:
