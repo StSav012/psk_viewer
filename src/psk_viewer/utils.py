@@ -239,10 +239,9 @@ def copy_to_clipboard(
     text_type: Qt.TextFormat | str = Qt.TextFormat.PlainText,
 ) -> None:
     from qtpy.QtCore import QMimeData
-    from qtpy.QtGui import QClipboard
-    from qtpy.QtWidgets import QApplication
+    from qtpy.QtGui import QClipboard, QGuiApplication
 
-    clipboard: QClipboard | None = QApplication.clipboard()
+    clipboard: QClipboard | None = QGuiApplication.clipboard()
     if clipboard is None:
         return
     mime_data: QMimeData = QMimeData()
