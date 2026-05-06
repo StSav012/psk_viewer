@@ -47,10 +47,8 @@ def _warn_about_outdated_package(
 
 
 def _make_old_qt_compatible_again() -> None:
-    from typing import Callable
-
     from qtpy import PYQT_VERSION, PYSIDE2, QT6
-    from qtpy.QtCore import QLibraryInfo, Qt, qVersion
+    from qtpy.QtCore import QLibraryInfo, Qt
     from qtpy.QtWidgets import QApplication, QDialog
 
     def to_iso_format(s: str) -> str:
@@ -171,95 +169,6 @@ def _make_old_qt_compatible_again() -> None:
             )
             QLibraryInfo.LibraryPath = QLibraryInfo.LibraryLocation
 
-        if _version_tuple(qVersion()) < _version_tuple("6.3"):
-            from functools import partialmethod
-
-            from qtpy.QtCore import QObject
-            from qtpy.QtGui import QIcon, QKeySequence
-            from qtpy.QtWidgets import QAction, QMenu, QToolBar, QWidget
-
-            def add_action(
-                self: QWidget,
-                *args: object,
-                old_add_action: (
-                    Callable[[QWidget, str], QAction]
-                    | Callable[[QWidget, str, QObject, bytes], QAction]
-                    | Callable[[QWidget, QIcon, str, QObject], QAction]
-                    | Callable[[QWidget, str, QObject, bytes, QKeySequence], QAction]
-                    | Callable[
-                        [QWidget, QIcon, str, QObject, bytes, QKeySequence], QAction
-                    ]
-                    | Callable[[QWidget, object, ...], QAction | None]
-                ),
-            ) -> QAction:
-                action: QAction
-                icon: QIcon
-                text: str
-                shortcut: QKeySequence | QKeySequence.StandardKey | str | int
-                receiver: QObject
-                member: bytes
-                if all(
-                    isinstance(arg, t)
-                    for arg, t in zip(
-                        args,
-                        [
-                            str,
-                            (QKeySequence, QKeySequence.StandardKey, str, int),
-                            QObject,
-                            bytes,
-                        ],
-                    )
-                ):
-                    if len(args) == 2:
-                        text, shortcut = args
-                        action = old_add_action(self, text)
-                        action.setShortcut(shortcut)
-                    elif len(args) == 3:
-                        text, shortcut, receiver = args
-                        action = old_add_action(self, text, receiver)
-                        action.setShortcut(shortcut)
-                    elif len(args) == 4:
-                        text, shortcut, receiver, member = args
-                        action = old_add_action(self, text, receiver, member, shortcut)
-                    else:
-                        return old_add_action(self, *args)
-                    return action
-                if all(
-                    isinstance(arg, t)
-                    for arg, t in zip(
-                        args,
-                        [
-                            QIcon,
-                            str,
-                            (QKeySequence, QKeySequence.StandardKey, str, int),
-                            QObject,
-                            bytes,
-                        ],
-                    )
-                ):
-                    if len(args) == 3:
-                        icon, text, shortcut = args
-                        action = old_add_action(self, icon, text)
-                        action.setShortcut(QKeySequence(shortcut))
-                    elif len(args) == 4:
-                        icon, text, shortcut, receiver = args
-                        action = old_add_action(self, icon, text, receiver)
-                        action.setShortcut(QKeySequence(shortcut))
-                    elif len(args) == 5:
-                        icon, text, shortcut, receiver, member = args
-                        action = old_add_action(
-                            self, icon, text, receiver, member, QKeySequence(shortcut)
-                        )
-                    else:
-                        return old_add_action(self, *args)
-                    return action
-                return old_add_action(self, *args)
-
-            QMenu.addAction = partialmethod(add_action, old_add_action=QMenu.addAction)
-            QToolBar.addAction = partialmethod(
-                add_action, old_add_action=QToolBar.addAction
-            )
-
     from pyqtgraph import __version__
 
     if _version_tuple(__version__) < _version_tuple("0.13.2"):
@@ -272,8 +181,8 @@ def _make_old_qt_compatible_again() -> None:
         import pyqtgraph as pg
         from qtpy.QtWidgets import QAbstractSpinBox
 
-        pg.SpinBox.setMaximumHeight = (
-            lambda self, max_h: QAbstractSpinBox.setMaximumHeight(self, round(max_h))
+        pg.SpinBox.setMaximumHeight = lambda self, max_h: (
+            QAbstractSpinBox.setMaximumHeight(self, round(max_h))
         )
     if _version_tuple(__version__) < _version_tuple("0.13.3"):
         _warn_about_outdated_package(
@@ -293,6 +202,9 @@ def _make_old_qt_compatible_again() -> None:
                     )
                 )
             )
+
+
+windows = []
 
 
 def main() -> int:
@@ -316,7 +228,7 @@ def main() -> int:
 
         _make_old_qt_compatible_again()
 
-        from .app import App
+        from .window import FrequencyDomainWindow, TimeDomainWindow, Window
 
     except Exception as ex:
         import traceback
@@ -373,9 +285,10 @@ def main() -> int:
 
     else:
         app: QApplication = QApplication(sys.argv)
-        windows: list[App] = []
         for a in args.file:
-            window: App = App(a)
+            window: TimeDomainWindow | FrequencyDomainWindow | None = Window(a)
+            if window is None:
+                continue
+
             window.show()
-            windows.append(window)
         return app.exec()

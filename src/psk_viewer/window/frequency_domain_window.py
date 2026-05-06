@@ -1,9 +1,9 @@
 import mimetypes
-from collections.abc import Iterable, Sequence
+from collections.abc import Collection, Iterable, Sequence
 from contextlib import suppress
 from numbers import Number
 from pathlib import Path
-from typing import Any, Callable, Final, TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, Callable, Final, cast
 
 import numpy as np
 import pandas as pd  # type: ignore
@@ -11,7 +11,7 @@ import pyqtgraph as pg  # type: ignore
 from numpy.typing import NDArray
 from pyqtgraph import GraphicsScene, PlotWidget
 from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent  # type: ignore
-from pyqtgraph.exporters.ImageExporter import ImageExporter
+from pyqtgraph.exporters import ImageExporter
 from qtpy.QtCore import (
     QCoreApplication,
     QItemSelectionModel,
@@ -22,6 +22,7 @@ from qtpy.QtCore import (
     Slot,
 )
 from qtpy.QtGui import (
+    QAction,
     QBrush,
     QCloseEvent,
     QColor,
@@ -30,67 +31,33 @@ from qtpy.QtGui import (
     QPalette,
     QPen,
     QScreen,
+    QShowEvent,
 )
-from qtpy.QtWidgets import QAction, QApplication, QMessageBox, QWidget
+from qtpy.QtWidgets import QMainWindow, QMessageBox, QWidget
 
-from .detection import correlation, peaks_positions
-from .file_dialog import OpenFileDialog, SaveFileDialog
-from .gui import GUI
-from .plot_data_item import PlotDataItem
-from .preferences import Preferences
-from .utils import (
+from ..detection import correlation, peaks_positions
+from ..gui.frequency_domain_gui import FrequencyDomainGUI
+from ..plot_data_item import PlotDataItem
+from ..preferences import Preferences
+from ..utils import (
+    DataMode,
+    SpectrometerData,
     copy_to_clipboard,
-    load_data_csv,
-    load_data_fs,
-    load_data_scandat,
+    load_data,
     resource_path,
-    superscript_number,
 )
 
-__all__ = ["App"]
+__all__ = ["FrequencyDomainWindow"]
 
 _translate = QCoreApplication.translate
 
-pg.ViewBox.suggestPadding = lambda *_: 0.0
 
-
-def tick_strings(
-    self: pg.AxisItem, values: Iterable[float], scale: float, spacing: float
-) -> list[str]:
-    """Improve formatting of `AxisItem.tickStrings`."""
-    if self.logMode:
-        return cast(list[str], self.logTickStrings(values, scale, spacing))
-
-    places: int = max(0, int(np.ceil(-np.log10(spacing * scale))))
-    strings: list[str] = []
-    v: float
-    for v in values:
-        vs: float = v * scale
-        v_str: str
-        if abs(vs) < 0.001 or abs(vs) >= 10000:
-            v_str = f"{vs:g}".casefold()
-            while "e-0" in v_str:
-                v_str = v_str.replace("e-0", "e-")
-            v_str = v_str.replace("+", "")
-            if "e" in v_str:
-                e_pos: int = v_str.find("e")
-                man: str = v_str[:e_pos]
-                exp: str = superscript_number(v_str[e_pos + 1 :])
-                v_str = man + "×10" + exp
-            v_str = v_str.replace("-", "−")
-        else:
-            v_str = f"{vs:0.{places}f}"
-        strings.append(v_str)
-    return strings
-
-
-pg.AxisItem.tickStrings = tick_strings
-
-
-class App(GUI):
-    PSK_DATA_MODE: Final[int] = 1
-    PSK_WITH_JUMP_DATA_MODE: Final[int] = 2
-    FS_DATA_MODE: Final[int] = -1
+class FrequencyDomainWindow(FrequencyDomainGUI):
+    supported_modes: Collection[DataMode] = (
+        DataMode.FS,
+        DataMode.PSK,
+        DataMode.PSK_WITH_JUMP,
+    )
 
     def __init__(
         self,
@@ -100,7 +67,7 @@ class App(GUI):
     ) -> None:
         super().__init__(parent, flags)
 
-        self._data_mode: int = 0
+        self._data_mode: DataMode = DataMode.unknown
 
         self._ghost_line: pg.PlotDataItem = self.figure.plot(np.empty(0), name="")
         self._plot_line: pg.PlotDataItem = self.figure.plot(np.empty(0), name="")
@@ -126,14 +93,6 @@ class App(GUI):
         )
         self.user_found_lines_data: NDArray[np.float64] = np.empty(0)
         self.automatically_found_lines_data: NDArray[np.float64] = np.empty(0)
-
-        # cross-hair
-        self._crosshair_v_line: pg.InfiniteLine = pg.InfiniteLine(
-            angle=90, movable=False
-        )
-        self._crosshair_h_line: pg.InfiniteLine = pg.InfiniteLine(
-            angle=0, movable=False
-        )
 
         self._cursor_balloon: pg.TextItem = pg.TextItem()
         self.figure.addItem(self._cursor_balloon)
@@ -165,69 +124,7 @@ class App(GUI):
             if loaded:
                 self.set_config_value("open", "location", file_path.parent)
 
-        self._open_table_dialog: OpenFileDialog = OpenFileDialog(
-            settings=self.settings,
-            supported_mimetype_filters=[
-                OpenFileDialog.SupportedMimetypeItem(
-                    required_packages=[],
-                    file_extension=".txt",
-                ),
-                OpenFileDialog.SupportedMimetypeItem(
-                    required_packages=[],
-                    file_extension=".csv",
-                ),
-                OpenFileDialog.SupportedMimetypeItem(
-                    required_packages=["openpyxl"],
-                    file_extension=".xlsx",
-                ),
-            ],
-            parent=self,
-        )
-        self._open_data_dialog: OpenFileDialog = OpenFileDialog(
-            settings=self.settings,
-            supported_name_filters=[
-                OpenFileDialog.SupportedNameFilterItem(
-                    required_packages=[],
-                    file_extensions=[".conf", ".scandat"],
-                    name=_translate("file type", "PSK Spectrometer"),
-                ),
-                OpenFileDialog.SupportedNameFilterItem(
-                    required_packages=[],
-                    file_extensions=[".fmd"],
-                    name=_translate("file type", "Fast Sweep Spectrometer"),
-                ),
-            ],
-            parent=self,
-        )
-        self._save_table_dialog: SaveFileDialog = SaveFileDialog(
-            settings=self.settings,
-            supported_mimetype_filters=[
-                SaveFileDialog.SupportedMimetypeItem(
-                    required_packages=[],
-                    file_extension=".csv",
-                ),
-                SaveFileDialog.SupportedMimetypeItem(
-                    required_packages=["openpyxl"],
-                    file_extension=".xlsx",
-                ),
-            ],
-            parent=self,
-        )
-        self._save_image_dialog: SaveFileDialog = SaveFileDialog(
-            settings=self.settings,
-            supported_mimetype_filters=[
-                SaveFileDialog.SupportedMimetypeItem(
-                    required_packages=[],
-                    file_extension=ext.lstrip("*"),
-                )
-                for ext in ImageExporter.getSupportedImageFormats()
-            ],
-            parent=self,
-        )
-
     def setup_ui(self) -> None:
-        self.figure.plotItem.addItem(self._crosshair_v_line, ignoreBounds=True)
-        self.figure.plotItem.addItem(self._crosshair_h_line, ignoreBounds=True)
         self.hide_cursors()
 
         self.set_plot_line_appearance()
@@ -284,37 +181,59 @@ class App(GUI):
         self._cursor_balloon.setColor(text_color)
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        """Senseless joke in the loop."""
-        close: QMessageBox = QMessageBox(self)
-        close.setText(self.tr("Are you sure?"))
-        close.setIcon(QMessageBox.Icon.Question)
-        close.setWindowIcon(self.windowIcon())
-        close.setWindowTitle(self.tr("Spectrometer Data Viewer"))
-        close.setStandardButtons(
-            QMessageBox.StandardButton.Yes
-            | QMessageBox.StandardButton.No
-            | QMessageBox.StandardButton.Cancel
-        )
-        close_code: int = (
-            QMessageBox.StandardButton.No
-            if self._plot_data.frequency_span > 0.0
-            else QMessageBox.StandardButton.Yes
-        )
-        while close_code == QMessageBox.StandardButton.No:
-            close_code = close.exec()
+        close_code: int
+        if self._data_mode == DataMode.unknown:  # nothing is loaded
+            close_code = QMessageBox.StandardButton.Yes
+        else:
+            # senseless joke in the loop
+            close: QMessageBox = QMessageBox(self)
+            close.setText(self.tr("Are you sure?"))
+            close.setIcon(QMessageBox.Icon.Question)
+            close.setWindowIcon(self.windowIcon())
+            close.setWindowTitle(self.tr("Spectrometer Data Viewer"))
+            close.setStandardButtons(
+                QMessageBox.StandardButton.Yes
+                | QMessageBox.StandardButton.No
+                | QMessageBox.StandardButton.Cancel
+            )
+            close_code = QMessageBox.StandardButton.No
+            while close_code == QMessageBox.StandardButton.No:
+                close_code = close.exec()
 
         if close_code == QMessageBox.StandardButton.Yes:
             self.settings.save(self)
             self.settings.sync()
+
+            from .. import windows
+
+            windows.remove(self)
+
             event.accept()
         elif close_code == QMessageBox.StandardButton.Cancel:
             event.ignore()
+
+    def showEvent(self, event: QShowEvent) -> None:
+
+        from .. import windows
+
+        windows.append(self)
+
+        window: QMainWindow
+        while windows:
+            for window in windows:
+                if window.isHidden():
+                    window.close()
+                    break
+            else:
+                break
+
+        event.accept()
 
     def load_config(self) -> None:
         self._loading = True
 
         # Fallback: Center the window
-        screen: QScreen = QApplication.primaryScreen()
+        screen: QScreen = QGuiApplication.primaryScreen()
         self.move(
             round(0.5 * (screen.size().width() - self.size().width())),
             round(0.5 * (screen.size().height() - self.size().height())),
@@ -322,10 +241,10 @@ class App(GUI):
 
         self.settings.restore(self)
 
-        self.check_frequency_persists.setChecked(
+        self.check_x_range_persists.setChecked(
             self.get_config_value("frequency", "persists", False, bool)
         )
-        self.check_voltage_persists.setChecked(
+        self.check_y_range_persists.setChecked(
             self.get_config_value("voltage", "persists", False, bool)
         )
 
@@ -337,16 +256,15 @@ class App(GUI):
             self.get_config_value("display", "unit", PlotDataItem.VOLTAGE_DATA, str)
             == PlotDataItem.GAMMA_DATA
         ):
-            self._plot_data.data_type = PlotDataItem.GAMMA_DATA
+            self._plot_data.y_data_type = PlotDataItem.GAMMA_DATA
         else:
-            self._plot_data.data_type = PlotDataItem.VOLTAGE_DATA
+            self._plot_data.y_data_type = PlotDataItem.VOLTAGE_DATA
         self.switch_data_action.setChecked(
-            self._plot_data.data_type == PlotDataItem.GAMMA_DATA
+            self._plot_data.y_data_type == PlotDataItem.GAMMA_DATA
         )
         self.display_gamma_or_voltage()
 
         self._loading = False
-        return
 
     def setup_ui_actions(self) -> None:
         self.toolbar.open_action.triggered.connect(self.on_open_action_triggered)
@@ -379,14 +297,10 @@ class App(GUI):
             self.on_configure_action_triggered
         )
 
-        self.spin_frequency_min.valueChanged.connect(self.on_spin_frequency_min_changed)
-        self.spin_frequency_max.valueChanged.connect(self.on_spin_frequency_max_changed)
-        self.spin_frequency_center.valueChanged.connect(
-            self.on_spin_frequency_center_changed
-        )
-        self.spin_frequency_span.valueChanged.connect(
-            self.on_spin_frequency_span_changed
-        )
+        self.spin_x_min.valueChanged.connect(self.on_spin_x_min_changed)
+        self.spin_x_max.valueChanged.connect(self.on_spin_x_max_changed)
+        self.spin_x_center.valueChanged.connect(self.on_spin_x_center_changed)
+        self.spin_x_span.valueChanged.connect(self.on_spin_x_span_changed)
         self.button_zoom_x_out_coarse.clicked.connect(
             self.on_button_zoom_x_out_coarse_clicked
         )
@@ -411,13 +325,13 @@ class App(GUI):
         self.button_move_x_right_coarse.clicked.connect(
             self.on_button_move_x_right_coarse_clicked
         )
-        self.check_frequency_persists.toggled.connect(
+        self.check_x_range_persists.toggled.connect(
             self.on_check_frequency_persists_toggled
         )
 
         self.switch_data_action.toggled.connect(self.on_switch_data_action_toggled)
-        self.spin_voltage_min.valueChanged.connect(self.on_spin_voltage_min_changed)
-        self.spin_voltage_max.valueChanged.connect(self.on_spin_voltage_max_changed)
+        self.spin_y_min.valueChanged.connect(self.on_spin_voltage_min_changed)
+        self.spin_y_max.valueChanged.connect(self.on_spin_voltage_max_changed)
         self.button_zoom_y_out_coarse.clicked.connect(
             self.on_button_zoom_y_out_coarse_clicked
         )
@@ -430,7 +344,7 @@ class App(GUI):
         self.button_zoom_y_in_coarse.clicked.connect(
             self.on_button_zoom_y_in_coarse_clicked
         )
-        self.check_voltage_persists.toggled.connect(
+        self.check_y_range_persists.toggled.connect(
             self.on_check_voltage_persists_toggled
         )
 
@@ -455,27 +369,27 @@ class App(GUI):
     def on_xlim_changed(self, xlim: Iterable[float]) -> None:
         min_freq, max_freq = min(xlim), max(xlim)
         self._loading = True
-        self.spin_frequency_min.setValue(min_freq)
-        self.spin_frequency_max.setValue(max_freq)
-        self.spin_frequency_span.setValue(max_freq - min_freq)
-        self.spin_frequency_center.setValue(0.5 * (max_freq + min_freq))
-        self.spin_frequency_min.setMaximum(max_freq)
-        self.spin_frequency_max.setMinimum(min_freq)
+        self.spin_x_min.setValue(min_freq)
+        self.spin_x_max.setValue(max_freq)
+        self.spin_x_span.setValue(max_freq - min_freq)
+        self.spin_x_center.setValue(0.5 * (max_freq + min_freq))
+        self.spin_x_min.setMaximum(max_freq)
+        self.spin_x_max.setMinimum(min_freq)
         self._loading = False
-        self.set_frequency_range(
-            lower_value=self.spin_frequency_min.value(),
-            upper_value=self.spin_frequency_max.value(),
+        self.set_x_range(
+            lower_value=self.spin_x_min.value(),
+            upper_value=self.spin_x_max.value(),
         )
 
     def on_ylim_changed(self, ylim: Iterable[float | np.float64]) -> None:
         min_voltage, max_voltage = min(ylim), max(ylim)
         self._loading = True
-        self.spin_voltage_min.setValue(min_voltage)
-        self.spin_voltage_max.setValue(max_voltage)
-        self.spin_voltage_min.setMaximum(max_voltage)
-        self.spin_voltage_max.setMinimum(min_voltage)
+        self.spin_y_min.setValue(min_voltage)
+        self.spin_y_max.setValue(max_voltage)
+        self.spin_y_min.setMaximum(max_voltage)
+        self.spin_y_max.setMinimum(min_voltage)
         self._loading = False
-        self.set_voltage_range(lower_value=min_voltage, upper_value=max_voltage)
+        self.set_y_range(lower_value=min_voltage, upper_value=max_voltage)
 
     @Slot(pg.PlotDataItem, np.ndarray, MouseClickEvent)
     def on_points_clicked(
@@ -706,63 +620,55 @@ class App(GUI):
             self.table_found_lines.scrollTo(index)
 
     @Slot(float)
-    def on_spin_frequency_min_changed(self, new_value: float) -> None:
+    def on_spin_x_min_changed(self, new_value: float) -> None:
         if self._loading:
             return
         self._loading = True
-        self.spin_frequency_max.setMinimum(new_value)
-        self.spin_frequency_center.setValue(
-            0.5 * (new_value + self.spin_frequency_max.value())
-        )
-        self.spin_frequency_span.setValue(self.spin_frequency_max.value() - new_value)
-        self.set_frequency_range(
-            lower_value=new_value, upper_value=self.spin_frequency_max.value()
-        )
+        self.spin_x_max.setMinimum(new_value)
+        self.spin_x_center.setValue(0.5 * (new_value + self.spin_x_max.value()))
+        self.spin_x_span.setValue(self.spin_x_max.value() - new_value)
+        self.set_x_range(lower_value=new_value, upper_value=self.spin_x_max.value())
         self._loading = False
 
     @Slot(float)
-    def on_spin_frequency_max_changed(self, new_value: float) -> None:
+    def on_spin_x_max_changed(self, new_value: float) -> None:
         if self._loading:
             return
         self._loading = True
-        self.spin_frequency_min.setMaximum(new_value)
-        self.spin_frequency_center.setValue(
-            0.5 * (self.spin_frequency_min.value() + new_value)
-        )
-        self.spin_frequency_span.setValue(new_value - self.spin_frequency_min.value())
-        self.set_frequency_range(
-            lower_value=self.spin_frequency_min.value(), upper_value=new_value
-        )
+        self.spin_x_min.setMaximum(new_value)
+        self.spin_x_center.setValue(0.5 * (self.spin_x_min.value() + new_value))
+        self.spin_x_span.setValue(new_value - self.spin_x_min.value())
+        self.set_x_range(lower_value=self.spin_x_min.value(), upper_value=new_value)
         self._loading = False
 
     @Slot(float)
-    def on_spin_frequency_center_changed(self, new_value: float) -> None:
+    def on_spin_x_center_changed(self, new_value: float) -> None:
         if self._loading:
             return
-        freq_span = self.spin_frequency_span.value()
+        freq_span = self.spin_x_span.value()
         min_freq = new_value - 0.5 * freq_span
         max_freq = new_value + 0.5 * freq_span
         self._loading = True
-        self.spin_frequency_min.setMaximum(max_freq)
-        self.spin_frequency_max.setMinimum(min_freq)
-        self.spin_frequency_min.setValue(min_freq)
-        self.spin_frequency_max.setValue(max_freq)
-        self.set_frequency_range(upper_value=max_freq, lower_value=min_freq)
+        self.spin_x_min.setMaximum(max_freq)
+        self.spin_x_max.setMinimum(min_freq)
+        self.spin_x_min.setValue(min_freq)
+        self.spin_x_max.setValue(max_freq)
+        self.set_x_range(upper_value=max_freq, lower_value=min_freq)
         self._loading = False
 
     @Slot(float)
-    def on_spin_frequency_span_changed(self, new_value: float) -> None:
+    def on_spin_x_span_changed(self, new_value: float) -> None:
         if self._loading:
             return
-        freq_center = self.spin_frequency_center.value()
+        freq_center = self.spin_x_center.value()
         min_freq = freq_center - 0.5 * new_value
         max_freq = freq_center + 0.5 * new_value
         self._loading = True
-        self.spin_frequency_min.setMaximum(max_freq)
-        self.spin_frequency_max.setMinimum(min_freq)
-        self.spin_frequency_min.setValue(min_freq)
-        self.spin_frequency_max.setValue(max_freq)
-        self.set_frequency_range(upper_value=max_freq, lower_value=min_freq)
+        self.spin_x_min.setMaximum(max_freq)
+        self.spin_x_max.setMinimum(min_freq)
+        self.spin_x_min.setValue(min_freq)
+        self.spin_x_max.setValue(max_freq)
+        self.set_x_range(upper_value=max_freq, lower_value=min_freq)
         self._loading = False
 
     @Slot()
@@ -784,17 +690,17 @@ class App(GUI):
     def zoom_x(self, factor: float) -> None:
         if self._loading:
             return
-        freq_span = self.spin_frequency_span.value() * factor
-        freq_center = self.spin_frequency_center.value()
+        freq_span = self.spin_x_span.value() * factor
+        freq_center = self.spin_x_center.value()
         min_freq = freq_center - 0.5 * freq_span
         max_freq = freq_center + 0.5 * freq_span
         self._loading = True
-        self.spin_frequency_min.setMaximum(max_freq)
-        self.spin_frequency_max.setMinimum(min_freq)
-        self.spin_frequency_min.setValue(min_freq)
-        self.spin_frequency_max.setValue(max_freq)
-        self.spin_frequency_span.setValue(freq_span)
-        self.set_frequency_range(upper_value=max_freq, lower_value=min_freq)
+        self.spin_x_min.setMaximum(max_freq)
+        self.spin_x_max.setMinimum(min_freq)
+        self.spin_x_min.setValue(min_freq)
+        self.spin_x_max.setValue(max_freq)
+        self.spin_x_span.setValue(freq_span)
+        self.set_x_range(upper_value=max_freq, lower_value=min_freq)
         self._loading = False
 
     @Slot()
@@ -816,17 +722,17 @@ class App(GUI):
     def move_x(self, shift: float) -> None:
         if self._loading:
             return
-        freq_span = self.spin_frequency_span.value()
-        freq_center = self.spin_frequency_center.value() + shift
+        freq_span = self.spin_x_span.value()
+        freq_center = self.spin_x_center.value() + shift
         min_freq = freq_center - 0.5 * freq_span
         max_freq = freq_center + 0.5 * freq_span
         self._loading = True
-        self.spin_frequency_min.setMaximum(max_freq)
-        self.spin_frequency_max.setMinimum(min_freq)
-        self.spin_frequency_min.setValue(min_freq)
-        self.spin_frequency_max.setValue(max_freq)
-        self.spin_frequency_center.setValue(freq_center)
-        self.set_frequency_range(upper_value=max_freq, lower_value=min_freq)
+        self.spin_x_min.setMaximum(max_freq)
+        self.spin_x_max.setMinimum(min_freq)
+        self.spin_x_min.setValue(min_freq)
+        self.spin_x_max.setValue(max_freq)
+        self.spin_x_center.setValue(freq_center)
+        self.set_x_range(upper_value=max_freq, lower_value=min_freq)
         self._loading = False
 
     @Slot(bool)
@@ -840,10 +746,8 @@ class App(GUI):
         if self._loading:
             return
         self._loading = True
-        self.spin_voltage_max.setMinimum(new_value)
-        self.set_voltage_range(
-            lower_value=new_value, upper_value=self.spin_voltage_max.value()
-        )
+        self.spin_y_max.setMinimum(new_value)
+        self.set_y_range(lower_value=new_value, upper_value=self.spin_y_max.value())
         self._loading = False
 
     @Slot(float)
@@ -851,10 +755,8 @@ class App(GUI):
         if self._loading:
             return
         self._loading = True
-        self.spin_voltage_min.setMaximum(new_value)
-        self.set_voltage_range(
-            lower_value=self.spin_voltage_min.value(), upper_value=new_value
-        )
+        self.spin_y_min.setMaximum(new_value)
+        self.set_y_range(lower_value=self.spin_y_min.value(), upper_value=new_value)
         self._loading = False
 
     @Slot()
@@ -876,18 +778,18 @@ class App(GUI):
     def zoom_y(self, factor: float) -> None:
         if self._loading:
             return
-        min_voltage = self.spin_voltage_min.value()
-        max_voltage = self.spin_voltage_max.value()
+        min_voltage = self.spin_y_min.value()
+        max_voltage = self.spin_y_max.value()
         voltage_span = abs(max_voltage - min_voltage) * factor
         voltage_center = (max_voltage + min_voltage) * 0.5
         min_voltage = voltage_center - 0.5 * voltage_span
         max_voltage = voltage_center + 0.5 * voltage_span
         self._loading = True
-        self.spin_voltage_min.setMaximum(max_voltage)
-        self.spin_voltage_max.setMinimum(min_voltage)
-        self.spin_voltage_min.setValue(min_voltage)
-        self.spin_voltage_max.setValue(max_voltage)
-        self.set_voltage_range(upper_value=max_voltage, lower_value=min_voltage)
+        self.spin_y_min.setMaximum(max_voltage)
+        self.spin_y_max.setMinimum(min_voltage)
+        self.spin_y_min.setValue(min_voltage)
+        self.spin_y_max.setValue(max_voltage)
+        self.set_y_range(upper_value=max_voltage, lower_value=min_voltage)
         self._loading = False
 
     @Slot(bool)
@@ -908,10 +810,7 @@ class App(GUI):
         self.set_crosshair_lines_appearance()
         self.model_found_lines.fancy_table_numbers = self.settings.fancy_table_numbers
         self.model_found_lines.log10_gamma = self.settings.log10_gamma
-        if (
-            self._data_mode == self.PSK_DATA_MODE
-            and self._plot_data.frequency_span > 0.0
-        ):
+        if self._data_mode == DataMode.PSK and self._plot_data.frequency_span > 0.0:
             jump: float = (
                 round(self.settings.jump / self._plot_data.frequency_step)
                 * self._plot_data.frequency_step
@@ -947,12 +846,12 @@ class App(GUI):
     def label(self) -> str | None:
         return self._plot_line.name()
 
-    def set_frequency_range(
+    def set_x_range(
         self, lower_value: float | np.float64, upper_value: float | np.float64
     ) -> None:
         self.figure.plotItem.setXRange(lower_value, upper_value, padding=0.0)
 
-    def set_voltage_range(
+    def set_y_range(
         self, lower_value: float | np.float64, upper_value: float | np.float64
     ) -> None:
         self.figure.plotItem.setYRange(lower_value, upper_value, padding=0.0)
@@ -1046,7 +945,7 @@ class App(GUI):
         self._canvas.replot()
 
     def find_lines(self, threshold: float) -> int:
-        if self._data_mode == 0 or self.model_signal.size < 2:
+        if self._data_mode == DataMode.unknown or self.model_signal.size < 2:
             return 0
 
         from scipy import interpolate  # type: ignore
@@ -1057,7 +956,7 @@ class App(GUI):
             return 0
 
         found_lines: NDArray[np.float64]
-        if self._data_mode == self.FS_DATA_MODE:
+        if self._data_mode == DataMode.FS:
             # re-scale the signal to the actual frequency mesh
             x_model: NDArray[np.float64] = (
                 np.arange(self.model_signal.size, dtype=x.dtype) * 0.1
@@ -1070,7 +969,7 @@ class App(GUI):
             found_lines = peaks_positions(
                 x, correlation(y_model_new, x, y), threshold=1.0 / threshold
             )
-        elif self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE):
+        elif self._data_mode in (DataMode.PSK, DataMode.PSK_WITH_JUMP):
             found_lines = peaks_positions(x, y, threshold=1.0 / threshold)
         else:
             return 0
@@ -1106,14 +1005,14 @@ class App(GUI):
         if self.model_signal.size < 2:
             return
 
-        init_frequency: float = self.spin_frequency_center.value()
+        init_frequency: float = self.spin_x_center.value()
 
         line_data: NDArray[np.float64] = self.automatically_found_lines.xData
         if line_data is None or not line_data.size:
             return
         i: int = cast(int, np.searchsorted(line_data, init_frequency, side="right") - 2)
         if 0 <= i < line_data.size and line_data[i] != init_frequency:
-            self.spin_frequency_center.setValue(line_data[i])
+            self.spin_x_center.setValue(line_data[i])
             self.ensure_y_fits()
 
     @Slot()
@@ -1121,19 +1020,19 @@ class App(GUI):
         if self.model_signal.size < 2:
             return
 
-        init_frequency: float = self.spin_frequency_center.value()
+        init_frequency: float = self.spin_x_center.value()
 
         line_data: NDArray[np.float64] = self.automatically_found_lines.xData
         if line_data is None or not line_data.size:
             return
         i: int = cast(int, np.searchsorted(line_data, init_frequency, side="left") + 1)
         if i < line_data.size and line_data[i] != init_frequency:
-            self.spin_frequency_center.setValue(line_data[i])
+            self.spin_x_center.setValue(line_data[i])
             self.ensure_y_fits()
 
     @Slot(QModelIndex)
     def on_table_cell_double_clicked(self, index: QModelIndex) -> None:
-        self.spin_frequency_center.setValue(self.model_found_lines.item(index.row(), 0))
+        self.spin_x_center.setValue(self.model_found_lines.item(index.row(), 0))
         self.ensure_y_fits()
 
     def ensure_y_fits(self) -> None:
@@ -1149,14 +1048,10 @@ class App(GUI):
         ]
         if np.any(visible_points < min(y.range)):
             minimum: np.float64 = np.min(visible_points)
-            self.set_voltage_range(
-                minimum - 0.05 * (max(y.range) - minimum), max(y.range)
-            )
+            self.set_y_range(minimum - 0.05 * (max(y.range) - minimum), max(y.range))
         if np.any(visible_points > max(y.range)):
             maximum: np.float64 = np.max(visible_points)
-            self.set_voltage_range(
-                min(y.range), maximum + 0.05 * (maximum - min(y.range))
-            )
+            self.set_y_range(min(y.range), maximum + 0.05 * (maximum - min(y.range)))
 
     @Slot()
     def on_load_found_lines_triggered(self) -> None:
@@ -1182,9 +1077,9 @@ class App(GUI):
                 ]
 
         def load_xlsx(fn: Path) -> Sequence[float]:
-            from openpyxl.reader.excel import load_workbook
-            from openpyxl.workbook.workbook import Workbook
-            from openpyxl.worksheet.worksheet import Worksheet
+            from openpyxl.reader.excel import load_workbook  # type: ignore
+            from openpyxl.workbook.workbook import Workbook  # type: ignore
+            from openpyxl.worksheet.worksheet import Worksheet  # type: ignore
 
             workbook: Workbook = load_workbook(
                 fn, read_only=True, keep_vba=False, data_only=True
@@ -1393,6 +1288,7 @@ class App(GUI):
         self._canvas.replot()
         self.status_bar.clearMessage()
         self.setWindowTitle(self.tr("Spectrometer Data Viewer"))
+        self._data_mode = DataMode.unknown
 
     @Slot()
     def on_open_ghost_action_triggered(self) -> None:
@@ -1408,6 +1304,44 @@ class App(GUI):
         self.toolbar.clear_ghost_action.setEnabled(False)
         self._canvas.replot()
 
+    def configure_interface_after_loading_data(self, f: NDArray[np.float64]) -> None:
+        if self._data_mode in (DataMode.FS,):
+            self.switch_data_action.setChecked(False)
+
+        self.toolbar.clear_action.setEnabled(True)
+
+        min_frequency: np.float64 = cast(np.float64, f[0])
+        max_frequency: np.float64 = cast(np.float64, f[-1])
+
+        self._loading = True
+        self.spin_x_min.setMaximum(max(max_frequency, self.spin_x_min.value()))
+        self.spin_x_max.setMinimum(min(min_frequency, self.spin_x_max.value()))
+        if not self.check_x_range_persists.isChecked():
+            self.spin_x_min.setValue(min_frequency)
+            self.spin_x_max.setValue(max_frequency)
+            self.spin_x_span.setValue(max_frequency - min_frequency)
+            self.spin_x_center.setValue(0.5 * (max_frequency + min_frequency))
+        self._loading = False
+
+        step: int = int(
+            round(self.settings.jump / ((max_frequency - min_frequency) / (f.size - 1)))
+        )
+        self.toolbar.differentiate_action.setEnabled(
+            self._data_mode == DataMode.PSK and 0 < step < 0.25 * f.size
+        )
+
+        self.switch_data_action.setEnabled(
+            self._data_mode
+            in (DataMode.PSK, DataMode.PSK_WITH_JUMP, DataMode.TIME_DOMAIN)
+        )
+        self.toolbar.save_data_action.setEnabled(True)
+        self.toolbar.copy_figure_action.setEnabled(True)
+        self.toolbar.save_figure_action.setEnabled(True)
+        self.toolbar.trace_action.setEnabled(True)
+        self.toolbar.load_trace_action.setEnabled(True)
+        self.box_find_lines.setEnabled(bool(self.model_signal.size))
+        self.box_found_lines.setEnabled(True)
+
     def load_data(self, filename: Path | None = None) -> bool:
         self.clear_ghost()
         self.clear_found_lines()
@@ -1417,89 +1351,83 @@ class App(GUI):
         ):
             return False
 
+        data: SpectrometerData | None = load_data(self, filename)
+        if data is None:
+            return False
+        if self._data_mode == data.mode:
+            return self.set_data(data)
+
+        if data.mode in FrequencyDomainWindow.supported_modes:
+            w = FrequencyDomainWindow(parent=self.parent(), flags=self.windowFlags())
+            r: bool = w.set_data(data)
+            if r:
+                w.show()
+                if self._data_mode == DataMode.unknown:
+                    self.close()
+            else:
+                w.deleteLater()
+            return r
+
+        from . import TimeDomainWindow
+
+        if data.mode in TimeDomainWindow.supported_modes:
+            w = TimeDomainWindow(parent=self.parent(), flags=self.windowFlags())
+            r: bool = w.set_data(data)
+            if r:
+                w.show()
+                if self._data_mode == DataMode.unknown:
+                    self.close()
+            else:
+                w.deleteLater()
+            return r
+
+        return False
+
+    def set_data(self, data: SpectrometerData | None) -> bool:
+        if data is None:
+            return False
+
+        filename: Path
         v: NDArray[np.float64]
         f: NDArray[np.float64]
-        g: NDArray[np.float64] = np.empty(0)
-        jump: float
-        if filename.suffix.casefold() == ".scandat":
-            f, v, g, jump = load_data_scandat(filename, self)
-            if f.size and v.size:
-                self.settings.display_processing = True
-                if jump > 0.0:
-                    self._data_mode = self.PSK_WITH_JUMP_DATA_MODE
-                else:
-                    self._data_mode = self.PSK_DATA_MODE
-        elif filename.suffix.casefold() in (".csv", ".conf"):
-            f, v, g, jump = load_data_csv(filename)
-            if f.size and v.size:
-                self.settings.display_processing = True
-                if jump > 0.0:
-                    self._data_mode = self.PSK_WITH_JUMP_DATA_MODE
-                else:
-                    self._data_mode = self.PSK_DATA_MODE
-        elif filename.suffix.casefold() in (".fmd", ".frd"):
-            f, v = load_data_fs(filename)
-            if f.size and v.size:
-                self.settings.display_processing = False
-                self._data_mode = self.FS_DATA_MODE
-        else:
+        g: NDArray[np.float64]
+        t: NDArray[np.float64]
+        data_mode: DataMode
+        filename, f, g, v, t, data_mode = data
+
+        if data_mode not in FrequencyDomainWindow.supported_modes:
             return False
 
         if not (f.size and v.size):
             return False
 
-        if self._data_mode == self.FS_DATA_MODE:
-            self.switch_data_action.setChecked(False)
+        self.settings.display_processing = data_mode in (
+            DataMode.PSK,
+            DataMode.PSK_WITH_JUMP,
+        )
+        self._data_mode = data_mode
+
+        self._plot_data.set_data(
+            frequency_data=f, gamma_data=g, voltage_data=v, time_data=t
+        )
+        self.configure_interface_after_loading_data(f)
+
+        self._plot_data.x_data_type = PlotDataItem.FREQUENCY_DATA
+        self._ghost_data.x_data_type = PlotDataItem.FREQUENCY_DATA
 
         self._plot_line.setData(
-            f,
-            (g if self.switch_data_action.isChecked() else v),
             name=str(filename.parent / filename.stem),
         )
-        self._plot_data.set_data(frequency_data=f, gamma_data=g, voltage_data=v)
-
-        min_frequency: np.float64 = cast(np.float64, f[0])
-        max_frequency: np.float64 = cast(np.float64, f[-1])
-
-        self.toolbar.clear_action.setEnabled(True)
-        step: int = int(
-            round(self.settings.jump / ((max_frequency - min_frequency) / (f.size - 1)))
-        )
-        self.toolbar.differentiate_action.setEnabled(
-            self._data_mode == self.PSK_DATA_MODE and 0 < step < 0.25 * f.size
-        )
-        self.switch_data_action.setEnabled(
-            self._data_mode in (self.PSK_DATA_MODE, self.PSK_WITH_JUMP_DATA_MODE)
-        )
-        self.toolbar.save_data_action.setEnabled(True)
-        self.toolbar.copy_figure_action.setEnabled(True)
-        self.toolbar.save_figure_action.setEnabled(True)
-        self.toolbar.trace_action.setEnabled(True)
-        self.box_find_lines.setEnabled(bool(self.model_signal.size))
-
-        self._loading = True
-        self.spin_frequency_min.setMaximum(
-            max(max_frequency, self.spin_frequency_min.value())
-        )
-        self.spin_frequency_max.setMinimum(
-            min(min_frequency, self.spin_frequency_max.value())
-        )
-        if not self.check_frequency_persists.isChecked():
-            self.spin_frequency_min.setValue(min_frequency)
-            self.spin_frequency_max.setValue(max_frequency)
-            self.spin_frequency_span.setValue(max_frequency - min_frequency)
-            self.spin_frequency_center.setValue(0.5 * (max_frequency + min_frequency))
-        self._loading = False
 
         self.display_gamma_or_voltage()
 
-        self.set_frequency_range(
-            lower_value=self.spin_frequency_min.value(),
-            upper_value=self.spin_frequency_max.value(),
+        self.set_x_range(
+            lower_value=self.spin_x_min.value(),
+            upper_value=self.spin_x_max.value(),
         )
-        self.set_voltage_range(
-            lower_value=self.spin_voltage_min.value(),
-            upper_value=self.spin_voltage_max.value(),
+        self.set_y_range(
+            lower_value=self.spin_y_min.value(),
+            upper_value=self.spin_y_max.value(),
         )
 
         self.setWindowTitle(self.tr("%s — Spectrometer Data Viewer") % filename)
@@ -1514,44 +1442,32 @@ class App(GUI):
         ):
             return False
 
+        data: SpectrometerData | None = load_data(self, filename)
+        if data is None:
+            return False
+
         v: NDArray[np.float64]
         f: NDArray[np.float64]
-        g: NDArray[np.float64] = np.empty(0)
-        jump: float
-        if filename.suffix.casefold() == ".scandat":
-            f, v, g, jump = load_data_scandat(filename, self)
-            if f.size and v.size:
-                if jump > 0.0:
-                    if self._data_mode != self.PSK_WITH_JUMP_DATA_MODE:
-                        return False
-                else:
-                    if self._data_mode != self.PSK_DATA_MODE:
-                        return False
-        elif filename.suffix.casefold() in (".csv", ".conf"):
-            f, v, g, jump = load_data_csv(filename)
-            if f.size and v.size:
-                if jump > 0.0:
-                    if self._data_mode != self.PSK_WITH_JUMP_DATA_MODE:
-                        return False
-                else:
-                    if self._data_mode != self.PSK_DATA_MODE:
-                        return False
-        elif filename.suffix.casefold() in (".fmd", ".frd"):
-            f, v = load_data_fs(filename)
-            if f.size and v.size and self._data_mode != self.FS_DATA_MODE:
-                return False
-        else:
+        g: NDArray[np.float64]
+        t: NDArray[np.float64]
+        data_mode: DataMode
+        filename, f, g, v, t, data_mode = data
+
+        if data_mode not in FrequencyDomainWindow.supported_modes:
+            return False
+
+        if data_mode != self._data_mode:
             return False
 
         if not (f.size and v.size):
             return False
 
+        self._ghost_data.set_data(
+            frequency_data=f, gamma_data=g, voltage_data=v, time_data=t
+        )
         self._ghost_line.setData(
-            f,
-            (g if self.switch_data_action.isChecked() else v),
             name=str(filename.parent / filename.stem),
         )
-        self._ghost_data.set_data(frequency_data=f, gamma_data=g, voltage_data=v)
 
         self.toolbar.clear_ghost_action.setEnabled(True)
 
@@ -1568,20 +1484,71 @@ class App(GUI):
 
     @Slot(bool)
     def on_differentiate_action_toggled(self, _: bool) -> None:
-        self._data_mode = self.PSK_WITH_JUMP_DATA_MODE
+        self._data_mode = DataMode.PSK_WITH_JUMP
         self.display_gamma_or_voltage()
         self.model_found_lines.refresh()
 
     @Slot(bool)
     def on_switch_data_action_toggled(self, new_state: bool) -> None:
-        self._plot_data.data_type = (
+        self._plot_data.y_data_type = (
             PlotDataItem.GAMMA_DATA if new_state else PlotDataItem.VOLTAGE_DATA
         )
-        self._ghost_data.data_type = (
+        self._ghost_data.y_data_type = (
             PlotDataItem.GAMMA_DATA if new_state else PlotDataItem.VOLTAGE_DATA
         )
-        self.set_config_value("display", "unit", self._plot_data.data_type)
+        self.set_config_value("display", "unit", self._plot_data.y_data_type)
         self.display_gamma_or_voltage(new_state)
+
+    def setup_left_axis(self, display_gamma: bool) -> None:
+        if display_gamma:
+            self.box_voltage.setWindowTitle(self.tr("Absorption"))
+        else:
+            self.box_voltage.setWindowTitle(self.tr("Voltage"))
+
+        a: pg.AxisItem = self._canvas.getAxis("left")
+        if display_gamma:
+            self.check_y_range_persists.setText(self.tr("Keep absorption range"))
+
+            a.enableAutoSIPrefix(False)
+            a.setLabel(
+                text=_translate("plot axes labels", "Absorption"),
+                units=_translate("unit", "cm<sup>−1</sup>"),
+            )
+            a.scale = 1.0
+            a.autoSIPrefixScale = 1.0
+
+            self._cursor_y.suffix = _translate("unit", "cm<sup>−1</sup>")
+            self._cursor_y.siPrefix = False
+            self._cursor_y.setFormatStr(
+                "{mantissa:.{decimals}f}×10<sup>{exp}</sup>{suffixGap}{suffix}"
+            )
+            opts = {
+                "suffix": _translate("unit", "cm⁻¹"),
+                "siPrefix": False,
+                "format": "{value:.{decimals}e}{suffixGap}{suffix}",
+            }
+
+        else:
+            self.check_y_range_persists.setText(self.tr("Keep voltage range"))
+
+            a.enableAutoSIPrefix(True)
+            a.setLabel(
+                text=_translate("plot axes labels", "Voltage"),
+                units=_translate("unit", "V"),
+            )
+
+            self._cursor_y.suffix = _translate("unit", "V")
+            self._cursor_y.siPrefix = True
+            self._cursor_y.setFormatStr(
+                "{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}"
+            )
+            opts = {
+                "suffix": _translate("unit", "V"),
+                "siPrefix": True,
+                "format": "{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}",
+            }
+        self.spin_y_min.setOpts(**opts)
+        self.spin_y_max.setOpts(**opts)
 
     def display_gamma_or_voltage(self, display_gamma: bool | None = None) -> None:
         if display_gamma is None:
@@ -1594,11 +1561,6 @@ class App(GUI):
             self._plot_data.jump = np.nan
             self._ghost_data.jump = np.nan
 
-        if display_gamma:
-            self.box_voltage.setWindowTitle(self.tr("Absorption"))
-        else:
-            self.box_voltage.setWindowTitle(self.tr("Voltage"))
-
         if self._plot_data:  # something is loaded
             self._plot_line.setData(self._plot_data.x_data, self._plot_data.y_data)
 
@@ -1606,10 +1568,10 @@ class App(GUI):
             y_data: NDArray[np.float64] = self._plot_data.y_data
             min_y: np.float64 = np.min(y_data)
             max_y: np.float64 = np.max(y_data)
-            if not self.check_voltage_persists.isChecked():
+            if not self.check_y_range_persists.isChecked():
                 self.on_ylim_changed((min_y, max_y))
-            self.spin_voltage_min.setMaximum(max(max_y, self.spin_voltage_min.value()))
-            self.spin_voltage_max.setMinimum(min(min_y, self.spin_voltage_max.value()))
+            self.spin_y_min.setMaximum(max(max_y, self.spin_y_min.value()))
+            self.spin_y_max.setMinimum(min(min_y, self.spin_y_max.value()))
             self._loading = False
 
         if self._ghost_data:  # something is loaded
@@ -1634,51 +1596,7 @@ class App(GUI):
                 ],
             )
 
-        a: pg.AxisItem = self._canvas.getAxis("left")
-        if display_gamma:
-            self.check_voltage_persists.setText(self.tr("Keep absorption range"))
-
-            a.enableAutoSIPrefix(False)
-            a.setLabel(
-                text=_translate("plot axes labels", "Absorption"),
-                units=_translate("unit", "cm<sup>−1</sup>"),
-            )
-            a.scale = 1.0
-            a.autoSIPrefixScale = 1.0
-
-            self._cursor_y.suffix = _translate("unit", "cm<sup>−1</sup>")
-            self._cursor_y.siPrefix = False
-            self._cursor_y.setFormatStr(
-                "{mantissa:.{decimals}f}×10<sup>{exp}</sup>{suffixGap}{suffix}"
-            )
-            opts = {
-                "suffix": _translate("unit", "cm⁻¹"),
-                "siPrefix": False,
-                "format": "{value:.{decimals}e}{suffixGap}{suffix}",
-            }
-
-        else:
-            self.check_voltage_persists.setText(self.tr("Keep voltage range"))
-
-            a.enableAutoSIPrefix(True)
-            a.setLabel(
-                text=_translate("plot axes labels", "Voltage"),
-                units=_translate("unit", "V"),
-            )
-
-            self._cursor_y.suffix = _translate("unit", "V")
-            self._cursor_y.siPrefix = True
-            self._cursor_y.setFormatStr(
-                "{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}"
-            )
-            opts = {
-                "suffix": _translate("unit", "V"),
-                "siPrefix": True,
-                "format": "{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}",
-            }
-        self.spin_voltage_min.setOpts(**opts)
-        self.spin_voltage_max.setOpts(**opts)
-
+        self.setup_left_axis(display_gamma)
         self.hide_cursors()
 
     @Slot()
@@ -1690,49 +1608,107 @@ class App(GUI):
             data: NDArray[np.float64]
             sep: str = self.settings.csv_separator
             if self.switch_data_action.isChecked():
-                data = np.column_stack((x * 1e-6, y))
-                # noinspection PyTypeChecker
-                np.savetxt(
-                    fn,
-                    data,
-                    delimiter=sep,
-                    header=(
-                        sep.join(
-                            (
-                                _translate("plot axes labels", "Frequency"),
-                                _translate("plot axes labels", "Absorption"),
+                if self._data_mode == DataMode.TIME_DOMAIN:
+                    data = np.column_stack((x, y))
+                    # noinspection PyTypeChecker
+                    np.savetxt(
+                        fn,
+                        data,
+                        delimiter=sep,
+                        header=(
+                            sep.join(
+                                (
+                                    _translate("plot axes labels", "Time"),
+                                    _translate("plot axes labels", "Absorption"),
+                                )
                             )
-                        )
-                        + "\n"
-                        + sep.join(
-                            (_translate("unit", "MHz"), _translate("unit", "cm⁻¹"))
-                        )
-                    ),
-                    fmt=("%.3f", "%.6e"),
-                    encoding="utf-8",
-                )
+                            + "\n"
+                            + sep.join(
+                                (
+                                    _translate("unit", "s"),
+                                    _translate("unit", "cm⁻¹"),
+                                )
+                            )
+                        ),
+                        fmt=("%.8e", "%.6e"),
+                        encoding="utf-8",
+                    )
+                else:
+                    data = np.column_stack((x * 1e-6, y))
+                    # noinspection PyTypeChecker
+                    np.savetxt(
+                        fn,
+                        data,
+                        delimiter=sep,
+                        header=(
+                            sep.join(
+                                (
+                                    _translate("plot axes labels", "Frequency"),
+                                    _translate("plot axes labels", "Absorption"),
+                                )
+                            )
+                            + "\n"
+                            + sep.join(
+                                (
+                                    _translate("unit", "MHz"),
+                                    _translate("unit", "cm⁻¹"),
+                                )
+                            )
+                        ),
+                        fmt=("%.3f", "%.6e"),
+                        encoding="utf-8",
+                    )
             else:
-                data = np.column_stack((x * 1e-6, y * 1e3))
-                # noinspection PyTypeChecker
-                np.savetxt(
-                    filename,
-                    data,
-                    delimiter=sep,
-                    header=(
-                        sep.join(
-                            (
-                                _translate("plot axes labels", "Frequency"),
-                                _translate("plot axes labels", "Voltage"),
+                if self._data_mode == DataMode.TIME_DOMAIN:
+                    data = np.column_stack((x, y * 1e3))
+                    # noinspection PyTypeChecker
+                    np.savetxt(
+                        filename,
+                        data,
+                        delimiter=sep,
+                        header=(
+                            sep.join(
+                                (
+                                    _translate("plot axes labels", "Time"),
+                                    _translate("plot axes labels", "Voltage"),
+                                )
                             )
-                        )
-                        + "\n"
-                        + sep.join(
-                            (_translate("unit", "MHz"), _translate("unit", "mV"))
-                        )
-                    ),
-                    fmt=("%.3f", "%.6f"),
-                    encoding="utf-8",
-                )
+                            + "\n"
+                            + sep.join(
+                                (
+                                    _translate("unit", "s"),
+                                    _translate("unit", "mV"),
+                                )
+                            )
+                        ),
+                        fmt=("%.8e", "%.6f"),
+                        encoding="utf-8",
+                    )
+                else:
+                    data = np.column_stack((x * 1e-6, y * 1e3))
+                    # noinspection PyTypeChecker
+                    np.savetxt(
+                        filename,
+                        data,
+                        delimiter=sep,
+                        header=(
+                            sep.join(
+                                (
+                                    _translate("plot axes labels", "Frequency"),
+                                    _translate("plot axes labels", "Voltage"),
+                                )
+                            )
+                            + "\n"
+                            + sep.join(
+                                (
+                                    _translate("unit", "MHz"),
+                                    _translate("unit", "mV"),
+                                )
+                            )
+                        ),
+                        fmt=("%.3f", "%.6f"),
+                        encoding="utf-8",
+                    )
 
         def save_xlsx(fn: Path) -> None:
             data: NDArray[np.float64]

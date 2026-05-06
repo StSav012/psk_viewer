@@ -7,13 +7,17 @@ __all__ = ["PlotDataItem"]
 
 
 class PlotDataItem:
+    TIME_DATA: Final[str] = "time_data"
+    FREQUENCY_DATA: Final[str] = "frequency_data"
     GAMMA_DATA: Final[str] = "gamma_data"
     VOLTAGE_DATA: Final[str] = "voltage_data"
 
     _jump: float = np.nan
-    _data_type: str = VOLTAGE_DATA
+    _x_data_type: str = FREQUENCY_DATA
+    _y_data_type: str = VOLTAGE_DATA
 
     def __init__(self) -> None:
+        self._time_data: NDArray[np.float64] = np.empty(0)
         self._frequency_data: NDArray[np.float64] = np.empty(0)
         self._voltage_data: NDArray[np.float64] = np.empty(0)
         self._gamma_data: NDArray[np.float64] = np.empty(0)
@@ -29,18 +33,32 @@ class PlotDataItem:
         frequency_data: NDArray[np.float64],
         voltage_data: NDArray[np.float64],
         gamma_data: NDArray[np.float64] | None = None,
+        time_data: NDArray[np.float64] | None = None,
     ) -> None:
         if gamma_data is None:
             gamma_data = np.empty(0, dtype=np.float64)
-        if frequency_data.size != voltage_data.size:
+        if time_data is None:
+            time_data = np.empty(0, dtype=np.float64)
+        if (
+            time_data.size != voltage_data.size
+            and frequency_data.size != voltage_data.size
+        ):
             raise ValueError(
-                "Frequency and voltage data must be of the same size, but the sizes are "
-                f"{frequency_data.size} and {voltage_data.size}"
+                "Voltage data must be of the same size as time or frequency, but the sizes are "
+                f"{time_data.size}, {frequency_data.size}, and {voltage_data.size}"
             )
-        if gamma_data.size != 0 and gamma_data.size != frequency_data.size:
+        if (
+            gamma_data.size != 0
+            and gamma_data.size != time_data.size
+            and gamma_data.size != frequency_data.size
+        ):
             raise ValueError(
-                "Frequency and absorption data must be of the same size, but the sizes are "
-                f"{frequency_data.size} and {gamma_data.size}"
+                "Absorption data must be of the same size as time or frequency, but the sizes are "
+                f"{time_data.size}, {frequency_data.size}, and {gamma_data.size}"
+            )
+        if time_data.ndim != 1:
+            raise ValueError(
+                f"Time data must be a 1D array, but it is {time_data.ndim}D"
             )
         if frequency_data.ndim != 1:
             raise ValueError(
@@ -54,11 +72,10 @@ class PlotDataItem:
             raise ValueError(
                 f"Absorption data must be a 1D array, but it is {gamma_data.ndim}D"
             )
-        sorting_indices: NDArray[np.float64] = np.argsort(frequency_data)
-        self._frequency_data = frequency_data[sorting_indices]
-        self._voltage_data = voltage_data[sorting_indices]
-        if gamma_data.size:
-            self._gamma_data = gamma_data[sorting_indices]
+        self._frequency_data = frequency_data
+        self._voltage_data = voltage_data
+        self._gamma_data = gamma_data
+        self._time_data = time_data
 
     def clear(self) -> None:
         self._frequency_data = np.empty(0)
@@ -83,6 +100,10 @@ class PlotDataItem:
         if 2 * step >= self._frequency_data.size:
             return np.nan
         return self._frequency_data[-step]
+
+    @property
+    def time_data(self) -> NDArray[np.float64]:
+        return self._time_data
 
     @property
     def frequency_data(self) -> NDArray[np.float64]:
@@ -161,23 +182,37 @@ class PlotDataItem:
         PlotDataItem._jump = new_value
 
     @property
-    def data_type(self) -> str:
-        return PlotDataItem._data_type
+    def x_data_type(self) -> str:
+        return PlotDataItem._x_data_type
 
-    @data_type.setter
-    def data_type(self, new_value: str) -> None:
+    @x_data_type.setter
+    def x_data_type(self, new_value: str) -> None:
+        if new_value not in (PlotDataItem.TIME_DATA, PlotDataItem.FREQUENCY_DATA):
+            raise ValueError(f"Unknown data type: {new_value}")
+        PlotDataItem._x_data_type = new_value
+
+    @property
+    def y_data_type(self) -> str:
+        return PlotDataItem._y_data_type
+
+    @y_data_type.setter
+    def y_data_type(self, new_value: str) -> None:
         if new_value not in (PlotDataItem.VOLTAGE_DATA, PlotDataItem.GAMMA_DATA):
             raise ValueError(f"Unknown data type: {new_value}")
-        PlotDataItem._data_type = new_value
+        PlotDataItem._y_data_type = new_value
 
     @property
     def x_data(self) -> NDArray[np.float64]:
-        return self.frequency_data
+        if self.x_data_type == PlotDataItem.TIME_DATA:
+            return self.time_data
+        if self.x_data_type == PlotDataItem.FREQUENCY_DATA:
+            return self.frequency_data
+        raise ValueError(f"Unknown data type: {self.x_data_type}")
 
     @property
     def y_data(self) -> NDArray[np.float64]:
-        if self.data_type == PlotDataItem.VOLTAGE_DATA:
+        if self.y_data_type == PlotDataItem.VOLTAGE_DATA:
             return self.voltage_data
-        if self.data_type == PlotDataItem.GAMMA_DATA:
+        if self.y_data_type == PlotDataItem.GAMMA_DATA:
             return self.gamma_data
-        raise ValueError(f"Unknown data type: {self.data_type}")
+        raise ValueError(f"Unknown data type: {self.y_data_type}")

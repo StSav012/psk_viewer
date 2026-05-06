@@ -1,3 +1,4 @@
+import enum
 import sys
 from collections.abc import Collection, Iterable, Iterator
 from contextlib import suppress
@@ -19,6 +20,7 @@ __all__ = [
     "load_data_csv",
     "load_data_fs",
     "load_data_scandat",
+    "load_data",
     "resource_path",
     "superscript_number",
     "superscript_tag",
@@ -26,6 +28,11 @@ __all__ = [
     "load_icon",
     "mix_colors",
     "HeaderWithUnit",
+    "FSData",
+    "PSKData",
+    "SpectrometerData",
+    "XValues",
+    "DataMode",
 ]
 
 VOLTAGE_GAIN: Final[float] = 5.0
@@ -185,7 +192,6 @@ def load_icon(widget: QWidget, icon_name: str) -> QIcon:
     else:
         with open(filename, "rb") as f_in:
             return icon_from_data(f_in.read())
-    return QIcon()
 
 
 def mix_colors(color_1: QColor, color_2: QColor, ratio_1: float = 0.5) -> QColor:
@@ -255,7 +261,44 @@ def copy_to_clipboard(
     clipboard.setMimeData(mime_data, QClipboard.Mode.Clipboard)
 
 
-def load_data_fs(filename: Path) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+class DataMode(enum.Enum):
+    unknown = enum.auto()
+    FS = enum.auto()
+    PSK = enum.auto()
+    PSK_WITH_JUMP = enum.auto()
+    TIME_DOMAIN = enum.auto()
+
+
+class FSData(NamedTuple):
+    frequency: NDArray[np.double] = np.empty(0, dtype=np.double)
+    voltage: NDArray[np.double] = np.empty(0, dtype=np.double)
+
+
+class XValues(enum.Enum):
+    unknown = enum.auto()
+    time = enum.auto()
+    frequency = enum.auto()
+
+
+class PSKData(NamedTuple):
+    frequency: NDArray[np.double] = np.empty(0, dtype=np.double)
+    voltage: NDArray[np.double] = np.empty(0, dtype=np.double)
+    absorption: NDArray[np.double] = np.empty(0, dtype=np.double)
+    time: NDArray[np.double] = np.empty(0, dtype=np.double)
+    jump: float = np.nan
+    mode: XValues = XValues.unknown
+
+
+class SpectrometerData(NamedTuple):
+    filename: Path
+    frequency: NDArray[np.double] = np.empty(0, dtype=np.double)
+    voltage: NDArray[np.double] = np.empty(0, dtype=np.double)
+    absorption: NDArray[np.double] = np.empty(0, dtype=np.double)
+    time: NDArray[np.double] = np.empty(0, dtype=np.double)
+    mode: DataMode = DataMode.unknown
+
+
+def load_data_fs(filename: Path) -> FSData:
     min_frequency: float = np.nan
     max_frequency: float = np.nan
     if (filename_fmd := filename.with_suffix(".fmd")).exists():
@@ -270,7 +313,7 @@ def load_data_fs(filename: Path) -> tuple[NDArray[np.float64], NDArray[np.float6
                         elif t[0].lower() == "FStop [GHz]".lower():
                             max_frequency = float(t[1]) * 1e6
     else:
-        return np.empty(0), np.empty(0)
+        return FSData()
     if (
         not np.isnan(min_frequency)
         and not np.isnan(max_frequency)
@@ -280,13 +323,11 @@ def load_data_fs(filename: Path) -> tuple[NDArray[np.float64], NDArray[np.float6
         x: NDArray[np.float64] = np.linspace(
             min_frequency, max_frequency, num=y.size, endpoint=False, dtype=np.float64
         )
-        return x, y
-    return np.empty(0), np.empty(0)
+        return FSData(x, y)
+    return FSData()
 
 
-def load_data_scandat(
-    filename: Path, parent: QWidget
-) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64], float]:
+def load_data_scandat(filename: Path, parent: QWidget | None) -> PSKData:
     with open(filename) as f_in:
         lines: list[str] = f_in.readlines()
 
@@ -416,40 +457,134 @@ def load_data_scandat(
             Qt.WindowType.Dialog,
             0.1,
         )
-    return x, y, y / bias / cell_length / VOLTAGE_GAIN, frequency_jump
+    return PSKData(
+        frequency=x,
+        voltage=y,
+        absorption=y / bias / cell_length / VOLTAGE_GAIN,
+        jump=frequency_jump,
+        mode=XValues.frequency,
+    )
 
 
-def load_data_csv(
-    filename: Path,
-) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64], float]:
+def time_to_seconds(s: str) -> float:
+    r: float = 0.0
+    for p in s.split(":"):
+        r = r * 60.0 + float(p)
+    return r
+
+
+def load_data_csv(filename: Path) -> PSKData:
     if (filename_csv := filename.with_suffix(".csv")).exists() and (
         filename_conf := filename.with_suffix(".conf")
     ).exists():
-        with open(filename_csv) as f_in:
-            lines: list[str] = list(
-                filter(lambda line: line[0].isdigit(), f_in.readlines())
-            )
-        x: NDArray[np.float64] = (
-            np.array([float(line.split()[1]) for line in lines]) * 1e6
-        )
-        y: NDArray[np.float64] = (
-            np.array([float(line.split()[2]) for line in lines]) * 1e-3
-        )
-        g: NDArray[np.float64] = np.array([float(line.split()[4]) for line in lines])
+        lines: list[str]
         with open(filename_conf) as f_in:
+            lines = f_in.readlines()
+            mode: XValues = (
+                XValues.frequency
+                if "frequency trend" in lines[0].casefold()
+                else XValues.time
+            )
             frequency_jump: float = (
                 float(
                     next(
                         filter(
                             lambda line: line.startswith("F(jump) [MHz]:"),
-                            f_in.readlines(),
+                            lines,
                         )
                     ).split()[-1]
                 )
                 * 1e3
             )
-        return x, y, g, frequency_jump
-    return np.empty(0), np.empty(0), np.empty(0), np.nan
+        with open(filename_csv) as f_in:
+            lines = f_in.readlines()
+        header: list[str] = lines[0].split() if not lines[0][0].isdigit() else []
+        if header:
+            time_column = header.index(
+                next(filter(lambda title: title.casefold().startswith("time"), header))
+            )
+            frequency_column = header.index(
+                next(
+                    filter(
+                        lambda title: title.casefold().startswith("frequency"), header
+                    )
+                )
+            )
+            voltage_column = header.index(
+                next(
+                    filter(
+                        lambda title: title.casefold().startswith("amplitude"), header
+                    )
+                )
+            )
+            absorption_column = header.index(
+                next(filter(lambda title: title.casefold().startswith("gamma"), header))
+            )
+        else:
+            # as the last resort
+            frequency_column = 1
+            voltage_column = 2
+            absorption_column = 4
+            time_column = -1
+        words: list[list[str]] = [
+            line.split()
+            for line in filter(lambda line: line[0].isdigit(), lines[bool(header) :])
+        ]
+        frequency: NDArray[np.double] = (
+            np.array([float(line[frequency_column]) for line in words]) * 1e6
+        )
+        time: NDArray[np.double] = np.array(
+            [time_to_seconds(line[time_column]) for line in words]
+        )
+        voltage: NDArray[np.double] = (
+            np.array([float(line[voltage_column]) for line in words]) * 1e-3
+        )
+        absorption: NDArray[np.double] = np.array(
+            [float(line[absorption_column]) for line in words]
+        )
+        return PSKData(
+            frequency=frequency,
+            voltage=voltage,
+            absorption=absorption,
+            time=time,
+            jump=frequency_jump,
+            mode=mode,
+        )
+    return PSKData()
+
+
+def load_data(
+    parent: QWidget | None, filename: str | PathLike[str]
+) -> SpectrometerData | None:
+    v: NDArray[np.float64]
+    f: NDArray[np.float64]
+    g: NDArray[np.float64] = np.empty(0)
+    t: NDArray[np.float64] = np.empty(0)
+    jump: float
+    m: XValues
+    data_mode: DataMode = DataMode.unknown
+    if not isinstance(filename, Path):
+        filename = Path(filename)
+    if filename.suffix.casefold() == ".scandat":
+        f, v, g, t, jump, m = load_data_scandat(filename, parent)
+        if f.size and v.size:
+            data_mode = DataMode.PSK_WITH_JUMP if jump > 0.0 else DataMode.PSK
+        elif m == XValues.time and t.size and v.size:
+            data_mode = DataMode.TIME_DOMAIN
+    elif filename.suffix.casefold() in (".csv", ".conf"):
+        f, v, g, t, jump, m = load_data_csv(filename)
+        if m == XValues.frequency and f.size and v.size:
+            data_mode = DataMode.PSK_WITH_JUMP if jump > 0.0 else DataMode.PSK
+        elif m == XValues.time and t.size and v.size:
+            data_mode = DataMode.TIME_DOMAIN
+    elif filename.suffix.casefold() in (".fmd", ".frd"):
+        f, v = load_data_fs(filename)
+        if f.size and v.size:
+            data_mode = DataMode.FS
+    else:
+        return None
+
+    return SpectrometerData(filename, f, g, v, t, data_mode)
 
 
 class HeaderWithUnit:
