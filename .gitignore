@@ -9,3 +9,4 @@
 /pysidedeploy.spec
 /src/psk_viewer/_version.py
 /src/psk_viewer.egg-info/
+/uv.lock
