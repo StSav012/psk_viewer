@@ -1,7 +1,7 @@
-from collections.abc import Collection, Iterable
+from collections.abc import Callable, Collection, Iterable
 from contextlib import suppress
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, cast
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import pandas as pd  # type: ignore

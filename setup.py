@@ -89,6 +89,7 @@ def required_packages() -> list[str]:
         qt_list.append(PackageRequirement(package_name="PySide2", min_version="5.13.2"))
 
     requirements: list[PackageRequirement | Sequence[PackageRequirement]] = [
+        PackageRequirement(package_name="packaging"),
         PackageRequirement(package_name="qtpy", min_version="2.4.1"),
         PackageRequirement(package_name="qtawesome"),
         qt_list,

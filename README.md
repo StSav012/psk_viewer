@@ -14,7 +14,7 @@
 
 They should install at the first application start automatically.
 
-**Required Python:** >= 3.9
+**Required Python:** >= 3.10
 
 **Notes:** 
   - to run on MS Windows 7, you can install Python from [adang1345/PythonWin7](https://github.com/adang1345/PythonWin7/);

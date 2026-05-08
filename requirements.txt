@@ -4,6 +4,7 @@ pandas
 pyqtgraph>=0.13.3
 
 # for the compatibility b/w various Qt versions
+packaging
 QtPy>=2.3.1
 
 # for unified isons

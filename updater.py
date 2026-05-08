@@ -36,9 +36,9 @@ def get_github_date(
     url: str = f"https://api.github.com/repos/{user}/{repo_name}/commits/{branch}"
     logger.debug(f"Requesting {url}")
     r: HTTPResponse = urllib.request.urlopen(url, timeout=1)
-    logger.debug(f"Response code: {r.getcode()}")
-    if r.getcode() != 200:
-        logger.warning(f"Response code is not OK: {r.getcode()}")
+    logger.debug(f"Response code: {r.status}")
+    if r.status != 200:
+        logger.warning(f"Response code is not OK: {r.status}")
         return None
     content: bytes = r.read()
     if not content:
@@ -82,9 +82,9 @@ def upgrade_files(
     url: str = f"https://github.com/{user}/{repo_name}/archive/{branch}.zip"
     logger.debug(f"Requesting {url}")
     r: HTTPResponse = urllib.request.urlopen(url, timeout=1)
-    logger.debug(f"Response code: {r.getcode()}")
-    if r.getcode() != 200:
-        logger.warning(f"Response code is not OK: {r.getcode()}")
+    logger.debug(f"Response code: {r.status}")
+    if r.status != 200:
+        logger.warning(f"Response code is not OK: {r.status}")
         return False
     with zipfile.ZipFile(io.BytesIO(r.read())) as inner_zip:
         root: Path = Path(f"{repo_name}-{branch}/")
@@ -164,7 +164,7 @@ def parse_table(table_text: str) -> list[dict[str, str]]:
     for line_no in range(2, len(text_lines)):
         data.append(dict())
         offset = 0
-        for col, title in zip(cols, titles):
+        for col, title in zip(cols, titles, strict=True):
             data[-1][title] = text_lines[line_no][offset : (offset + col)].strip()
             offset += col + 1
     return data

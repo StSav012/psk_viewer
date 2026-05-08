@@ -1,9 +1,9 @@
 import mimetypes
-from collections.abc import Collection, Iterable, Sequence
+from collections.abc import Callable, Collection, Iterable, Sequence
 from contextlib import suppress
 from numbers import Number
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Final, cast
+from typing import TYPE_CHECKING, Any, Final, cast
 
 import numpy as np
 import pandas as pd  # type: ignore

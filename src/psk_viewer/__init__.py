@@ -4,7 +4,7 @@ import enum
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import AnyStr, Final
+from typing import Final
 
 __author__: Final[str] = "StSav012"
 __original_name__: Final[str] = "psk_viewer"
@@ -15,41 +15,25 @@ except ImportError:
     __version__ = ""
 
 
-def _version_tuple(version_string: AnyStr) -> tuple[int | AnyStr, ...]:
-    result: tuple[int | AnyStr, ...] = tuple()
-    part: AnyStr
-    for part in version_string.split("." if isinstance(version_string, str) else b"."):
-        try:
-            result += (int(part),)
-        except ValueError:
-            # follow `pkg_resources` version 0.6a9: remove dashes to sort letters after digits
-            result += (
-                (part.replace("-", ""),)
-                if isinstance(part, str)
-                else (part.replace(b"-", b""),)
-            )
-    return result
-
-
-def _warn_about_outdated_package(
-    package_name: str, package_version: str, release_time: datetime
-) -> None:
-    """Display a warning about an outdated package a year after the package released."""
-    if datetime.now().replace(tzinfo=timezone(timedelta())) - release_time > timedelta(
-        days=366
-    ):
-        import tkinter.messagebox
-
-        tkinter.messagebox.showwarning(
-            title="Package Outdated",
-            message=f"Please update {package_name} package to {package_version} or newer",
-        )
-
-
 def _make_old_qt_compatible_again() -> None:
+    from packaging.version import Version
     from qtpy import PYQT_VERSION, PYSIDE2, QT6
     from qtpy.QtCore import QLibraryInfo, Qt
     from qtpy.QtWidgets import QApplication, QDialog
+
+    def _warn_about_outdated_package(
+        package_name: str, package_version: str, release_time: datetime
+    ) -> None:
+        """Display a warning about an outdated package a year after the package released."""
+        if datetime.now().replace(
+            tzinfo=timezone(timedelta())
+        ) - release_time > timedelta(days=366):
+            import tkinter.messagebox
+
+            tkinter.messagebox.showwarning(
+                title="Package Outdated",
+                message=f"Please update {package_name} package to {package_version} or newer",
+            )
 
     def to_iso_format(s: str) -> str:
         if sys.version_info < (3, 11, 0):
@@ -69,7 +53,7 @@ def _make_old_qt_compatible_again() -> None:
                         f"{groups['second']:0>2}.{groups['fraction']:0<6}",
                     )
                 )
-                return date + "T" + time + groups["offset"]
+                return date + "any_str" + time + groups["offset"]
 
             def from_iso_calendar(m: re.Match[str]) -> str:
                 from datetime import date
@@ -85,7 +69,7 @@ def _make_old_qt_compatible_again() -> None:
                         f"{groups['second']:0>2}.{groups['fraction']:0<6}",
                     )
                 )
-                return date + "T" + time + groups["offset"]
+                return date + "any_str" + time + groups["offset"]
 
             patterns: dict[str, Callable[[re.Match[str]], str]] = {
                 # '20111104', '20111104T000523283'
@@ -122,7 +106,7 @@ def _make_old_qt_compatible_again() -> None:
 
     if PYQT_VERSION is not None:
         # i.e., PyQt*
-        from typing import Callable
+        from collections.abc import Callable
 
         from qtpy import QtCore
 
@@ -145,7 +129,7 @@ def _make_old_qt_compatible_again() -> None:
 
     from qtpy import __version__
 
-    if _version_tuple(__version__) < _version_tuple("2.3.1"):
+    if Version(__version__) < Version("2.3.1"):
         _warn_about_outdated_package(
             package_name="QtPy",
             package_version="2.3.1",
@@ -153,7 +137,7 @@ def _make_old_qt_compatible_again() -> None:
         )
         if QT6:
             QLibraryInfo.LibraryLocation = QLibraryInfo.LibraryPath
-    if _version_tuple(__version__) < _version_tuple("2.4.0"):
+    if Version(__version__) < Version("2.4.0"):
         _warn_about_outdated_package(
             package_name="QtPy",
             package_version="2.4.0",
@@ -171,7 +155,7 @@ def _make_old_qt_compatible_again() -> None:
 
     from pyqtgraph import __version__
 
-    if _version_tuple(__version__) < _version_tuple("0.13.2"):
+    if Version(__version__) < Version("0.13.2"):
         _warn_about_outdated_package(
             package_name="pyqtgraph",
             package_version="0.13.2",
@@ -184,7 +168,7 @@ def _make_old_qt_compatible_again() -> None:
         pg.SpinBox.setMaximumHeight = lambda self, max_h: (
             QAbstractSpinBox.setMaximumHeight(self, round(max_h))
         )
-    if _version_tuple(__version__) < _version_tuple("0.13.3"):
+    if Version(__version__) < Version("0.13.3"):
         _warn_about_outdated_package(
             package_name="pyqtgraph",
             package_version="0.13.3",
@@ -193,7 +177,7 @@ def _make_old_qt_compatible_again() -> None:
 
         from qtpy.QtCore import qVersion
 
-        if _version_tuple(qVersion()) >= _version_tuple("6.5.0"):
+        if Version(qVersion()) >= Version("6.5.0"):
             raise RuntimeWarning(
                 " ".join(
                     (
@@ -209,7 +193,6 @@ windows = []
 
 def main() -> int:
     import argparse
-    import platform
 
     ap: argparse.ArgumentParser = argparse.ArgumentParser(
         allow_abbrev=True,
@@ -236,10 +219,13 @@ def main() -> int:
         traceback.print_exc()
 
         error_message: str
-        if isinstance(ex, SyntaxError):
+        if isinstance(ex, SyntaxError) or (
+            isinstance(ex, TypeError)
+            and ex.args == ("unsupported operand type(s) for |: 'type' and 'type'",)
+        ):
             error_message = (
                 "Python "
-                + platform.python_version()
+                + ".".join(map(str, sys.version_info[:2]))
                 + " is not supported.\n"
                 + "Get a newer Python!"
             )
