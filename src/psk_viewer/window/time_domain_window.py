@@ -29,10 +29,11 @@ from qtpy.QtGui import (
 )
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QWidget
 
-from ..gui.time_domain_gui import TimeDomainGUI
+from psk_viewer.widgets.preferences import Preferences
+
 from ..plot_data_item import PlotDataItem
-from ..preferences import Preferences
 from ..utils import DataMode, SpectrometerData, load_data
+from .gui.time_domain_gui import TimeDomainGUI
 
 __all__ = ["TimeDomainWindow"]
 
@@ -197,16 +198,16 @@ class TimeDomainWindow(TimeDomainGUI):
                 round(0.5 * (screen.size().width() - self.size().width())),
                 round(0.5 * (screen.size().height() - self.size().height())),
             )
-    
+
             self.settings.restore(self)
-    
+
             self.check_x_range_persists.setChecked(
                 self.get_config_value("time", "persists", False, bool)
             )
             self.check_y_range_persists.setChecked(
                 self.get_config_value("voltage", "persists", False, bool)
             )
-    
+
             if (
                 self.get_config_value("display", "unit", PlotDataItem.VOLTAGE_DATA, str)
                 == PlotDataItem.GAMMA_DATA

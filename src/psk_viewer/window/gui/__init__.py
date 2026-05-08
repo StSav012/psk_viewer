@@ -25,11 +25,11 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from .. import __version__
-from ..file_dialog import OpenFileDialog, SaveFileDialog
-from ..settings import Settings
-from ..utils import find_qm_files, load_icon
-from ..valuelabel import ValueLabel
+from ... import __version__
+from ...settings import Settings
+from ...utils import find_qm_files, load_icon
+from ...widgets.file_dialog import OpenFileDialog, SaveFileDialog
+from ...widgets.valuelabel import ValueLabel
 
 __all__ = ["GUI"]
 

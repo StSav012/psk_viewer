@@ -13,7 +13,7 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from ..toolbar import TimeDomainToolbar
+from ...widgets.toolbar import TimeDomainToolbar
 from . import GUI
 
 __all__ = ["TimeDomainGUI"]

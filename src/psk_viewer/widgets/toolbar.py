@@ -4,7 +4,7 @@ from qtpy.QtCore import Qt
 from qtpy.QtGui import QColor, QKeySequence, QPalette
 from qtpy.QtWidgets import QAction, QApplication, QToolBar, QWidget
 
-from .utils import load_icon, mix_colors
+from ..utils import load_icon, mix_colors
 
 __all__ = ["TimeDomainToolbar", "FrequencyDomainToolbar"]
 

@@ -7,7 +7,7 @@ from typing import NamedTuple
 
 from qtpy.QtWidgets import QFileDialog, QWidget
 
-from .settings import Settings
+from ..settings import Settings
 
 __all__ = ["OpenFileDialog", "SaveFileDialog"]
 

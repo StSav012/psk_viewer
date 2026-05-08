@@ -22,10 +22,10 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
+from ..settings import Settings
 from .colorselector import ColorSelector
 from .font_selector import FontSelector
 from .open_file_path_entry import OpenFilePathEntry
-from .settings import Settings
 
 __all__ = ["Preferences"]
 

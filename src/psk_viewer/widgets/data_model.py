@@ -11,7 +11,7 @@ from qtpy.QtCore import (
     Qt,
 )
 
-from .utils import HeaderWithUnit, superscript_tag
+from ..utils import HeaderWithUnit, superscript_tag
 
 __all__ = ("DataModel",)
 

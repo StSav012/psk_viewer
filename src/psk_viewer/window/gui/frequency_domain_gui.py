@@ -15,10 +15,11 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from ..data_model import DataModel
-from ..found_lines_model import FoundLinesModel
-from ..table_view import TableView
-from ..toolbar import FrequencyDomainToolbar
+from psk_viewer.widgets.data_model import DataModel
+from psk_viewer.widgets.found_lines_model import FoundLinesModel
+from psk_viewer.widgets.table_view import TableView
+
+from ...widgets.toolbar import FrequencyDomainToolbar
 from . import GUI
 
 __all__ = ["FrequencyDomainGUI"]
