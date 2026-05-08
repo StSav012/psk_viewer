@@ -100,19 +100,21 @@ def load_icon(widget: QWidget, icon_name: str) -> QIcon:
                     xmlns:xlink="http://www.w3.org/1999/xlink"
                     fill="none"
                     stroke="foreground"
-                    stroke-width="1px"
+                    stroke-width="2px"
+                    stroke-linejoin="bevel"
                 >
                     <g id="d">
                         <path d="m9.5 4.5v10.5"/>
-                        <ellipse cx="7.25" cy="12" rx="2.25" ry="2.5"/>
+                        <ellipse cx="7.25" cy="11.5" rx="2.25" ry="2.5"/>
                     </g>
-                    <path id="2" d="m11.75 6c-0-2 3.75-1.25 0.5 2.25h1.8"/>
+                    <path id="2" d="m 12.25,5.4c 0,-1.5 2.5,-1.5 1.75,0.25 -0.25,0.5 -1.24,2.5 -2.75,2.5h 4"/>
                     <path d="m23.5 4.5-18.75 23"/>
                     <path id="x" d="m20 22 3 5.75"/>
-                    <use transform="translate(8.25 13)" xlink:href="#d"/>
-                    <use transform="translate(13 13)" xlink:href="#2"/>
+                    <use transform="translate(7.5 13)" xlink:href="#d"/>
+                    <use transform="translate(12.5 13)" xlink:href="#2"/>
                     <use transform="matrix(-1 0 0 1 43 0)" xlink:href="#x"/>
-                </svg>""",
+                </svg>
+            """,
             "saveTable": QTAData(
                 ("mdi6.content-save", "mdi6.table"),
                 [
