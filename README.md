@@ -4,7 +4,7 @@
   - `pandas`,
   - `pyqtgraph>=0.13.3`,
   - `qtpy>=2.3.1`,
-  - `scipy`,
+  - `scipy>=0.16.0`,
   - any of `PyQt6`, `PySide6`, `PyQt5`, `PySide2`.
 
 **Optional packages:**

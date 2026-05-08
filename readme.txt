@@ -5,7 +5,7 @@ Required packages:
   • pyqtgraph>=0.13.3,
   • packaging,
   • QtPy>=2.3.1,
-  • scipy,
+  • scipy>=0.16.0,
   • any of PyQt6 (<6.5.0 if pyqtgraph<0.13.3), PySide6 (<6.5.0 if pyqtgraph<0.13.3), PyQt5, PySide2,
     whichever compatible with the Python and the OS.
 

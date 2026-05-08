@@ -23,33 +23,36 @@ def correlation(
     another_x: NDArray[np.float64],
     another_y: NDArray[np.float64],
 ) -> NDArray[np.float64]:
-    from scipy.signal import butter, lfilter  # type: ignore
+    from scipy.signal import butter, sosfilt
 
     def butter_bandpass_filter(
         data: NDArray[np.float64], low_cut: float, high_cut: float, order: int = 5
     ) -> NDArray[np.float64]:
-        def butter_bandpass() -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+        def butter_bandpass() -> NDArray[np.float64]:
             nyq: float = 0.5 * fs
             low: float = low_cut / nyq
             high: float = high_cut / nyq
             if low > 0.0 and high < fs:
                 return cast(
-                    tuple[NDArray[np.float64], NDArray[np.float64]],
-                    butter(order, [low, high], btype="bandpass"),
+                    NDArray[np.float64],
+                    cast(
+                        object,
+                        butter(order, [low, high], btype="bandpass", output="sos"),
+                    ),
                 )
             if low > 0.0 and high >= fs:
                 return cast(
-                    tuple[NDArray[np.float64], NDArray[np.float64]],
-                    butter(order, low, btype="highpass"),
+                    NDArray[np.float64],
+                    cast(object, butter(order, low, btype="highpass", output="sos")),
                 )
             if low <= 0.0 and high < fs:
                 return cast(
-                    tuple[NDArray[np.float64], NDArray[np.float64]],
-                    butter(order, high, btype="lowpass"),
+                    NDArray[np.float64],
+                    cast(object, butter(order, high, btype="lowpass", output="sos")),
                 )
             raise ValueError
 
-        return lfilter(*butter_bandpass(), data)
+        return cast(NDArray[np.float64], sosfilt(butter_bandpass(), data))
 
     if another_y.size:
         fs: float = 1.0 / (another_x[1] - another_x[0])

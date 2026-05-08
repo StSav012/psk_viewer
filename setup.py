@@ -95,7 +95,7 @@ def required_packages() -> list[str]:
         qt_list,
         PackageRequirement(package_name="pandas"),
         PackageRequirement(package_name="pyqtgraph", min_version="0.13.3"),
-        PackageRequirement(package_name="scipy"),
+        PackageRequirement(package_name="scipy", min_version="0.16.0"),
     ]
     return [str(required_package(requirement)) for requirement in requirements]
 
