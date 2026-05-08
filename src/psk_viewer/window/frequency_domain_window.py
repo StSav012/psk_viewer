@@ -1010,7 +1010,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         line_data: NDArray[np.float64] = self.automatically_found_lines.xData
         if line_data is None or not line_data.size:
             return
-        i: int = cast(int, np.searchsorted(line_data, init_frequency, side="right") - 2)
+        i: int = np.searchsorted(line_data, init_frequency, side="right").item() - 2
         if 0 <= i < line_data.size and line_data[i] != init_frequency:
             self.spin_x_center.setValue(line_data[i])
             self.ensure_y_fits()
@@ -1025,7 +1025,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         line_data: NDArray[np.float64] = self.automatically_found_lines.xData
         if line_data is None or not line_data.size:
             return
-        i: int = cast(int, np.searchsorted(line_data, init_frequency, side="left") + 1)
+        i: int = np.searchsorted(line_data, init_frequency, side="left").item() + 1
         if i < line_data.size and line_data[i] != init_frequency:
             self.spin_x_center.setValue(line_data[i])
             self.ensure_y_fits()
