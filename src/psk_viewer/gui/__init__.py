@@ -1,6 +1,7 @@
 import re
 import sys
 from pathlib import Path
+from threading import Lock
 from typing import Any, Literal, TypeVar, cast
 
 import numpy as np
@@ -48,7 +49,7 @@ class GUI(QMainWindow):
         self.settings: Settings = Settings("SavSoft", "Spectrometer Viewer", self)
 
         # prevent config from being re-written while loading
-        self._loading: bool = True
+        self._loading: Lock = Lock()
 
         self.central_widget: QWidget = QWidget(self)
         self.grid_layout: QGridLayout = QGridLayout(self.central_widget)
@@ -257,7 +258,7 @@ class GUI(QMainWindow):
                 return default
 
     def set_config_value(self, section: str, key: str, value: object) -> None:
-        if self._loading:
+        if self._loading.locked():
             return
         with self.settings.section(section):
             if isinstance(value, np.generic):

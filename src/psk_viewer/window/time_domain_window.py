@@ -190,37 +190,34 @@ class TimeDomainWindow(TimeDomainGUI):
         event.accept()
 
     def load_config(self) -> None:
-        self._loading = True
-
-        # Fallback: Center the window
-        screen: QScreen = QGuiApplication.primaryScreen()
-        self.move(
-            round(0.5 * (screen.size().width() - self.size().width())),
-            round(0.5 * (screen.size().height() - self.size().height())),
-        )
-
-        self.settings.restore(self)
-
-        self.check_x_range_persists.setChecked(
-            self.get_config_value("time", "persists", False, bool)
-        )
-        self.check_y_range_persists.setChecked(
-            self.get_config_value("voltage", "persists", False, bool)
-        )
-
-        if (
-            self.get_config_value("display", "unit", PlotDataItem.VOLTAGE_DATA, str)
-            == PlotDataItem.GAMMA_DATA
-        ):
-            self._plot_data.y_data_type = PlotDataItem.GAMMA_DATA
-        else:
-            self._plot_data.y_data_type = PlotDataItem.VOLTAGE_DATA
-        self.switch_data_action.setChecked(
-            self._plot_data.y_data_type == PlotDataItem.GAMMA_DATA
-        )
-        self.display_gamma_or_voltage()
-
-        self._loading = False
+        with self._loading:
+            # Fallback: Center the window
+            screen: QScreen = QGuiApplication.primaryScreen()
+            self.move(
+                round(0.5 * (screen.size().width() - self.size().width())),
+                round(0.5 * (screen.size().height() - self.size().height())),
+            )
+    
+            self.settings.restore(self)
+    
+            self.check_x_range_persists.setChecked(
+                self.get_config_value("time", "persists", False, bool)
+            )
+            self.check_y_range_persists.setChecked(
+                self.get_config_value("voltage", "persists", False, bool)
+            )
+    
+            if (
+                self.get_config_value("display", "unit", PlotDataItem.VOLTAGE_DATA, str)
+                == PlotDataItem.GAMMA_DATA
+            ):
+                self._plot_data.y_data_type = PlotDataItem.GAMMA_DATA
+            else:
+                self._plot_data.y_data_type = PlotDataItem.VOLTAGE_DATA
+            self.switch_data_action.setChecked(
+                self._plot_data.y_data_type == PlotDataItem.GAMMA_DATA
+            )
+            self.display_gamma_or_voltage()
 
     def setup_ui_actions(self) -> None:
         self.toolbar.open_action.triggered.connect(self.on_open_action_triggered)
@@ -281,14 +278,13 @@ class TimeDomainWindow(TimeDomainGUI):
 
     def on_xlim_changed(self, xlim: Iterable[float]) -> None:
         min_freq, max_freq = min(xlim), max(xlim)
-        self._loading = True
-        self.spin_x_min.setValue(min_freq)
-        self.spin_x_max.setValue(max_freq)
-        self.spin_x_span.setValue(max_freq - min_freq)
-        self.spin_x_center.setValue(0.5 * (max_freq + min_freq))
-        self.spin_x_min.setMaximum(max_freq)
-        self.spin_x_max.setMinimum(min_freq)
-        self._loading = False
+        with self._loading:
+            self.spin_x_min.setValue(min_freq)
+            self.spin_x_max.setValue(max_freq)
+            self.spin_x_span.setValue(max_freq - min_freq)
+            self.spin_x_center.setValue(0.5 * (max_freq + min_freq))
+            self.spin_x_min.setMaximum(max_freq)
+            self.spin_x_max.setMinimum(min_freq)
         self.set_x_range(
             lower_value=self.spin_x_min.value(),
             upper_value=self.spin_x_max.value(),
@@ -296,12 +292,11 @@ class TimeDomainWindow(TimeDomainGUI):
 
     def on_ylim_changed(self, ylim: Iterable[float | np.float64]) -> None:
         min_voltage, max_voltage = min(ylim), max(ylim)
-        self._loading = True
-        self.spin_y_min.setValue(min_voltage)
-        self.spin_y_max.setValue(max_voltage)
-        self.spin_y_min.setMaximum(max_voltage)
-        self.spin_y_max.setMinimum(min_voltage)
-        self._loading = False
+        with self._loading:
+            self.spin_y_min.setValue(min_voltage)
+            self.spin_y_max.setValue(max_voltage)
+            self.spin_y_min.setMaximum(max_voltage)
+            self.spin_y_max.setMinimum(min_voltage)
         self.set_y_range(lower_value=min_voltage, upper_value=max_voltage)
 
     @Slot(tuple)
@@ -371,55 +366,51 @@ class TimeDomainWindow(TimeDomainGUI):
 
     @Slot(float)
     def on_spin_x_min_changed(self, new_value: float) -> None:
-        if self._loading:
+        if self._loading.locked():
             return
-        self._loading = True
-        self.spin_x_max.setMinimum(new_value)
-        self.spin_x_center.setValue(0.5 * (new_value + self.spin_x_max.value()))
-        self.spin_x_span.setValue(self.spin_x_max.value() - new_value)
-        self.set_x_range(lower_value=new_value, upper_value=self.spin_x_max.value())
-        self._loading = False
+        with self._loading:
+            self.spin_x_max.setMinimum(new_value)
+            self.spin_x_center.setValue(0.5 * (new_value + self.spin_x_max.value()))
+            self.spin_x_span.setValue(self.spin_x_max.value() - new_value)
+            self.set_x_range(lower_value=new_value, upper_value=self.spin_x_max.value())
 
     @Slot(float)
     def on_spin_x_max_changed(self, new_value: float) -> None:
-        if self._loading:
+        if self._loading.locked():
             return
-        self._loading = True
-        self.spin_x_min.setMaximum(new_value)
-        self.spin_x_center.setValue(0.5 * (self.spin_x_min.value() + new_value))
-        self.spin_x_span.setValue(new_value - self.spin_x_min.value())
-        self.set_x_range(lower_value=self.spin_x_min.value(), upper_value=new_value)
-        self._loading = False
+        with self._loading:
+            self.spin_x_min.setMaximum(new_value)
+            self.spin_x_center.setValue(0.5 * (self.spin_x_min.value() + new_value))
+            self.spin_x_span.setValue(new_value - self.spin_x_min.value())
+            self.set_x_range(lower_value=self.spin_x_min.value(), upper_value=new_value)
 
     @Slot(float)
     def on_spin_x_center_changed(self, new_value: float) -> None:
-        if self._loading:
+        if self._loading.locked():
             return
         freq_span = self.spin_x_span.value()
         min_freq = new_value - 0.5 * freq_span
         max_freq = new_value + 0.5 * freq_span
-        self._loading = True
-        self.spin_x_min.setMaximum(max_freq)
-        self.spin_x_max.setMinimum(min_freq)
-        self.spin_x_min.setValue(min_freq)
-        self.spin_x_max.setValue(max_freq)
-        self.set_x_range(upper_value=max_freq, lower_value=min_freq)
-        self._loading = False
+        with self._loading:
+            self.spin_x_min.setMaximum(max_freq)
+            self.spin_x_max.setMinimum(min_freq)
+            self.spin_x_min.setValue(min_freq)
+            self.spin_x_max.setValue(max_freq)
+            self.set_x_range(upper_value=max_freq, lower_value=min_freq)
 
     @Slot(float)
     def on_spin_x_span_changed(self, new_value: float) -> None:
-        if self._loading:
+        if self._loading.locked():
             return
         freq_center = self.spin_x_center.value()
         min_freq = freq_center - 0.5 * new_value
         max_freq = freq_center + 0.5 * new_value
-        self._loading = True
-        self.spin_x_min.setMaximum(max_freq)
-        self.spin_x_max.setMinimum(min_freq)
-        self.spin_x_min.setValue(min_freq)
-        self.spin_x_max.setValue(max_freq)
-        self.set_x_range(upper_value=max_freq, lower_value=min_freq)
-        self._loading = False
+        with self._loading:
+            self.spin_x_min.setMaximum(max_freq)
+            self.spin_x_max.setMinimum(min_freq)
+            self.spin_x_min.setValue(min_freq)
+            self.spin_x_max.setValue(max_freq)
+            self.set_x_range(upper_value=max_freq, lower_value=min_freq)
 
     @Slot()
     def on_button_zoom_x_out_coarse_clicked(self) -> None:
@@ -438,44 +429,41 @@ class TimeDomainWindow(TimeDomainGUI):
         self.zoom_x(0.5)
 
     def zoom_x(self, factor: float) -> None:
-        if self._loading:
+        if self._loading.locked():
             return
         freq_span = self.spin_x_span.value() * factor
         freq_center = self.spin_x_center.value()
         min_freq = freq_center - 0.5 * freq_span
         max_freq = freq_center + 0.5 * freq_span
-        self._loading = True
-        self.spin_x_min.setMaximum(max_freq)
-        self.spin_x_max.setMinimum(min_freq)
-        self.spin_x_min.setValue(min_freq)
-        self.spin_x_max.setValue(max_freq)
-        self.spin_x_span.setValue(freq_span)
-        self.set_x_range(upper_value=max_freq, lower_value=min_freq)
-        self._loading = False
+        with self._loading:
+            self.spin_x_min.setMaximum(max_freq)
+            self.spin_x_max.setMinimum(min_freq)
+            self.spin_x_min.setValue(min_freq)
+            self.spin_x_max.setValue(max_freq)
+            self.spin_x_span.setValue(freq_span)
+            self.set_x_range(upper_value=max_freq, lower_value=min_freq)
 
     @Slot(bool)
     def on_check_frequency_persists_toggled(self, new_value: bool) -> None:
-        if self._loading:
+        if self._loading.locked():
             return
         self.set_config_value("frequency", "persists", new_value)
 
     @Slot(float)
     def on_spin_voltage_min_changed(self, new_value: float) -> None:
-        if self._loading:
+        if self._loading.locked():
             return
-        self._loading = True
-        self.spin_y_max.setMinimum(new_value)
-        self.set_y_range(lower_value=new_value, upper_value=self.spin_y_max.value())
-        self._loading = False
+        with self._loading:
+            self.spin_y_max.setMinimum(new_value)
+            self.set_y_range(lower_value=new_value, upper_value=self.spin_y_max.value())
 
     @Slot(float)
     def on_spin_voltage_max_changed(self, new_value: float) -> None:
-        if self._loading:
+        if self._loading.locked():
             return
-        self._loading = True
-        self.spin_y_min.setMaximum(new_value)
-        self.set_y_range(lower_value=self.spin_y_min.value(), upper_value=new_value)
-        self._loading = False
+        with self._loading:
+            self.spin_y_min.setMaximum(new_value)
+            self.set_y_range(lower_value=self.spin_y_min.value(), upper_value=new_value)
 
     @Slot()
     def on_button_zoom_y_out_coarse_clicked(self) -> None:
@@ -494,7 +482,7 @@ class TimeDomainWindow(TimeDomainGUI):
         self.zoom_y(0.5)
 
     def zoom_y(self, factor: float) -> None:
-        if self._loading:
+        if self._loading.locked():
             return
         min_voltage = self.spin_y_min.value()
         max_voltage = self.spin_y_max.value()
@@ -502,17 +490,16 @@ class TimeDomainWindow(TimeDomainGUI):
         voltage_center = (max_voltage + min_voltage) * 0.5
         min_voltage = voltage_center - 0.5 * voltage_span
         max_voltage = voltage_center + 0.5 * voltage_span
-        self._loading = True
-        self.spin_y_min.setMaximum(max_voltage)
-        self.spin_y_max.setMinimum(min_voltage)
-        self.spin_y_min.setValue(min_voltage)
-        self.spin_y_max.setValue(max_voltage)
-        self.set_y_range(upper_value=max_voltage, lower_value=min_voltage)
-        self._loading = False
+        with self._loading:
+            self.spin_y_min.setMaximum(max_voltage)
+            self.spin_y_max.setMinimum(min_voltage)
+            self.spin_y_min.setValue(min_voltage)
+            self.spin_y_max.setValue(max_voltage)
+            self.set_y_range(upper_value=max_voltage, lower_value=min_voltage)
 
     @Slot(bool)
     def on_check_voltage_persists_toggled(self, new_value: bool) -> None:
-        if self._loading:
+        if self._loading.locked():
             return
         self.set_config_value("voltage", "persists", new_value)
 
@@ -702,15 +689,14 @@ class TimeDomainWindow(TimeDomainGUI):
         min_time: np.float64 = cast(np.float64, t[0])
         max_time: np.float64 = cast(np.float64, t[-1])
 
-        self._loading = True
-        self.spin_x_min.setMaximum(max(max_time, self.spin_x_min.value()))
-        self.spin_x_max.setMinimum(min(min_time, self.spin_x_max.value()))
-        if not self.check_x_range_persists.isChecked():
-            self.spin_x_min.setValue(min_time)
-            self.spin_x_max.setValue(max_time)
-            self.spin_x_span.setValue(max_time - min_time)
-            self.spin_x_center.setValue(0.5 * (max_time + min_time))
-        self._loading = False
+        with self._loading:
+            self.spin_x_min.setMaximum(max(max_time, self.spin_x_min.value()))
+            self.spin_x_max.setMinimum(min(min_time, self.spin_x_max.value()))
+            if not self.check_x_range_persists.isChecked():
+                self.spin_x_min.setValue(min_time)
+                self.spin_x_max.setValue(max_time)
+                self.spin_x_span.setValue(max_time - min_time)
+                self.spin_x_center.setValue(0.5 * (max_time + min_time))
 
         self.switch_data_action.setEnabled(
             self._data_mode
@@ -924,15 +910,14 @@ class TimeDomainWindow(TimeDomainGUI):
         if self._plot_data:  # something is loaded
             self._plot_line.setData(self._plot_data.x_data, self._plot_data.y_data)
 
-            self._loading = True
-            y_data: NDArray[np.float64] = self._plot_data.y_data
-            min_y: np.float64 = np.min(y_data)
-            max_y: np.float64 = np.max(y_data)
+            with self._loading:
+                y_data: NDArray[np.float64] = self._plot_data.y_data
+                min_y: np.float64 = np.min(y_data)
+                max_y: np.float64 = np.max(y_data)
+                self.spin_y_min.setMaximum(max(max_y, self.spin_y_min.value()))
+                self.spin_y_max.setMinimum(min(min_y, self.spin_y_max.value()))
             if not self.check_y_range_persists.isChecked():
                 self.on_ylim_changed((min_y, max_y))
-            self.spin_y_min.setMaximum(max(max_y, self.spin_y_min.value()))
-            self.spin_y_max.setMinimum(min(min_y, self.spin_y_max.value()))
-            self._loading = False
 
         if self._ghost_data:  # something is loaded
             self._ghost_line.setData(self._ghost_data.x_data, self._ghost_data.y_data)
