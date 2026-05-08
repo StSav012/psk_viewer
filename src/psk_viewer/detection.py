@@ -8,9 +8,7 @@ __all__ = ["LINE_WIDTH", "correlation", "peaks_positions"]
 LINE_WIDTH: Final[float] = 2.6e6
 
 
-def remove_spikes(
-    sequence: NDArray[np.float64], iterations: int = 1
-) -> NDArray[np.float64]:
+def remove_spikes(sequence: NDArray[np.bool], iterations: int = 1) -> NDArray[np.bool]:
     from scipy import ndimage  # type: ignore
 
     sequence = ndimage.binary_dilation(sequence, iterations=iterations)
@@ -70,12 +68,12 @@ def peaks_positions(
     data_x: NDArray[np.float64],
     data_y: NDArray[np.float64],
     threshold: float = 0.0046228,
-) -> NDArray[np.float64]:
+) -> NDArray[np.int64]:
     import pandas as pd  # type: ignore
 
     if data_x.size < 2 or data_y.size < 2:
         # nothing to do
-        return np.empty(0)
+        return np.empty(0, dtype=np.int64)
 
     std: NDArray[np.float64] = (
         pd.Series(data_y)
@@ -83,11 +81,11 @@ def peaks_positions(
         .std()
         .to_numpy()
     )
-    match: NDArray[np.float64] = np.array(std >= np.nanquantile(std, 1.0 - threshold))
+    match: NDArray[np.bool] = np.asarray(std >= np.nanquantile(std, 1.0 - threshold))
     match = remove_spikes(match, iterations=8)
     match[0] = match[-1] = False
     islands: NDArray[np.int64] = np.argwhere(np.diff(match)).reshape(-1, 2)
-    peaks: NDArray[np.float64] = np.array(
+    peaks: NDArray[np.int64] = np.array(
         [
             i[0] + np.argmax(data_y[i[0] : i[1]])
             for i in islands
