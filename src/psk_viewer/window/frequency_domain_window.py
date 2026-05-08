@@ -3,6 +3,7 @@ from collections.abc import Callable, Collection, Iterable, Sequence
 from contextlib import suppress
 from numbers import Number
 from pathlib import Path
+from threading import Lock
 from typing import TYPE_CHECKING, Any, Final, cast
 
 import numpy as np
@@ -75,7 +76,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         self._ghost_data: PlotDataItem = PlotDataItem()
         self._plot_data: PlotDataItem = PlotDataItem()
 
-        self._ignore_scale_change: bool = False
+        self._ignore_scale_change: Lock = Lock()
 
         self.model_signal: NDArray[np.float64]
         try:
@@ -591,16 +592,15 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         self.toolbar.clear_trace_action.setEnabled(True)
 
     def on_lim_changed(self, arg: tuple[PlotWidget, list[list[float]]]) -> None:
-        if self._ignore_scale_change:
+        if self._ignore_scale_change.locked():
             return
         rect: list[list[float]] = arg[1]
         xlim: list[float]
         ylim: list[float]
         xlim, ylim = rect
-        self._ignore_scale_change = True
-        self.on_xlim_changed(xlim)
-        self.on_ylim_changed(ylim)
-        self._ignore_scale_change = False
+        with self._ignore_scale_change:
+            self.on_xlim_changed(xlim)
+            self.on_ylim_changed(ylim)
 
     def on_points_selected(self, rows: list[int]) -> None:
         self.table_found_lines.clearSelection()
@@ -942,11 +942,11 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         if x.size < 2 or y.size < 2:
             return 0
 
-        found_lines: NDArray[np.float64]
+        found_lines: NDArray[np.int64]
         if self._data_mode == DataMode.FS:
             # re-scale the signal to the actual frequency mesh
             x_model: NDArray[np.float64] = (
-                np.arange(self.model_signal.size, dtype=x.dtype) * 0.1
+                np.arange(self.model_signal.size, dtype=np.float64) * 0.1
             )
             interpol = interpolate.interp1d(x_model, self.model_signal, kind=2)
             x_model_new: NDArray[np.float64] = np.arange(
@@ -961,29 +961,35 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         else:
             return 0
 
-        self._ignore_scale_change = True
-        if found_lines.size:
-            self.automatically_found_lines_data = x[found_lines]
-            self.automatically_found_lines.setData(x[found_lines], y[found_lines])
-        else:
-            self.automatically_found_lines.setData(np.empty(0), np.empty(0))
-            self.automatically_found_lines_data = np.empty(0)
+        with self._ignore_scale_change:
+            if found_lines.size:
+                self.automatically_found_lines_data = x[found_lines]
+                self.automatically_found_lines.setData(x[found_lines], y[found_lines])
+            else:
+                self.automatically_found_lines.setData(np.empty(0), np.empty(0))
+                self.automatically_found_lines_data = np.empty(0)
 
-        # update the table
-        self.model_found_lines.set_lines(
-            self._plot_data,
-            (self.automatically_found_lines_data, self.user_found_lines_data),
-        )
+            # update the table
+            self.model_found_lines.set_lines(
+                self._plot_data,
+                (self.automatically_found_lines_data, self.user_found_lines_data),
+            )
 
-        self.toolbar.copy_trace_action.setEnabled(not self.model_found_lines.is_empty)
-        self.toolbar.save_trace_action.setEnabled(not self.model_found_lines.is_empty)
-        self.toolbar.clear_trace_action.setEnabled(not self.model_found_lines.is_empty)
+            self.toolbar.copy_trace_action.setEnabled(
+                not self.model_found_lines.is_empty
+            )
+            self.toolbar.save_trace_action.setEnabled(
+                not self.model_found_lines.is_empty
+            )
+            self.toolbar.clear_trace_action.setEnabled(
+                not self.model_found_lines.is_empty
+            )
 
-        self.button_clear_automatically_found_lines.setEnabled(bool(found_lines.size))
-        self.button_next_found_line.setEnabled(bool(found_lines.size))
-        self.button_prev_found_line.setEnabled(bool(found_lines.size))
-
-        self._ignore_scale_change = False
+            self.button_clear_automatically_found_lines.setEnabled(
+                bool(found_lines.size)
+            )
+            self.button_next_found_line.setEnabled(bool(found_lines.size))
+            self.button_prev_found_line.setEnabled(bool(found_lines.size))
 
         return found_lines.size
 
