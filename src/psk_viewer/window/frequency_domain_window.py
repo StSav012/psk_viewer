@@ -1192,8 +1192,12 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         if not (filename := self._save_table_dialog.get_save_filename()):
             return
 
-        f: NDArray[np.double] | NDArray[np.cdouble] = self.model_found_lines.all_data[:, 0] * 1e-6
-        v: NDArray[np.double] | NDArray[np.cdouble] = self.model_found_lines.all_data[:, 1] * 1e3
+        f: NDArray[np.double] | NDArray[np.cdouble] = (
+            self.model_found_lines.all_data[:, 0] * 1e-6
+        )
+        v: NDArray[np.double] | NDArray[np.cdouble] = (
+            self.model_found_lines.all_data[:, 1] * 1e3
+        )
         data: NDArray[np.complex128] | NDArray[np.float64]
         if self.model_found_lines.all_data.shape[1] > 2:
             g: NDArray[np.complex128] | NDArray[np.float64] = (
