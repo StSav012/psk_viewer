@@ -54,31 +54,28 @@ class TableView(QTableView):
         if old == new:
             return
         # hide columns according to the settings
-        self.settings.beginGroup("marksTable")
-        self.settings.beginReadArray("columns")
-        column: int
-        for column in range(old, new):
-            self.settings.setArrayIndex(column)
-            hidden: bool = not cast(
-                bool,
-                self.settings.value("visible", not self.isColumnHidden(column), bool),
-            )
-            if hidden != self.isColumnHidden(column):
-                super().setColumnHidden(column, hidden)
-                if not hidden:
-                    self.resizeColumnToContents(column)
-        self.settings.endArray()
-        self.settings.endGroup()
+        with self.settings.section("marksTable"), self.settings.read_array("columns"):
+            column: int
+            for column in range(old, new):
+                self.settings.setArrayIndex(column)
+                hidden: bool = not cast(
+                    bool,
+                    self.settings.value(
+                        "visible", not self.isColumnHidden(column), bool
+                    ),
+                )
+                if hidden != self.isColumnHidden(column):
+                    super().setColumnHidden(column, hidden)
+                    if not hidden:
+                        self.resizeColumnToContents(column)
 
     def setColumnHidden(self, column: int, hidden: bool) -> None:
         super().setColumnHidden(column, hidden)
-        self.settings.beginGroup("marksTable")
-        header: QHeaderView = self.horizontalHeader()
-        self.settings.beginWriteArray("columns", header.count())
-        self.settings.setArrayIndex(column)
-        self.settings.setValue("visible", not hidden)
-        self.settings.endArray()
-        self.settings.endGroup()
+        with self.settings.section("marksTable"):
+            header: QHeaderView = self.horizontalHeader()
+            with self.settings.write_array("columns", header.count()):
+                self.settings.setArrayIndex(column)
+                self.settings.setValue("visible", not hidden)
 
     def setModel(self, model: QAbstractItemModel | None) -> None:
         super().setModel(model)

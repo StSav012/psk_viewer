@@ -203,6 +203,24 @@ class Settings(QSettings):
         finally:
             self.endGroup()
 
+    @contextmanager
+    def read_array(self, prefix: str) -> Iterator[int]:
+        try:
+            yield self.beginReadArray(prefix)
+        finally:
+            self.endArray()
+
+    @contextmanager
+    def write_array(self, prefix: str, size: int | None = None) -> Iterator[None]:
+        try:
+            if size is None:
+                self.beginWriteArray(prefix)
+            else:
+                self.beginWriteArray(prefix, size)
+            yield None
+        finally:
+            self.endArray()
+
     @property
     def line_end(self) -> str:
         with self.section("export"):
