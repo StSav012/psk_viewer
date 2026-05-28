@@ -210,6 +210,7 @@ class SaveFileDialog(FileDialog):
         ext: str | None
 
         supported_name_filters: list[str] = []
+        supported_name_filter: FileDialog.SupportedNameFilterItem
         for supported_name_filter in self.supported_name_filters:
             if not supported_name_filter.required_packages or any(
                 find_spec(package)
@@ -252,8 +253,10 @@ class SaveFileDialog(FileDialog):
                 supported_mimetypes.append(mimetype)
                 if filename_mimetype is not None and filename_mimetype == mimetype:
                     selected_mimetype = mimetype
-                    if ext := mimetypes.guess_extension(
-                        selected_mimetype, strict=False
+                    if selected_mimetype is not None and (
+                        ext := mimetypes.guess_extension(
+                            selected_mimetype, strict=False
+                        )
                     ):
                         selected_ext = ext
 
@@ -275,8 +278,7 @@ class SaveFileDialog(FileDialog):
         if selected_ext:
             self.setDefaultSuffix(selected_ext)
 
-        expected_file: Path
-        if expected_file := (filename or opened_filename):
+        if (expected_file := (filename or opened_filename)) is not None:
             self.setDirectory(str(expected_file.parent))
             if opened_filename:
                 expected_file = expected_file.with_name(opened_filename.name)

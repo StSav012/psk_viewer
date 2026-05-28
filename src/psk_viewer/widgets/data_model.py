@@ -98,13 +98,13 @@ class DataModel(QAbstractTableModel):
         precision, scale, fancy = self._format[column]
         if np.isnan(scale):
             if fancy:
-                if isinstance(value, complex):
-                    re_s: str = fancy_format(value.real)
-                    im_s: str = fancy_format(value.imag)
-                    if value.imag < 0:
-                        return re_s + im_s + "j"
-                    return re_s + "+" + im_s + "j"
-                return fancy_format(value)
+                if isinstance(value, float):
+                    return fancy_format(value)
+                re_s: str = fancy_format(value.real)
+                im_s: str = fancy_format(value.imag)
+                if value.imag < 0:
+                    return re_s + im_s + "j"
+                return re_s + "+" + im_s + "j"
             if replace_hyphen:
                 return f"{value:.{precision}e}".replace("-", "−")
             return f"{value:.{precision}e}"

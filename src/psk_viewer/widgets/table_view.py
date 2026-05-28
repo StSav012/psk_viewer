@@ -1,6 +1,6 @@
 from typing import cast
 
-from qtpy.QtCore import QAbstractItemModel, QModelIndex, QPoint, Qt
+from qtpy.QtCore import QAbstractItemModel, QModelIndex, QPoint, Qt, Slot
 from qtpy.QtGui import QKeyEvent, QKeySequence
 from qtpy.QtWidgets import QAction, QHeaderView, QMenu, QTableView, QWidget
 
@@ -18,7 +18,9 @@ class TableView(QTableView):
 
         def popup(pos: QPoint) -> None:
             menu: QMenu = QMenu()
-            model: FoundLinesModel = cast(FoundLinesModel, self.model())
+            model: QAbstractItemModel = self.model()
+            if not isinstance(model, FoundLinesModel):
+                return
             # store the actions not to lose all of them but the last
             actions: list[QAction] = []
             index: int
@@ -37,7 +39,7 @@ class TableView(QTableView):
                             True
                         )  # don't allow hiding the last visible column
             chosen_action: QAction | None = menu.exec_(self.mapToGlobal(pos))
-            if chosen_action in actions:
+            if chosen_action is not None and chosen_action in actions:
                 self.setColumnHidden(
                     actions.index(chosen_action), not chosen_action.isChecked()
                 )
@@ -47,6 +49,7 @@ class TableView(QTableView):
         header.customContextMenuRequested.connect(popup)
         header.sectionCountChanged.connect(self.on_column_count_changed)
 
+    @Slot(int, int)
     def on_column_count_changed(self, old: int, new: int) -> None:
         if old == new:
             return
@@ -91,7 +94,10 @@ class TableView(QTableView):
 
         :return: the plain text representation of the selected table lines
         """
-        model: FoundLinesModel = cast(FoundLinesModel, self.model())
+        model: QAbstractItemModel = self.model()
+        if not isinstance(model, FoundLinesModel):
+            return ""
+
         text_matrix: list[list[str]]
         if whole_table:
             text_matrix = [
@@ -121,7 +127,10 @@ class TableView(QTableView):
 
         :return: the rich text representation of the selected table lines
         """
-        model: FoundLinesModel = cast(FoundLinesModel, self.model())
+        model: QAbstractItemModel = self.model()
+        if not isinstance(model, FoundLinesModel):
+            return ""
+
         text_matrix: list[list[str]]
         if whole_table:
             text_matrix = [

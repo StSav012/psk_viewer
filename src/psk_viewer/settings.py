@@ -63,15 +63,11 @@ class Settings(QSettings):
     def dialog(
         self,
     ) -> dict[
-        str | tuple[str, tuple[str, ...]] | tuple[str, tuple[str, ...], object],
-        dict[
-            str,
-            CallbackOnly
-            | PathCallbackOnly
-            | SpinboxAndCallback
-            | ComboboxAndCallback
-            | EditableComboboxAndCallback,
-        ],
+        tuple[str, tuple[str]] | tuple[str, tuple[str, str], object],
+        dict[str, CallbackOnly | SpinboxAndCallback]
+        | dict[str, PathCallbackOnly]
+        | dict[str, SpinboxAndCallback]
+        | dict[str, ComboboxAndCallback],
     ]:
         self._line_ends = {
             "\n": _translate("line end", r"line feed (\n, U+000A)"),

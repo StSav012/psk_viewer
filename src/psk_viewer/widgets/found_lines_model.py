@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 
 import numpy as np
 from numpy.typing import NDArray
@@ -108,7 +108,7 @@ class FoundLinesModel(DataModel):
     def set_lines(
         self,
         plot_data: PlotDataItem,
-        frequencies: NDArray[np.float64] | Iterable[NDArray[np.float64]],
+        frequencies: NDArray[np.float64] | Sequence[NDArray[np.float64]],
     ) -> None:
         if isinstance(frequencies, np.ndarray):
             self._frequencies = frequencies.ravel()
@@ -121,8 +121,10 @@ class FoundLinesModel(DataModel):
         self.refresh(plot_data)
 
     def frequency_indices(
-        self, plot_data: PlotDataItem, frequencies: NDArray[np.float64] | None = None
-    ) -> np.int64 | NDArray[np.int64]:
+        self,
+        plot_data: PlotDataItem,
+        frequencies: NDArray[np.double] | None = None,
+    ) -> NDArray[np.long]:
         if frequencies is None:
             frequencies = self._frequencies
         return np.searchsorted(plot_data.x_data, frequencies)
