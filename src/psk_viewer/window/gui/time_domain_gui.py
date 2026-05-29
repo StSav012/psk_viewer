@@ -122,16 +122,11 @@ class TimeDomainGUI(GUI):
 
         # TODO: adjust size when undocked
         self.box_time.setWidget(self.group_time)
-        self.box_time.setFeatures(
-            self.box_time.features() & ~QDockWidget.DockWidgetFeature.DockWidgetClosable
-        )
+        self.toolbar.toolboxes_menu.addAction(self.box_time.toggleViewAction())
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.box_time)
 
         self.box_voltage.setWidget(self.group_voltage)
-        self.box_voltage.setFeatures(
-            self.box_voltage.features()
-            & ~QDockWidget.DockWidgetFeature.DockWidgetClosable
-        )
+        self.toolbar.toolboxes_menu.addAction(self.box_voltage.toggleViewAction())
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.box_voltage)
 
         with the(

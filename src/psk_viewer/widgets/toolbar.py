@@ -2,7 +2,7 @@ from collections.abc import Callable
 
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QColor, QKeySequence, QPalette
-from qtpy.QtWidgets import QAction, QApplication, QToolBar, QWidget
+from qtpy.QtWidgets import QAction, QApplication, QMenu, QToolBar, QWidget
 
 from ..utils import load_icon, mix_colors
 
@@ -49,6 +49,50 @@ class ToolBar(QToolBar):
             a.setMenuRole(role)
 
         return a
+
+    def _add_menu(
+        self,
+        icon_name: str,
+        title: str,
+        shortcut: QKeySequence.StandardKey | str | None = None,
+        tooltip: str = "",
+        enabled: bool = True,
+        checkable: bool = False,
+        role: QAction.MenuRole | None = None,
+        receiver: Callable[[], None] | None = None,
+    ) -> QMenu:
+        a: QAction
+        if receiver is None:
+            a = self.addAction(load_icon(self, icon_name), title)
+        else:
+            a = self.addAction(load_icon(self, icon_name), title, receiver)
+        if shortcut is not None:
+            a.setShortcut(shortcut)
+        if tooltip:
+            a.setToolTip(tooltip)
+        if not a.shortcut().isEmpty() and a.toolTip():
+            tooltip_text_color: QColor = self.palette().color(
+                QPalette.ColorRole.ToolTipText
+            )
+            tooltip_base_color: QColor = self.palette().color(
+                QPalette.ColorRole.ToolTipBase
+            )
+            shortcut_color: QColor = mix_colors(tooltip_text_color, tooltip_base_color)
+            a.setToolTip(
+                f'<p style="white-space:pre">{a.toolTip()}&nbsp;&nbsp;'
+                f'<code style="color:{shortcut_color.name()};font-size:small">'
+                f"{a.shortcut().toString(QKeySequence.SequenceFormat.NativeText)}</code></p>"
+            )
+        a.setEnabled(enabled)
+        a.setCheckable(checkable)
+        if role is not None:
+            a.setMenuRole(role)
+
+        m: QMenu = QMenu(title, self)
+        m.setIcon(load_icon(self, icon_name))
+        a.setMenu(m)
+
+        return m
 
 
 class TimeDomainToolbar(ToolBar):
@@ -104,6 +148,11 @@ class TimeDomainToolbar(ToolBar):
             enabled=False,
         )
         self.addSeparator()
+        self.toolboxes_menu: QMenu = self._add_menu(
+            "toolbox",
+            self.tr("Toolbox"),
+            tooltip=self.tr("Show or hide toolboxes"),
+        )
         self.configure_action: QAction = self._add_action(
             "configure",
             self.tr("Configure"),
@@ -218,6 +267,11 @@ class FrequencyDomainToolbar(ToolBar):
             enabled=False,
         )
         self.addSeparator()
+        self.toolboxes_menu: QMenu = self._add_menu(
+            "toolbox",
+            self.tr("Toolbox"),
+            tooltip=self.tr("Show or hide toolboxes"),
+        )
         self.configure_action: QAction = self._add_action(
             "configure",
             self.tr("Configure"),

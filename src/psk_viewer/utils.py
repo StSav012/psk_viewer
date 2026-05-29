@@ -165,6 +165,7 @@ def load_icon(widget: QWidget, icon_name: str) -> QIcon:
                     {"scale_factor": 0.4, "offset": (0.0, 0.0625), "color": "blue"},
                 ],
             ),
+            "toolbox": QTAData(("mdi6.toolbox",)),
             "configure": QTAData(("mdi6.cogs",)),
             "qt_logo": b"""\
                 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 158 120" fill="foreground">

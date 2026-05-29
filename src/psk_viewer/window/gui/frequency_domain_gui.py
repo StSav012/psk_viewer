@@ -176,31 +176,19 @@ class FrequencyDomainGUI(GUI):
 
         # TODO: adjust size when undocked
         self.box_frequency.setWidget(self.group_frequency)
-        self.box_frequency.setFeatures(
-            self.box_frequency.features()
-            & ~QDockWidget.DockWidgetFeature.DockWidgetClosable
-        )
+        self.toolbar.toolboxes_menu.addAction(self.box_frequency.toggleViewAction())
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.box_frequency)
 
         self.box_voltage.setWidget(self.group_voltage)
-        self.box_voltage.setFeatures(
-            self.box_voltage.features()
-            & ~QDockWidget.DockWidgetFeature.DockWidgetClosable
-        )
+        self.toolbar.toolboxes_menu.addAction(self.box_voltage.toggleViewAction())
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.box_voltage)
 
         self.box_find_lines.setWidget(self.group_find_lines)
-        self.box_find_lines.setFeatures(
-            self.box_find_lines.features()
-            & ~QDockWidget.DockWidgetFeature.DockWidgetClosable
-        )
+        self.toolbar.toolboxes_menu.addAction(self.box_find_lines.toggleViewAction())
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.box_find_lines)
 
         self.box_found_lines.setWidget(self.table_found_lines)
-        self.box_found_lines.setFeatures(
-            self.box_found_lines.features()
-            & ~QDockWidget.DockWidgetFeature.DockWidgetClosable
-        )
+        self.toolbar.toolboxes_menu.addAction(self.box_found_lines.toggleViewAction())
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.box_found_lines)
 
         self.button_clear_automatically_found_lines.setEnabled(False)
