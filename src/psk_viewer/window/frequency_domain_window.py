@@ -36,8 +36,6 @@ from qtpy.QtGui import (
 )
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QWidget
 
-from psk_viewer.widgets.preferences import Preferences
-
 from ..detection import correlation, peaks_positions
 from ..plot_data_item import PlotDataItem
 from ..utils import (
@@ -47,6 +45,7 @@ from ..utils import (
     load_data,
     resource_path,
 )
+from ..widgets.preferences import Preferences
 from .gui.frequency_domain_gui import FrequencyDomainGUI
 
 __all__ = ["FrequencyDomainWindow"]

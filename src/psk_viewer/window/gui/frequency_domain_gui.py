@@ -18,6 +18,9 @@ from qtpy.QtWidgets import (
 from psk_viewer.widgets.data_model import DataModel
 from psk_viewer.widgets.found_lines_model import FoundLinesModel
 from psk_viewer.widgets.table_view import TableView
+from ...widgets.data_model import DataModel
+from ...widgets.found_lines_model import FoundLinesModel
+from ...widgets.table_view import TableView
 
 from ...widgets.toolbar import FrequencyDomainToolbar
 from . import GUI

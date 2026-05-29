@@ -29,10 +29,9 @@ from qtpy.QtGui import (
 )
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QWidget
 
-from psk_viewer.widgets.preferences import Preferences
-
 from ..plot_data_item import PlotDataItem
 from ..utils import DataMode, SpectrometerData, load_data
+from ..widgets.preferences import Preferences
 from .gui.time_domain_gui import TimeDomainGUI
 
 __all__ = ["TimeDomainWindow"]
