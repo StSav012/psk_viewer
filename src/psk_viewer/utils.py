@@ -1,10 +1,10 @@
 import enum
 import sys
 from collections.abc import Collection, Iterable, Iterator
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 from os import PathLike
 from pathlib import Path
-from typing import Any, BinaryIO, Final, NamedTuple
+from typing import Any, BinaryIO, Final, NamedTuple, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
@@ -33,6 +33,7 @@ __all__ = [
     "SpectrometerData",
     "XValues",
     "DataMode",
+    "the",
 ]
 
 VOLTAGE_GAIN: Final[float] = 5.0
@@ -677,3 +678,11 @@ def find_qm_files(
         with suppress(Exception), open(file, "rb") as f_in:
             if f_in.read(len(magic)) == magic:
                 yield file
+
+
+_T = TypeVar("_T")
+
+
+@contextmanager
+def the(obj: _T) -> Iterator[_T]:
+    yield obj

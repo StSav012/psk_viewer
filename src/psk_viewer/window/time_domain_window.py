@@ -30,7 +30,7 @@ from qtpy.QtGui import (
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QWidget
 
 from ..plot_data_item import PlotDataItem
-from ..utils import DataMode, SpectrometerData, load_data
+from ..utils import DataMode, SpectrometerData, load_data, the
 from ..widgets.preferences import Preferences
 from .gui.time_domain_gui import TimeDomainGUI
 
@@ -95,20 +95,21 @@ class TimeDomainWindow(TimeDomainGUI):
         self.set_axis_line_appearance()
         self.set_crosshair_lines_appearance()
 
-        # customize menu
-        titles_to_leave: list[str] = [
-            self._canvas.ctrl.alphaGroup.parent().title(),
-            self._canvas.ctrl.gridGroup.parent().title(),
-        ]
-        action: QAction
-        for action in self._canvas.ctrlMenu.actions():
-            if action.text() not in titles_to_leave:
-                self._canvas.ctrlMenu.removeAction(action)
-        self._canvas.vb.menu = self._canvas.ctrlMenu
-        self._canvas.ctrlMenu = None
-        self._canvas.vb.menu.addAction(self._view_all_action)
-        self._canvas.ctrl.autoAlphaCheck.setChecked(False)
-        self._canvas.ctrl.autoAlphaCheck.hide()
+        with the(self._canvas) as canvas:
+            # customize menu
+            titles_to_leave: list[str] = [
+                canvas.ctrl.alphaGroup.parent().title(),
+                canvas.ctrl.gridGroup.parent().title(),
+            ]
+            action: QAction
+            for action in canvas.ctrlMenu.actions():
+                if action.text() not in titles_to_leave:
+                    canvas.ctrlMenu.removeAction(action)
+            canvas.vb.menu = canvas.ctrlMenu
+            canvas.ctrlMenu = None
+            canvas.vb.menu.addAction(self._view_all_action)
+            canvas.ctrl.autoAlphaCheck.setChecked(False)
+            canvas.ctrl.autoAlphaCheck.hide()
         self.figure.sceneObj.contextMenu = None
 
         self._install_translation()

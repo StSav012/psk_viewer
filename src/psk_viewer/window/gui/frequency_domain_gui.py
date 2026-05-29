@@ -15,13 +15,10 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from psk_viewer.widgets.data_model import DataModel
-from psk_viewer.widgets.found_lines_model import FoundLinesModel
-from psk_viewer.widgets.table_view import TableView
+from ...utils import the
 from ...widgets.data_model import DataModel
 from ...widgets.found_lines_model import FoundLinesModel
 from ...widgets.table_view import TableView
-
 from ...widgets.toolbar import FrequencyDomainToolbar
 from . import GUI
 
@@ -121,51 +118,58 @@ class FrequencyDomainGUI(GUI):
 
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.toolbar)
 
-        self.form_layout_frequency.addRow(self.tr("Minimum:"), self.spin_x_min)
-        self.form_layout_frequency.addRow(self.tr("Maximum:"), self.spin_x_max)
-        self.form_layout_frequency.addRow(self.tr("Center:"), self.spin_x_center)
-        self.form_layout_frequency.addRow(self.tr("Span:"), self.spin_x_span)
+        with the(self.form_layout_frequency) as layout:
+            layout.addRow(self.tr("Minimum:"), self.spin_x_min)
+            layout.addRow(self.tr("Maximum:"), self.spin_x_max)
+            layout.addRow(self.tr("Center:"), self.spin_x_center)
+            layout.addRow(self.tr("Span:"), self.spin_x_span)
 
-        self.grid_layout_frequency.addWidget(self.check_x_range_persists, 0, 0, 1, 4)
-        self.grid_layout_frequency.addWidget(self.button_zoom_x_out_coarse, 1, 0)
-        self.grid_layout_frequency.addWidget(self.button_zoom_x_out_fine, 1, 1)
-        self.grid_layout_frequency.addWidget(self.button_zoom_x_in_fine, 1, 2)
-        self.grid_layout_frequency.addWidget(self.button_zoom_x_in_coarse, 1, 3)
+        with the(self.grid_layout_frequency) as layout:
+            layout.addWidget(self.check_x_range_persists, 0, 0, 1, 4)
+            layout.addWidget(self.button_zoom_x_out_coarse, 1, 0)
+            layout.addWidget(self.button_zoom_x_out_fine, 1, 1)
+            layout.addWidget(self.button_zoom_x_in_fine, 1, 2)
+            layout.addWidget(self.button_zoom_x_in_coarse, 1, 3)
 
-        self.grid_layout_frequency.addWidget(self.button_move_x_left_coarse, 2, 0)
-        self.grid_layout_frequency.addWidget(self.button_move_x_left_fine, 2, 1)
-        self.grid_layout_frequency.addWidget(self.button_move_x_right_fine, 2, 2)
-        self.grid_layout_frequency.addWidget(self.button_move_x_right_coarse, 2, 3)
+            layout.addWidget(self.button_move_x_left_coarse, 2, 0)
+            layout.addWidget(self.button_move_x_left_fine, 2, 1)
+            layout.addWidget(self.button_move_x_right_fine, 2, 2)
+            layout.addWidget(self.button_move_x_right_coarse, 2, 3)
 
-        self.v_layout_frequency.addLayout(self.form_layout_frequency)
-        self.v_layout_frequency.addLayout(self.grid_layout_frequency)
+        with the(self.v_layout_frequency) as layout:
+            layout.addLayout(self.form_layout_frequency)
+            layout.addLayout(self.grid_layout_frequency)
 
-        self.form_layout_voltage.addRow(self.tr("Minimum:"), self.spin_y_min)
-        self.form_layout_voltage.addRow(self.tr("Maximum:"), self.spin_y_max)
+        with the(self.form_layout_voltage) as layout:
+            layout.addRow(self.tr("Minimum:"), self.spin_y_min)
+            layout.addRow(self.tr("Maximum:"), self.spin_y_max)
 
-        self.grid_layout_voltage.addWidget(self.check_y_range_persists, 0, 0, 1, 4)
-        self.grid_layout_voltage.addWidget(self.button_zoom_y_out_coarse, 1, 0)
-        self.grid_layout_voltage.addWidget(self.button_zoom_y_out_fine, 1, 1)
-        self.grid_layout_voltage.addWidget(self.button_zoom_y_in_fine, 1, 2)
-        self.grid_layout_voltage.addWidget(self.button_zoom_y_in_coarse, 1, 3)
+        with the(self.grid_layout_voltage) as layout:
+            layout.addWidget(self.check_y_range_persists, 0, 0, 1, 4)
+            layout.addWidget(self.button_zoom_y_out_coarse, 1, 0)
+            layout.addWidget(self.button_zoom_y_out_fine, 1, 1)
+            layout.addWidget(self.button_zoom_y_in_fine, 1, 2)
+            layout.addWidget(self.button_zoom_y_in_coarse, 1, 3)
 
-        self.v_layout_voltage.addWidget(self.switch_data_action)
-        self.switch_data_action.setEnabled(False)
-        self.switch_data_action.setCheckable(True)
-        self.switch_data_action.setShortcut("Ctrl+`")
+        with the(self.switch_data_action) as button:
+            button.setEnabled(False)
+            button.setCheckable(True)
+            button.setShortcut("Ctrl+`")
 
-        self.v_layout_voltage.addLayout(self.form_layout_voltage)
-        self.v_layout_voltage.addLayout(self.grid_layout_voltage)
+        with the(self.v_layout_voltage) as layout:
+            layout.addWidget(self.switch_data_action)
+            layout.addLayout(self.form_layout_voltage)
+            layout.addLayout(self.grid_layout_voltage)
 
         self.form_layout_find_lines.addRow(
             self.tr("Search threshold:"), self.spin_threshold
         )
-        self.grid_layout_find_lines.addWidget(self.button_find_lines, 0, 0, 1, 2)
-        self.grid_layout_find_lines.addWidget(
-            self.button_clear_automatically_found_lines, 1, 0, 1, 2
-        )
-        self.grid_layout_find_lines.addWidget(self.button_prev_found_line, 2, 0)
-        self.grid_layout_find_lines.addWidget(self.button_next_found_line, 2, 1)
+
+        with the(self.grid_layout_find_lines) as layout:
+            layout.addWidget(self.button_find_lines, 0, 0, 1, 2)
+            layout.addWidget(self.button_clear_automatically_found_lines, 1, 0, 1, 2)
+            layout.addWidget(self.button_prev_found_line, 2, 0)
+            layout.addWidget(self.button_next_found_line, 2, 1)
 
         self.v_layout_find_lines.addLayout(self.form_layout_find_lines)
         self.v_layout_find_lines.addLayout(self.grid_layout_find_lines)
@@ -210,46 +214,50 @@ class FrequencyDomainGUI(GUI):
                 DataModel.Format(4, np.nan, self.settings.fancy_table_numbers),
             ]
         )
-        self.table_found_lines.setModel(self.model_found_lines)
-        self.table_found_lines.setMouseTracking(True)
-        self.table_found_lines.setContextMenuPolicy(
-            Qt.ContextMenuPolicy.ActionsContextMenu
-        )
-        self.table_found_lines.setEditTriggers(
-            QAbstractItemView.EditTrigger.NoEditTriggers
-        )
-        self.table_found_lines.setDropIndicatorShown(False)
-        self.table_found_lines.setDragDropOverwriteMode(False)
-        self.table_found_lines.setCornerButtonEnabled(False)
-        self.table_found_lines.setSortingEnabled(True)
-        self.table_found_lines.sortByColumn(0, Qt.SortOrder.AscendingOrder)
-        self.table_found_lines.setAlternatingRowColors(True)
-        self.table_found_lines.horizontalHeader().setDefaultSectionSize(90)
-        self.table_found_lines.horizontalHeader().setHighlightSections(False)
-        self.table_found_lines.horizontalHeader().setStretchLastSection(True)
-        self.table_found_lines.verticalHeader().setVisible(False)
-        self.table_found_lines.verticalHeader().setHighlightSections(False)
 
-        opts = {
-            "siPrefix": True,
-            "decimals": 6,
-            "dec": True,
-            "compactHeight": False,
-            "format": "{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}",
-        }
-        self.spin_x_min.setOpts(**opts)
-        self.spin_x_max.setOpts(**opts)
-        self.spin_x_center.setOpts(**opts)
-        self.spin_x_span.setOpts(**opts)
-        opts = {
-            "siPrefix": True,
-            "decimals": 3,
-            "dec": True,
-            "compactHeight": False,
-            "format": "{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}",
-        }
-        self.spin_y_min.setOpts(**opts)
-        self.spin_y_max.setOpts(**opts)
+        with the(self.table_found_lines) as table:
+            table.setModel(self.model_found_lines)
+            table.setMouseTracking(True)
+            table.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
+            table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+            table.setDropIndicatorShown(False)
+            table.setDragDropOverwriteMode(False)
+            table.setCornerButtonEnabled(False)
+            table.setSortingEnabled(True)
+            table.sortByColumn(0, Qt.SortOrder.AscendingOrder)
+            table.setAlternatingRowColors(True)
+            with the(table.horizontalHeader()) as header:
+                header.setDefaultSectionSize(90)
+                header.setHighlightSections(False)
+                header.setStretchLastSection(True)
+            with the(table.verticalHeader()) as header:
+                header.setVisible(False)
+                header.setHighlightSections(False)
+
+        with the(
+            dict(
+                siPrefix=True,
+                decimals=6,
+                dec=True,
+                compactHeight=False,
+                format="{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}",
+            )
+        ) as opts:
+            self.spin_x_min.setOpts(**opts)
+            self.spin_x_max.setOpts(**opts)
+            self.spin_x_center.setOpts(**opts)
+            self.spin_x_span.setOpts(**opts)
+        with the(
+            dict(
+                siPrefix=True,
+                decimals=3,
+                dec=True,
+                compactHeight=False,
+                format="{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}",
+            )
+        ) as opts:
+            self.spin_y_min.setOpts(**opts)
+            self.spin_y_max.setOpts(**opts)
 
         self.spin_threshold.setOpts(compactHeight=False)
 
@@ -262,118 +270,101 @@ class FrequencyDomainGUI(GUI):
     def _setup_translation(self) -> None:
         super()._setup_translation()
 
-        cast(QLabel, self.form_layout_frequency.labelForField(self.spin_x_min)).setText(
-            self.tr("Minimum:")
-        )
-        cast(QLabel, self.form_layout_frequency.labelForField(self.spin_x_max)).setText(
-            self.tr("Maximum:")
-        )
-        cast(
-            QLabel, self.form_layout_frequency.labelForField(self.spin_x_center)
-        ).setText(self.tr("Center:"))
-        cast(
-            QLabel, self.form_layout_frequency.labelForField(self.spin_x_span)
-        ).setText(self.tr("Span:"))
+        with the(self.form_layout_frequency.labelForField) as labelForField:
+            cast(QLabel, labelForField(self.spin_x_min)).setText(self.tr("Minimum:"))
+            cast(QLabel, labelForField(self.spin_x_max)).setText(self.tr("Maximum:"))
+            cast(QLabel, labelForField(self.spin_x_center)).setText(self.tr("Center:"))
+            cast(QLabel, labelForField(self.spin_x_span)).setText(self.tr("Span:"))
 
-        cast(QLabel, self.form_layout_voltage.labelForField(self.spin_y_min)).setText(
-            self.tr("Minimum:")
-        )
-        cast(QLabel, self.form_layout_voltage.labelForField(self.spin_y_max)).setText(
-            self.tr("Maximum:")
-        )
+        with the(self.form_layout_voltage.labelForField) as labelForField:
+            cast(QLabel, labelForField(self.spin_y_min)).setText(self.tr("Minimum:"))
+            cast(QLabel, labelForField(self.spin_y_max)).setText(self.tr("Maximum:"))
 
-        self.switch_data_action.setText(self.tr("Show Absorption"))
-        self.switch_data_action.setToolTip(
-            self.tr("Switch Y data between absorption and voltage")
-        )
+        with the(self.switch_data_action) as button:
+            button.setText(self.tr("Show Absorption"))
+            button.setToolTip(self.tr("Switch Y data between absorption and voltage"))
 
-        cast(
-            QLabel, self.form_layout_find_lines.labelForField(self.spin_threshold)
-        ).setText(self.tr("Search threshold:"))
+        with the(self.form_layout_find_lines.labelForField) as labelForField:
+            cast(QLabel, labelForField(self.spin_threshold)).setText(
+                self.tr("Search threshold:")
+            )
 
-        self._cursor_x.suffix = _translate("unit", "Hz")
-        self._cursor_y.suffix = _translate("unit", "V")
+        with (
+            the(_translate("unit", "Hz")) as unit_x,
+            the(_translate("unit", "V")) as unit_y,
+        ):
+            self._cursor_x.suffix = unit_x
+            self._cursor_y.suffix = unit_y
 
-        self.box_frequency.setWindowTitle(self.tr("Frequency"))
-        self.check_x_range_persists.setText(self.tr("Keep frequency range"))
+            self.box_frequency.setWindowTitle(self.tr("Frequency"))
+            self.check_x_range_persists.setText(self.tr("Keep frequency range"))
 
-        self.button_zoom_x_out_coarse.setText(self.tr("−50%"))
-        self.button_zoom_x_out_fine.setText(self.tr("−10%"))
-        self.button_zoom_x_in_fine.setText(self.tr("+10%"))
-        self.button_zoom_x_in_coarse.setText(self.tr("+50%"))
+            self.button_zoom_x_out_coarse.setText(self.tr("−50%"))
+            self.button_zoom_x_out_fine.setText(self.tr("−10%"))
+            self.button_zoom_x_in_fine.setText(self.tr("+10%"))
+            self.button_zoom_x_in_coarse.setText(self.tr("+50%"))
 
-        self.button_move_x_left_coarse.setText(
-            "−" + pg.siFormat(5e8, suffix=_translate("unit", "Hz"))
-        )
-        self.button_move_x_left_fine.setText(
-            "−" + pg.siFormat(5e7, suffix=_translate("unit", "Hz"))
-        )
-        self.button_move_x_right_fine.setText(
-            "+" + pg.siFormat(5e7, suffix=_translate("unit", "Hz"))
-        )
-        self.button_move_x_right_coarse.setText(
-            "+" + pg.siFormat(5e8, suffix=_translate("unit", "Hz"))
-        )
+            self.button_move_x_left_coarse.setText(
+                "−" + pg.siFormat(5e8, suffix=unit_x)
+            )
+            self.button_move_x_left_fine.setText("−" + pg.siFormat(5e7, suffix=unit_x))
+            self.button_move_x_right_fine.setText("+" + pg.siFormat(5e7, suffix=unit_x))
+            self.button_move_x_right_coarse.setText(
+                "+" + pg.siFormat(5e8, suffix=unit_x)
+            )
 
-        self.box_voltage.setWindowTitle(self.tr("Vertical Axis"))
-        self.check_y_range_persists.setText(self.tr("Keep voltage range"))
+            self.box_voltage.setWindowTitle(self.tr("Vertical Axis"))
+            self.check_y_range_persists.setText(self.tr("Keep voltage range"))
 
-        self.button_zoom_y_out_coarse.setText(self.tr("−50%"))
-        self.button_zoom_y_out_fine.setText(self.tr("−10%"))
-        self.button_zoom_y_in_fine.setText(self.tr("+10%"))
-        self.button_zoom_y_in_coarse.setText(self.tr("+50%"))
+            self.button_zoom_y_out_coarse.setText(self.tr("−50%"))
+            self.button_zoom_y_out_fine.setText(self.tr("−10%"))
+            self.button_zoom_y_in_fine.setText(self.tr("+10%"))
+            self.button_zoom_y_in_coarse.setText(self.tr("+50%"))
 
-        self.box_find_lines.setWindowTitle(self.tr("Find Lines Automatically"))
-        self.group_find_lines.setToolTip(self.tr("Try to detect lines automatically"))
-        self.button_find_lines.setText(self.tr("Find Lines Automatically"))
-        self.button_clear_automatically_found_lines.setText(
-            self.tr("Clear Automatically Found Lines")
-        )
-        self.button_prev_found_line.setText(self.tr("Previous Line"))
-        self.button_next_found_line.setText(self.tr("Next Line"))
+            self.box_find_lines.setWindowTitle(self.tr("Find Lines Automatically"))
+            self.group_find_lines.setToolTip(
+                self.tr("Try to detect lines automatically")
+            )
+            self.button_find_lines.setText(self.tr("Find Lines Automatically"))
+            self.button_clear_automatically_found_lines.setText(
+                self.tr("Clear Automatically Found Lines")
+            )
+            self.button_prev_found_line.setText(self.tr("Previous Line"))
+            self.button_next_found_line.setText(self.tr("Next Line"))
 
-        self.box_found_lines.setWindowTitle(self.tr("Found Lines"))
+            self.box_found_lines.setWindowTitle(self.tr("Found Lines"))
 
-        self.spin_x_min.setSuffix(_translate("unit", "Hz"))
-        self.spin_x_max.setSuffix(_translate("unit", "Hz"))
-        self.spin_x_center.setSuffix(_translate("unit", "Hz"))
-        self.spin_x_span.setSuffix(_translate("unit", "Hz"))
+            self.spin_x_min.setSuffix(unit_x)
+            self.spin_x_max.setSuffix(unit_x)
+            self.spin_x_center.setSuffix(unit_x)
+            self.spin_x_span.setSuffix(unit_x)
 
-        self.spin_y_min.setSuffix(_translate("unit", "V"))
-        self.spin_y_max.setSuffix(_translate("unit", "V"))
+            self.spin_y_min.setSuffix(unit_y)
+            self.spin_y_max.setSuffix(unit_y)
 
-        self.figure.setLabel(
-            "bottom",
-            text=_translate("plot axes labels", "Frequency"),
-            units=_translate("unit", "Hz"),
-        )
-        self.figure.setLabel(
-            "left",
-            text=_translate("plot axes labels", "Voltage"),
-            units=_translate("unit", "V"),
-        )
+            self.figure.setLabel(
+                "bottom",
+                text=_translate("plot axes labels", "Frequency"),
+                units=unit_x,
+            )
+            self.figure.setLabel(
+                "left",
+                text=_translate("plot axes labels", "Voltage"),
+                units=unit_y,
+            )
 
         self._view_all_action.setText(
             _translate("plot context menu action", "View All")
         )
-        self._canvas.ctrl.alphaGroup.parent().setTitle(
-            _translate("plot context menu action", "Alpha")
-        )
-        self._canvas.ctrl.gridGroup.parent().setTitle(
-            _translate("plot context menu action", "Grid")
-        )
-        self._canvas.ctrl.xGridCheck.setText(
-            _translate("plot context menu action", "Show X Grid")
-        )
-        self._canvas.ctrl.yGridCheck.setText(
-            _translate("plot context menu action", "Show Y Grid")
-        )
-        self._canvas.ctrl.label.setText(
-            _translate("plot context menu action", "Opacity")
-        )
-        self._canvas.ctrl.alphaGroup.setTitle(
-            _translate("plot context menu action", "Alpha")
-        )
-        self._canvas.ctrl.autoAlphaCheck.setText(
-            _translate("plot context menu action", "Auto")
-        )
+        with the(self._canvas.ctrl) as c:
+            c.alphaGroup.parent().setTitle(
+                _translate("plot context menu action", "Alpha")
+            )
+            c.gridGroup.parent().setTitle(
+                _translate("plot context menu action", "Grid")
+            )
+            c.xGridCheck.setText(_translate("plot context menu action", "Show X Grid"))
+            c.yGridCheck.setText(_translate("plot context menu action", "Show Y Grid"))
+            c.label.setText(_translate("plot context menu action", "Opacity"))
+            c.alphaGroup.setTitle(_translate("plot context menu action", "Alpha"))
+            c.autoAlphaCheck.setText(_translate("plot context menu action", "Auto"))

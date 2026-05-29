@@ -13,6 +13,7 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
+from ...utils import the
 from ...widgets.toolbar import TimeDomainToolbar
 from . import GUI
 
@@ -33,9 +34,9 @@ class TimeDomainGUI(GUI):
         self.box_time: QDockWidget = QDockWidget(self.central_widget)
         self.box_time.setObjectName("box_time")
         self.group_time: QWidget = QWidget(self.box_time)
-        self.v_layout_frequency: QVBoxLayout = QVBoxLayout(self.group_time)
-        self.form_layout_frequency: QFormLayout = QFormLayout()
-        self.grid_layout_frequency: QGridLayout = QGridLayout()
+        self.v_layout_time: QVBoxLayout = QVBoxLayout(self.group_time)
+        self.form_layout_time: QFormLayout = QFormLayout()
+        self.grid_layout_time: QGridLayout = QGridLayout()
 
         self.spin_x_min: pg.SpinBox = pg.SpinBox(self.group_time)
         self.spin_x_max: pg.SpinBox = pg.SpinBox(self.group_time)
@@ -81,36 +82,43 @@ class TimeDomainGUI(GUI):
 
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self.toolbar)
 
-        self.form_layout_frequency.addRow(self.tr("Minimum:"), self.spin_x_min)
-        self.form_layout_frequency.addRow(self.tr("Maximum:"), self.spin_x_max)
-        self.form_layout_frequency.addRow(self.tr("Center:"), self.spin_x_center)
-        self.form_layout_frequency.addRow(self.tr("Span:"), self.spin_x_span)
+        with the(self.form_layout_time) as layout:
+            layout.addRow(self.tr("Minimum:"), self.spin_x_min)
+            layout.addRow(self.tr("Maximum:"), self.spin_x_max)
+            layout.addRow(self.tr("Center:"), self.spin_x_center)
+            layout.addRow(self.tr("Span:"), self.spin_x_span)
 
-        self.grid_layout_frequency.addWidget(self.check_x_range_persists, 0, 0, 1, 4)
-        self.grid_layout_frequency.addWidget(self.button_zoom_x_out_coarse, 1, 0)
-        self.grid_layout_frequency.addWidget(self.button_zoom_x_out_fine, 1, 1)
-        self.grid_layout_frequency.addWidget(self.button_zoom_x_in_fine, 1, 2)
-        self.grid_layout_frequency.addWidget(self.button_zoom_x_in_coarse, 1, 3)
+        with the(self.grid_layout_time) as layout:
+            layout.addWidget(self.check_x_range_persists, 0, 0, 1, 4)
+            layout.addWidget(self.button_zoom_x_out_coarse, 1, 0)
+            layout.addWidget(self.button_zoom_x_out_fine, 1, 1)
+            layout.addWidget(self.button_zoom_x_in_fine, 1, 2)
+            layout.addWidget(self.button_zoom_x_in_coarse, 1, 3)
 
-        self.v_layout_frequency.addLayout(self.form_layout_frequency)
-        self.v_layout_frequency.addLayout(self.grid_layout_frequency)
+        with the(self.v_layout_time) as layout:
+            layout.addLayout(self.form_layout_time)
+            layout.addLayout(self.grid_layout_time)
 
-        self.form_layout_voltage.addRow(self.tr("Minimum:"), self.spin_y_min)
-        self.form_layout_voltage.addRow(self.tr("Maximum:"), self.spin_y_max)
+        with the(self.form_layout_voltage) as layout:
+            layout.addRow(self.tr("Minimum:"), self.spin_y_min)
+            layout.addRow(self.tr("Maximum:"), self.spin_y_max)
 
-        self.grid_layout_voltage.addWidget(self.check_y_range_persists, 0, 0, 1, 4)
-        self.grid_layout_voltage.addWidget(self.button_zoom_y_out_coarse, 1, 0)
-        self.grid_layout_voltage.addWidget(self.button_zoom_y_out_fine, 1, 1)
-        self.grid_layout_voltage.addWidget(self.button_zoom_y_in_fine, 1, 2)
-        self.grid_layout_voltage.addWidget(self.button_zoom_y_in_coarse, 1, 3)
+        with the(self.grid_layout_voltage) as layout:
+            layout.addWidget(self.check_y_range_persists, 0, 0, 1, 4)
+            layout.addWidget(self.button_zoom_y_out_coarse, 1, 0)
+            layout.addWidget(self.button_zoom_y_out_fine, 1, 1)
+            layout.addWidget(self.button_zoom_y_in_fine, 1, 2)
+            layout.addWidget(self.button_zoom_y_in_coarse, 1, 3)
 
-        self.v_layout_voltage.addWidget(self.switch_data_action)
-        self.switch_data_action.setEnabled(False)
-        self.switch_data_action.setCheckable(True)
-        self.switch_data_action.setShortcut("Ctrl+`")
+        with the(self.switch_data_action) as button:
+            button.setEnabled(False)
+            button.setCheckable(True)
+            button.setShortcut("Ctrl+`")
 
-        self.v_layout_voltage.addLayout(self.form_layout_voltage)
-        self.v_layout_voltage.addLayout(self.grid_layout_voltage)
+        with the(self.v_layout_voltage) as layout:
+            layout.addWidget(self.switch_data_action)
+            layout.addLayout(self.form_layout_voltage)
+            layout.addLayout(self.grid_layout_voltage)
 
         # TODO: adjust size when undocked
         self.box_time.setWidget(self.group_time)
@@ -126,26 +134,30 @@ class TimeDomainGUI(GUI):
         )
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.box_voltage)
 
-        opts = {
-            "siPrefix": True,
-            "decimals": 3,
-            "dec": True,
-            "compactHeight": False,
-            "format": "{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}",
-        }
-        self.spin_x_min.setOpts(**opts)
-        self.spin_x_max.setOpts(**opts)
-        self.spin_x_center.setOpts(**opts)
-        self.spin_x_span.setOpts(**opts)
-        opts = {
-            "siPrefix": True,
-            "decimals": 3,
-            "dec": True,
-            "compactHeight": False,
-            "format": "{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}",
-        }
-        self.spin_y_min.setOpts(**opts)
-        self.spin_y_max.setOpts(**opts)
+        with the(
+            dict(
+                siPrefix=True,
+                decimals=3,
+                dec=True,
+                compactHeight=False,
+                format="{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}",
+            )
+        ) as opts:
+            self.spin_x_min.setOpts(**opts)
+            self.spin_x_max.setOpts(**opts)
+            self.spin_x_center.setOpts(**opts)
+            self.spin_x_span.setOpts(**opts)
+        with the(
+            dict(
+                siPrefix=True,
+                decimals=3,
+                dec=True,
+                compactHeight=False,
+                format="{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}",
+            )
+        ) as opts:
+            self.spin_y_min.setOpts(**opts)
+            self.spin_y_max.setOpts(**opts)
 
         self.figure.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
@@ -156,90 +168,74 @@ class TimeDomainGUI(GUI):
     def _setup_translation(self) -> None:
         super()._setup_translation()
 
-        cast(QLabel, self.form_layout_frequency.labelForField(self.spin_x_min)).setText(
-            self.tr("Minimum:")
-        )
-        cast(QLabel, self.form_layout_frequency.labelForField(self.spin_x_max)).setText(
-            self.tr("Maximum:")
-        )
-        cast(
-            QLabel, self.form_layout_frequency.labelForField(self.spin_x_center)
-        ).setText(self.tr("Center:"))
-        cast(
-            QLabel, self.form_layout_frequency.labelForField(self.spin_x_span)
-        ).setText(self.tr("Span:"))
+        with the(self.form_layout_time.labelForField) as labelForField:
+            cast(QLabel, labelForField(self.spin_x_min)).setText(self.tr("Minimum:"))
+            cast(QLabel, labelForField(self.spin_x_max)).setText(self.tr("Maximum:"))
+            cast(QLabel, labelForField(self.spin_x_center)).setText(self.tr("Center:"))
+            cast(QLabel, labelForField(self.spin_x_span)).setText(self.tr("Span:"))
 
-        cast(QLabel, self.form_layout_voltage.labelForField(self.spin_y_min)).setText(
-            self.tr("Minimum:")
-        )
-        cast(QLabel, self.form_layout_voltage.labelForField(self.spin_y_max)).setText(
-            self.tr("Maximum:")
-        )
+        with the(self.form_layout_voltage.labelForField) as labelForField:
+            cast(QLabel, labelForField(self.spin_y_min)).setText(self.tr("Minimum:"))
+            cast(QLabel, labelForField(self.spin_y_max)).setText(self.tr("Maximum:"))
 
-        self.switch_data_action.setText(self.tr("Show Absorption"))
-        self.switch_data_action.setToolTip(
-            self.tr("Switch Y data between absorption and voltage")
-        )
+        with the(self.switch_data_action) as button:
+            button.setText(self.tr("Show Absorption"))
+            button.setToolTip(self.tr("Switch Y data between absorption and voltage"))
 
-        self._cursor_x.suffix = _translate("unit", "s")
-        self._cursor_y.suffix = _translate("unit", "V")
+        with (
+            the(_translate("unit", "s")) as unit_x,
+            the(_translate("unit", "V")) as unit_y,
+        ):
+            self._cursor_x.suffix = unit_x
+            self._cursor_y.suffix = unit_y
 
-        self.box_time.setWindowTitle(self.tr("Time"))
-        self.check_x_range_persists.setText(self.tr("Keep time range"))
+            self.box_time.setWindowTitle(self.tr("Time"))
+            self.check_x_range_persists.setText(self.tr("Keep time range"))
 
-        self.button_zoom_x_out_coarse.setText(self.tr("−50%"))
-        self.button_zoom_x_out_fine.setText(self.tr("−10%"))
-        self.button_zoom_x_in_fine.setText(self.tr("+10%"))
-        self.button_zoom_x_in_coarse.setText(self.tr("+50%"))
+            self.button_zoom_x_out_coarse.setText(self.tr("−50%"))
+            self.button_zoom_x_out_fine.setText(self.tr("−10%"))
+            self.button_zoom_x_in_fine.setText(self.tr("+10%"))
+            self.button_zoom_x_in_coarse.setText(self.tr("+50%"))
 
-        self.box_voltage.setWindowTitle(self.tr("Vertical Axis"))
-        self.check_y_range_persists.setText(self.tr("Keep voltage range"))
+            self.box_voltage.setWindowTitle(self.tr("Vertical Axis"))
+            self.check_y_range_persists.setText(self.tr("Keep voltage range"))
 
-        self.button_zoom_y_out_coarse.setText(self.tr("−50%"))
-        self.button_zoom_y_out_fine.setText(self.tr("−10%"))
-        self.button_zoom_y_in_fine.setText(self.tr("+10%"))
-        self.button_zoom_y_in_coarse.setText(self.tr("+50%"))
+            self.button_zoom_y_out_coarse.setText(self.tr("−50%"))
+            self.button_zoom_y_out_fine.setText(self.tr("−10%"))
+            self.button_zoom_y_in_fine.setText(self.tr("+10%"))
+            self.button_zoom_y_in_coarse.setText(self.tr("+50%"))
 
-        self.spin_x_min.setSuffix(_translate("unit", "s"))
-        self.spin_x_max.setSuffix(_translate("unit", "s"))
-        self.spin_x_center.setSuffix(_translate("unit", "s"))
-        self.spin_x_span.setSuffix(_translate("unit", "s"))
+            self.spin_x_min.setSuffix(unit_x)
+            self.spin_x_max.setSuffix(unit_x)
+            self.spin_x_center.setSuffix(unit_x)
+            self.spin_x_span.setSuffix(unit_x)
 
-        self.spin_y_min.setSuffix(_translate("unit", "V"))
-        self.spin_y_max.setSuffix(_translate("unit", "V"))
+            self.spin_y_min.setSuffix(unit_y)
+            self.spin_y_max.setSuffix(unit_y)
 
-        self.figure.setLabel(
-            "bottom",
-            text=_translate("plot axes labels", "Time"),
-            units=_translate("unit", "s"),
-        )
-        self.figure.setLabel(
-            "left",
-            text=_translate("plot axes labels", "Voltage"),
-            units=_translate("unit", "V"),
-        )
+            self.figure.setLabel(
+                "bottom",
+                text=_translate("plot axes labels", "Time"),
+                units=unit_x,
+            )
+            self.figure.setLabel(
+                "left",
+                text=_translate("plot axes labels", "Voltage"),
+                units=unit_y,
+            )
 
         self._view_all_action.setText(
             _translate("plot context menu action", "View All")
         )
-        self._canvas.ctrl.alphaGroup.parent().setTitle(
-            _translate("plot context menu action", "Alpha")
-        )
-        self._canvas.ctrl.gridGroup.parent().setTitle(
-            _translate("plot context menu action", "Grid")
-        )
-        self._canvas.ctrl.xGridCheck.setText(
-            _translate("plot context menu action", "Show X Grid")
-        )
-        self._canvas.ctrl.yGridCheck.setText(
-            _translate("plot context menu action", "Show Y Grid")
-        )
-        self._canvas.ctrl.label.setText(
-            _translate("plot context menu action", "Opacity")
-        )
-        self._canvas.ctrl.alphaGroup.setTitle(
-            _translate("plot context menu action", "Alpha")
-        )
-        self._canvas.ctrl.autoAlphaCheck.setText(
-            _translate("plot context menu action", "Auto")
-        )
+        with the(self._canvas.ctrl) as c:
+            c.alphaGroup.parent().setTitle(
+                _translate("plot context menu action", "Alpha")
+            )
+            c.gridGroup.parent().setTitle(
+                _translate("plot context menu action", "Grid")
+            )
+            c.xGridCheck.setText(_translate("plot context menu action", "Show X Grid"))
+            c.yGridCheck.setText(_translate("plot context menu action", "Show Y Grid"))
+            c.label.setText(_translate("plot context menu action", "Opacity"))
+            c.alphaGroup.setTitle(_translate("plot context menu action", "Alpha"))
+            c.autoAlphaCheck.setText(_translate("plot context menu action", "Auto"))
