@@ -1,4 +1,4 @@
-from collections.abc import Iterator, Sequence
+from collections.abc import Collection, Iterator, Sequence
 from contextlib import contextmanager, suppress
 from os import PathLike, linesep
 from pathlib import Path
@@ -8,6 +8,8 @@ import pyqtgraph as pg  # type: ignore
 from qtpy.QtCore import QByteArray, QCoreApplication, QObject, QSettings
 from qtpy.QtGui import QColor, QFont, QGuiApplication
 from qtpy.QtWidgets import QWidget
+
+from .widgets.open_file_path_entry import OpenFilePathEntry
 
 __all__ = ["Settings"]
 
@@ -22,6 +24,7 @@ class Settings(QSettings):
 
     class PathCallbackOnly(NamedTuple):
         callback: str
+        name_filters: Collection[OpenFilePathEntry.NameFilter] = []
 
     class SpinboxAndCallback(NamedTuple):
         spinbox_opts: dict[str, bool | int | float | str]
@@ -190,7 +193,13 @@ class Settings(QSettings):
             },
             (self.tr("View"), ("mdi6.binoculars",)): {
                 self.tr("Translation file:"): Settings.PathCallbackOnly(
-                    Settings.translation_path.fget.__name__
+                    Settings.translation_path.fget.__name__,
+                    name_filters=[
+                        OpenFilePathEntry.NameFilter(
+                            name=self.tr("Translations"),
+                            suffixes=[".qm"],
+                        )
+                    ],
                 ),
             },
         }

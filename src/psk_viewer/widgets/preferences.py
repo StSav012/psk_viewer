@@ -150,6 +150,8 @@ class PreferencePage(BaseLogger, QScrollArea):
             elif isinstance(value2, Settings.PathCallbackOnly):
                 if isinstance(current_value, (Path, type(None))):
                     path_entry = OpenFilePathEntry(current_value, widget)
+                    if value2.name_filters:
+                        path_entry.set_name_filters(value2.name_filters)
                     path_entry.changed.connect(
                         partial(_on_event, callback=value2.callback)
                     )

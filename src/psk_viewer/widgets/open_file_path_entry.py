@@ -1,5 +1,6 @@
+from collections.abc import Collection
 from pathlib import Path
-from typing import ClassVar
+from typing import ClassVar, NamedTuple
 
 from qtpy.QtCore import Signal, Slot
 from qtpy.QtWidgets import QFileDialog, QHBoxLayout, QLineEdit, QToolButton, QWidget
@@ -9,6 +10,10 @@ __all__ = ["OpenFilePathEntry"]
 
 class OpenFilePathEntry(QWidget):
     changed: ClassVar[Signal] = Signal(Path, name="changed")
+
+    class NameFilter(NamedTuple):
+        name: str
+        suffixes: Collection[str] = [""]
 
     def __init__(
         self,
@@ -35,13 +40,6 @@ class OpenFilePathEntry(QWidget):
         self._dialog: QFileDialog = QFileDialog(self)
         self._dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptOpen)
         self._dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
-        _space_before_extensions: str = " " * (
-            not self._dialog.testOption(QFileDialog.Option.HideNameFilterDetails)
-        )
-        self._dialog.setNameFilter(
-            "".join((self.tr("Translations"), _space_before_extensions, "(*.qm)"))
-        )
-        self._dialog.setDefaultSuffix(".qm")
         if self._path is not None:
             self._dialog.selectFile(str(self._path))
 
@@ -67,3 +65,39 @@ class OpenFilePathEntry(QWidget):
             if selected_files and Path(selected_files[0]) != self._path:
                 self.path = Path(selected_files[0])
                 self.changed.emit(self._path)
+
+    def set_name_filters(self, name_filters: Collection[NameFilter]) -> None:
+        def_suffix: str = ""
+        nfs: list[str] = []
+        space_before_extensions: str = " " * (
+            not self._dialog.testOption(QFileDialog.Option.HideNameFilterDetails)
+        )
+        for nf in name_filters:
+            nfs.append(
+                space_before_extensions.join(
+                    (
+                        nf.name,
+                        "".join(
+                            (
+                                "(",
+                                " ".join(
+                                    (s if s.startswith("*") else "*" + s)
+                                    for s in nf.suffixes
+                                ),
+                                ")",
+                            )
+                        ),
+                    )
+                )
+            )
+            if not def_suffix:
+                def_suffix = next(
+                    (
+                        bare_suffix
+                        for s in nf.suffixes
+                        if (bare_suffix := s.lstrip("*")) and "*" not in bare_suffix
+                    ),
+                    "",
+                )
+        self._dialog.setNameFilters(nfs)
+        self._dialog.setDefaultSuffix(def_suffix)
