@@ -936,8 +936,6 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         if self._data_mode == DataMode.unknown or self.model_signal.size < 2:
             return 0
 
-        from scipy import interpolate  # type: ignore
-
         x: Final[NDArray[np.float64]] = self._plot_line.xData
         y: Final[NDArray[np.float64]] = self._plot_line.yData
         if x.size < 2 or y.size < 2:
@@ -949,11 +947,12 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             x_model: NDArray[np.float64] = (
                 np.arange(self.model_signal.size, dtype=np.float64) * 0.1
             )
-            interpol = interpolate.interp1d(x_model, self.model_signal, kind=2)
             x_model_new: NDArray[np.float64] = np.arange(
                 x_model[0], x_model[-1], x[1] - x[0]
             )
-            y_model_new: NDArray[np.float64] = interpol(x_model_new)
+            y_model_new: NDArray[np.float64] = np.interp(
+                x_model_new, x_model, self.model_signal
+            )
             found_lines = peaks_positions(
                 x, correlation(y_model_new, x, y), threshold=1.0 / threshold
             )

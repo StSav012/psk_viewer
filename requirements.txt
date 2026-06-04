@@ -1,5 +1,4 @@
 numpy
-scipy>=0.16.0
 pandas
 pyqtgraph>=0.13.3
 
