@@ -1,5 +1,7 @@
 import mimetypes
+import re
 from collections.abc import Collection
+from fnmatch import fnmatch
 from importlib.util import find_spec
 from os import PathLike
 from pathlib import Path
@@ -10,6 +12,20 @@ from qtpy.QtWidgets import QFileDialog, QWidget
 from ..settings import Settings
 
 __all__ = ["OpenFileDialog", "SaveFileDialog"]
+
+
+def ensure_matches(fn: str, selected_filter: str) -> str:
+    patterns: list[str] = sum(
+        (e.split() for e in re.findall(r"\((.*?)\)$", selected_filter)), []
+    )
+    for p in patterns:
+        if fnmatch(fn, p):
+            return fn
+    for p in patterns:
+        p = p.lstrip("*")
+        if "*" not in p:
+            return fn + p
+    raise ValueError("Cannot match")
 
 
 class FileDialog(QFileDialog):
@@ -39,14 +55,33 @@ class FileDialog(QFileDialog):
             tuple(supported_name_filters)
         )
 
+    def defaultSuffix(self) -> str:
+        suffix = super().defaultSuffix().lstrip("*")
+        if not suffix.startswith("."):
+            suffix = "." + suffix
+        return suffix
+
     def selectFile(self, filename: str | PathLike[str]) -> None:
-        return super().selectFile(str(filename))
+        return super().selectFile(str(Path(filename)))
 
     def selectedFile(self) -> Path | None:
         try:
-            return Path(self.selectedFiles()[0])
+            return self.selectedFiles()[0]
         except IndexError:
             return None
+
+    # noinspection PyMethodOverriding
+    def selectedFiles(self) -> list[Path]:
+        selected_filter: str = self.selectedNameFilter()
+        return [
+            Path(ensure_matches(fn, selected_filter)) for fn in super().selectedFiles()
+        ]
+
+    def setDefaultSuffix(self, suffix: str) -> None:
+        suffix = suffix.lstrip("*")
+        if not suffix.startswith("."):
+            suffix = "." + suffix
+        super().setDefaultSuffix(suffix)
 
 
 class OpenFileDialog(FileDialog):
@@ -140,7 +175,7 @@ class OpenFileDialog(FileDialog):
 
         opened_filename: Path | None
         if opened_filename := self.settings.opened_file_name:
-            self.selectFile(opened_filename)
+            self.selectFile(opened_filename.with_suffix(self.defaultSuffix()))
             self.setDirectory(str(opened_filename.parent))
 
         self.settings.restore(self)
@@ -152,12 +187,12 @@ class OpenFileDialog(FileDialog):
             return file_path
         return None
 
-    def get_open_filenames(self) -> list[str | PathLike[str]]:
+    def get_open_filenames(self) -> list[Path]:
         self._fill_filters()
 
         opened_filename: Path | None
         if opened_filename := self.settings.opened_file_name:
-            self.selectFile(opened_filename)
+            self.selectFile(opened_filename.with_suffix(self.defaultSuffix()))
             self.setDirectory(str(opened_filename.parent))
 
         self.settings.restore(self)
@@ -249,7 +284,7 @@ class SaveFileDialog(FileDialog):
                 mimetype := mimetypes.types_map.get(
                     supported_mimetype_filter.file_extension
                 )
-            ):
+            ) is not None:
                 supported_mimetypes.append(mimetype)
                 if filename_mimetype is not None and filename_mimetype == mimetype:
                     selected_mimetype = mimetype
@@ -259,6 +294,14 @@ class SaveFileDialog(FileDialog):
                         )
                     ):
                         selected_ext = ext
+        if filename_mimetype not in supported_mimetypes:
+            for mimetype in supported_mimetypes:
+                if mimetype is not None and (
+                    ext := mimetypes.guess_extension(mimetype, strict=False)
+                ):
+                    selected_mimetype = mimetype
+                    selected_ext = ext
+                    break
 
         if not supported_name_filters and not supported_mimetypes:
             return None
@@ -284,12 +327,10 @@ class SaveFileDialog(FileDialog):
                 expected_file = expected_file.with_name(opened_filename.name)
             if selected_ext:
                 expected_file = expected_file.with_suffix(selected_ext)
-            self.selectFile(str(expected_file))
+            self.selectFile(expected_file.with_suffix(self.defaultSuffix()))
 
-        if self.exec() and self.selectedFiles():
+        if self.exec() and (filename := self.selectedFile()) is not None:
             self.settings.save(self)
-            if not (filename := self.selectedFile()):
-                return None
             self.settings.saved_file_name = filename
             return filename
         return None
