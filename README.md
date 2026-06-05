@@ -1,28 +1,39 @@
 # IPM RAS PSK and FS spectrometer files viewer
 
 **Required packages:**
-  - `pandas`,
-  - `pyqtgraph>=0.13.3`,
-  - `qtpy>=2.3.1`,
-  - any of `PyQt6`, `PySide6`, `PyQt5`, `PySide2`.
 
-**Optional packages:**
-  - `numexpr`: for accelerating certain numerical operations;
-  - `bottleneck`: for accelerating certain types of nan evaluations;
-  - `openpyxl`: for saving MS Excel files.
+* `pandas`,
+* `packaging`,
+* `pyqtgraph>=0.13.3`,
+* `qtpy>=2.3.1`,
+* any of `PyQt6`, `PySide6`, `PyQt5`, `PySide2`.
+
+###### Optional packages:
+
+* `pycatsearch`: for in-place matching spectral lines;
+* `numexpr`: for accelerating certain numerical operations;
+* `bottleneck`: for accelerating certain types of nan evaluations;
+* `openpyxl`: for saving MS Excel files.
 
 They should install at the first application start automatically.
 
-**Required Python:** >= 3.10
+###### Required Python: >= 3.10
 
-**Notes:** 
-  - to run on MS Windows 7, you can install Python from [adang1345/PythonWin7](https://github.com/adang1345/PythonWin7/);
-  - `PySide2` requires Python < 3.11; 
-    there is [a port](https://anaconda.org/conda-forge/pyside2) of `PySide2` on Python 3.11 by `conda-forge`, 
-    but it's unclear whether it's stable;
-  - `PyQt6` and `PySide6` require pretty modern OS, e.g., 64-bit MS Windows 10 21H2 or later;
-  - `pyqtgraph<0.13.3` is incompatible with `Qt6>=6.5.0`;
-  - `PySide6==6.9.1` doesn't draw anything, it's a known bug.
+The package is developed under the newest Python to date. Older versions of Python should be compatible as long as [
+`ruff`](https://docs.astral.sh/ruff/) makes no mistakes.
+
+In case of a difficulty in the development, the support might shrink, but not further than what
+[![SPEC 0 — Minimum Supported Dependencies](https://img.shields.io/badge/SPEC-0-green?labelColor=%23004811&color=%235CA038)](https://scientific-python.org/specs/spec-0000/)
+proclaims.
+
+###### Notes:
+
+* to run on MS Windows 7, you can install Python from [adang1345/PythonWin7](https://github.com/adang1345/PythonWin7/);
+* `PySide2` requires Python < 3.11; there is [a port](https://anaconda.org/conda-forge/pyside2) of `PySide2` on Python
+  3.11 by `conda-forge`, but it's unclear whether it's stable;
+* `PyQt6` and `PySide6` require pretty modern OS, e.g., 64-bit MS Windows 10 21H2 or later;
+* `pyqtgraph<0.13.3` is incompatible with `Qt6>=6.5.0`;
+* `PySide6==6.9.1` doesn't draw anything, it's a known bug.
 
 ### Getting Python
 Python might already been installed on your system.
@@ -35,10 +46,13 @@ It will be convenient to add the Python directory to the `PATH` environment vari
 The source code is available at https://github.com/StSav012/psk_viewer.
 
 ###### Use `pip` or another Python package manager
+
+[![PyPI - Version](https://img.shields.io/pypi/v/psk_viewer)](https://img.shields.io/pypi/v/psk_viewer)
+
 You can get the code with `pip` (the preferred way): 
 
-  - (optionally) create a virtual environment and activate it,
-  - issue 
+* (optionally) create a virtual environment and activate it,
+* issue
     ```commandline
     pip install psk_viewer
     ```
@@ -53,13 +67,13 @@ every time you wish to update the code.
 ###### Use `git`
 You can get the code with `git`: 
 
-  - navigate to the directory you wish to store the code in,
-  - issue 
+* navigate to the directory you wish to store the code in,
+* issue
     ```commandline
     git clone https://github.com/StSav012/psk_viewer.git
     ```
     in the command line,
-  - find `psk_viewer` directory with the code; feel free to move or rename however you want. 
+* find `psk_viewer` directory with the code; feel free to move or rename however you want.
 
 Then, do 
 ```commandline
@@ -77,8 +91,9 @@ gh repo clone StSav012/psk_viewer
 in the preferred directory.
 
 ###### Get a packed archive
-  - download the source code archive from https://github.com/StSav012/psk_viewer/archive/master.zip,
-  - unpack its content into a directory to your taste.
+
+* download the source code archive from https://github.com/StSav012/psk_viewer/archive/master.zip,
+* unpack its content into a directory to your taste.
 
 The source code will get updated every time the application starts unless you manually delete `updater.py` file.
 
@@ -106,12 +121,12 @@ Parts of the application interface can be moved, re-arranged, and resized.
 
 The least evident part of the interface is the toolbar. Its buttons allow you to do the following:
 
-  - open a data file, either from the FS or the PSK spectrometer, see the selector below the file name;
-  - clear everything opened and marked;
-  - replace the displayed data with their finite-step second derivative (if appropriate);
-  - switch the displayed data between the detector voltage and the absorption values (if appropriate);
-  - export the displayed data into a numerical table or as a picture;
-  - mark interesting data points, copy the values, save them, or remove the marks;
-  - customize colors, lines thickness, and some text formatting.
+* open a data file, either from the FS or the PSK spectrometer, see the selector below the file name;
+* clear everything opened and marked;
+* replace the displayed data with their finite-step second derivative (if appropriate);
+* switch the displayed data between the detector voltage and the absorption values (if appropriate);
+* export the displayed data into a numerical table or as a picture;
+* mark interesting data points, copy the values, save them, or remove the marks;
+* customize colors, lines thickness, and some text formatting.
 
 Read the tooltips, they may appear useful.
