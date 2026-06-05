@@ -1,11 +1,22 @@
+import os
 from collections.abc import Iterable, Sequence
+from contextlib import suppress
+from math import inf
+from pathlib import Path
 
 import numpy as np
 from numpy.typing import NDArray
-from qtpy.QtCore import QCoreApplication, QObject
+from qtpy.QtCore import (
+    QCoreApplication,
+    QModelIndex,
+    QObject,
+    QPersistentModelIndex,
+    QSortFilterProxyModel,
+    Qt,
+)
 
 from ..plot_data_item import PlotDataItem
-from ..utils import HeaderWithUnit
+from ..utils import HeaderWithUnit, best_name
 from .data_model import DataModel
 
 __all__ = ["FoundLinesModel"]
@@ -13,11 +24,12 @@ __all__ = ["FoundLinesModel"]
 _translate = QCoreApplication.translate
 
 
-class FoundLinesModel(DataModel):
+class _FoundLinesModel(DataModel):
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
+        self._catalog: object = None
+        self._df: float = 0.6e6
         self._frequencies: NDArray[np.float64] = np.empty(0)
-        self._last_plot_data: PlotDataItem | None = None
         self._log10_gamma: bool = False
         self._fancy_table_numbers: bool = False
 
@@ -38,13 +50,18 @@ class FoundLinesModel(DataModel):
                     else _translate("unit", "log₁₀(cm⁻¹)")
                 ),
             ),
+            self.tr("Substance"),
         ]
+
         self.set_format(
             [
                 DataModel.Format(precision=3, scale=1e-6),
                 DataModel.Format(precision=4, scale=1e3),
                 DataModel.Format(
-                    precision=4, scale=np.nan, fancy=self._fancy_table_numbers
+                    precision=4,
+                    scale=np.nan,
+                    fancy=self._fancy_table_numbers,
+                    log10=self._log10_gamma,
                 ),
             ]
         )
@@ -58,7 +75,7 @@ class FoundLinesModel(DataModel):
         if bool(new_value) == self._log10_gamma:
             return
         self._log10_gamma = bool(new_value)
-        if len(self._header) == 3:
+        if len(self._header) >= 3:
             self._header[2] = HeaderWithUnit(
                 name=_translate("plot axes labels", "Absorption"),
                 unit=(
@@ -67,7 +84,26 @@ class FoundLinesModel(DataModel):
                     else _translate("unit", "log₁₀(cm⁻¹)")
                 ),
             )
-        self.refresh()
+        self.set_format(
+            [
+                DataModel.Format(precision=3, scale=1e-6),
+                DataModel.Format(precision=4, scale=1e3),
+                DataModel.Format(
+                    precision=4,
+                    scale=np.nan,
+                    fancy=self._fancy_table_numbers,
+                    log10=self._log10_gamma,
+                ),
+            ]
+        )
+        if self.data_column_count >= 3:
+            for row, column in self._data:
+                if column == 2:
+                    del self._data[row, column][Qt.ItemDataRole.DisplayRole]
+            self.dataChanged.emit(
+                self.createIndex(0, 2),
+                self.createIndex(self.rowCount() - 1, 2),
+            )
 
     @property
     def fancy_table_numbers(self) -> bool:
@@ -83,27 +119,142 @@ class FoundLinesModel(DataModel):
                 DataModel.Format(precision=3, scale=1e-6),
                 DataModel.Format(precision=4, scale=1e3),
                 DataModel.Format(
-                    precision=4, scale=np.nan, fancy=self._fancy_table_numbers
+                    precision=4,
+                    scale=np.nan,
+                    fancy=self._fancy_table_numbers,
+                    log10=self._log10_gamma,
                 ),
             ]
         )
-        self.refresh()
+        if self.data_column_count >= 3:
+            for row, column in self._data:
+                if column == 2:
+                    del self._data[row, column][Qt.ItemDataRole.DisplayRole]
+            self.dataChanged.emit(
+                self.createIndex(0, 2),
+                self.createIndex(self.rowCount() - 1, 2),
+            )
+
+    @property
+    def df(self) -> float:
+        return self._df
+
+    @df.setter
+    def df(self, df: float) -> None:
+        if df == self._df:
+            return
+        df = abs(df)
+        self._df = df
+        for roles in self._data.values():
+            if Qt.ItemDataRole.BackgroundRole in roles:
+                del roles[Qt.ItemDataRole.BackgroundRole]
+        self.dataChanged.emit(
+            self.createIndex(0, 0),
+            self.createIndex(self.rowCount() - 1, self.columnCount() - 1),
+        )
+
+    def substitution_for_cell(
+        self,
+        index: QModelIndex | QPersistentModelIndex,
+        content: tuple[object],
+        role: Qt.ItemDataRole | int,
+    ) -> object:
+        _key: tuple[int, int] = index.row(), index.column()
+        with suppress(LookupError):
+            return self._data[_key][role]
+
+        if not self.catalog_file_names:
+            return None
+        try:
+            from pycatsearch.catalog import Catalog
+            from pycatsearch.utils import LINES, CatalogEntryType, CatalogType, LineType
+        except ImportError:
+            return None
+
+        catalog: object = self._catalog
+        if not isinstance(catalog, Catalog):
+            return None
+
+        frequency, *_ = content
+        frequency *= 1e-6
+        entries: CatalogType = catalog.filter(
+            min_frequency=frequency - self._df * 1e-6,
+            max_frequency=frequency + self._df * 1e-6,
+        )
+        substances: list[tuple[float, CatalogEntryType]] = []
+        for entry in entries.values():
+            key = CatalogEntryType()
+            for slot in entry.__slots__:
+                if slot != LINES:
+                    setattr(key, slot, getattr(entry, slot))
+            weight: float = 0.0
+            line: LineType
+            for line in entry.lines:
+                weight += (
+                    (10.0**line.intensity / (line.frequency - frequency) ** 2)
+                    if line.frequency != frequency
+                    else inf
+                )
+            substances.append((weight, key))
+        if not substances:
+            return None
+        substances.sort(reverse=True)
+        best_line_entry: CatalogEntryType = substances[0][1]
+        label: str = best_name(best_line_entry)
+        data: dict[Qt.ItemDataRole | int, object] = {
+            Qt.ItemDataRole.DisplayRole: label,
+            Qt.ItemDataRole.UserRole: label,
+            Qt.ItemDataRole.ForegroundRole: (label, best_line_entry),
+            Qt.ItemDataRole.BackgroundRole: [
+                (best_name(substance[1]), substance[1]) for substance in substances
+            ],
+        }
+        if _key not in self._data:
+            self._data[_key] = {}
+        for _role, value in data.items():
+            # preserve previously set values
+            if _role not in self._data[_key]:
+                self._data[_key][_role] = value
+        return data.get(role)
 
     def add_line(self, plot_data: PlotDataItem, frequency: float) -> None:
-        if frequency in self._frequencies:
-            return
-        self._frequencies = np.append(self._frequencies, frequency)
-        self.refresh(plot_data)
+        self.add_lines(plot_data, [frequency])
 
     def add_lines(
-        self, plot_data: PlotDataItem, frequency_values: Iterable[float]
+        self,
+        plot_data: PlotDataItem,
+        frequency_values: Iterable[float],
     ) -> None:
-        self._frequencies = np.concatenate((self._frequencies, frequency_values))
-        # avoid duplicates
-        self._frequencies = self._frequencies[
-            np.unique(self._frequencies, return_index=True)[1]
+        frequency_values = [
+            frequency
+            for frequency in frequency_values
+            if frequency not in self._frequencies
         ]
-        self.refresh(plot_data)
+        if not frequency_values:
+            return
+        frequency_indices: NDArray[np.long] = self.frequency_indices(
+            plot_data, frequency_values
+        )
+        if not frequency_indices.size:
+            return
+        new_data: NDArray[np.double] | NDArray[np.cdouble]
+        if plot_data.voltage_data.size == plot_data.gamma_data.size:
+            new_data = np.column_stack(
+                (
+                    plot_data.frequency_data[frequency_indices],
+                    plot_data.voltage_data[frequency_indices],
+                    plot_data.gamma_data[frequency_indices],
+                )
+            )
+        else:
+            new_data = np.column_stack(
+                (
+                    plot_data.frequency_data[frequency_indices],
+                    plot_data.voltage_data[frequency_indices],
+                )
+            )
+        self._frequencies = np.concatenate((self._frequencies, frequency_values))
+        self.extend_data(new_data)
 
     def set_lines(
         self,
@@ -123,20 +274,13 @@ class FoundLinesModel(DataModel):
     def frequency_indices(
         self,
         plot_data: PlotDataItem,
-        frequencies: NDArray[np.double] | None = None,
+        frequencies: Sequence[float] | NDArray[np.double] | None = None,
     ) -> NDArray[np.long]:
         if frequencies is None:
             frequencies = self._frequencies
         return np.searchsorted(plot_data.x_data, frequencies)
 
-    def refresh(self, plot_data: PlotDataItem | None = None) -> None:
-        if plot_data is None:
-            plot_data = self._last_plot_data
-            if plot_data is None:  # still
-                return
-        else:
-            self._last_plot_data = plot_data
-
+    def refresh(self, plot_data: PlotDataItem) -> None:
         frequency_indices: NDArray[np.int64] = self.frequency_indices(plot_data)
         if not frequency_indices.size:
             self.clear()
@@ -148,15 +292,7 @@ class FoundLinesModel(DataModel):
                     (
                         plot_data.frequency_data[frequency_indices],
                         plot_data.voltage_data[frequency_indices],
-                        (
-                            np.log10(
-                                plot_data.gamma_data[frequency_indices].astype(
-                                    np.complex128
-                                )
-                            )
-                            if self._log10_gamma
-                            else plot_data.gamma_data[frequency_indices]
-                        ),
+                        plot_data.gamma_data[frequency_indices],
                     )
                 )
             )
@@ -169,3 +305,68 @@ class FoundLinesModel(DataModel):
                     )
                 )
             )
+
+    @property
+    def catalog_file_names(self) -> list[Path]:
+        try:
+            from pycatsearch.catalog import Catalog
+        except ImportError:
+            return []
+        else:
+            if isinstance(self._catalog, Catalog):
+                return self._catalog.sources
+        return []
+
+    try:
+        from pycatsearch.catalog import Catalog
+    except ImportError:
+
+        @property
+        def catalog(_self) -> None:
+            return None
+    else:
+
+        @property
+        def catalog(self) -> Catalog | None:
+            if isinstance(self._catalog, _FoundLinesModel.Catalog):
+                return self._catalog
+            return None
+
+    @catalog.setter
+    def catalog(self, catalog: object) -> None:
+        try:
+            from pycatsearch.catalog import Catalog
+        except ImportError:
+            return
+        if isinstance(catalog, Catalog):
+            self._catalog = catalog
+
+
+class FoundLinesModel(QSortFilterProxyModel):
+    Format = _FoundLinesModel.Format
+    catalog = _FoundLinesModel.catalog
+    header = _FoundLinesModel.header
+    is_empty = _FoundLinesModel.is_empty
+    add_line = _FoundLinesModel.add_line
+    add_lines = _FoundLinesModel.add_lines
+    all_data = _FoundLinesModel.all_data
+    catalog_file_names = _FoundLinesModel.catalog_file_names
+    clear = _FoundLinesModel.clear
+    df = _FoundLinesModel.df
+    frequency_indices = _FoundLinesModel.frequency_indices
+    formatted_item = _FoundLinesModel.formatted_item
+    item = _FoundLinesModel.item
+    set_format = _FoundLinesModel.set_format
+    set_lines = _FoundLinesModel.set_lines
+    refresh = _FoundLinesModel.refresh
+    rowCount = _FoundLinesModel.rowCount
+
+    def __init__(self, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self.setSourceModel(_FoundLinesModel(parent))
+
+    def __getattr__(self, item: str) -> object:
+        return getattr(self.sourceModel(), item)
+
+    def __setattr__(self, item: str, value: object) -> None:
+        setattr(self.sourceModel(), item, value)

@@ -738,6 +738,7 @@ class TimeDomainWindow(TimeDomainGUI):
             w = FrequencyDomainWindow(parent=self.parent(), flags=self.windowFlags())
             r: bool = w.set_data(data)
             if r:
+                w.load_catalog()
                 w.show()
                 if self._data_mode == DataMode.unknown:
                     self.close()

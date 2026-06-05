@@ -2,11 +2,18 @@ from typing import cast
 
 from qtpy.QtCore import QAbstractItemModel, QModelIndex, QPoint, Qt, Slot
 from qtpy.QtGui import QKeyEvent, QKeySequence
-from qtpy.QtWidgets import QAction, QHeaderView, QMenu, QTableView, QWidget
+from qtpy.QtWidgets import (
+    QAction,
+    QHeaderView,
+    QMenu,
+    QTableView,
+    QWidget,
+)
 
 from ..settings import Settings
-from ..utils import HeaderWithUnit, copy_to_clipboard
+from ..utils import HeaderWithUnit, copy_to_clipboard, remove_html, the
 from .found_lines_model import FoundLinesModel
+from .rich_combo_box import RichComboBoxDelegate
 
 __all__ = ["TableView"]
 
@@ -44,10 +51,29 @@ class TableView(QTableView):
                     actions.index(chosen_action), not chosen_action.isChecked()
                 )
 
-        header: QHeaderView = self.horizontalHeader()
-        header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        header.customContextMenuRequested.connect(popup)
-        header.sectionCountChanged.connect(self.on_column_count_changed)
+        self.setMouseTracking(True)
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
+        self.setDropIndicatorShown(False)
+        self.setDragDropOverwriteMode(False)
+        self.setCornerButtonEnabled(False)
+        self.setSortingEnabled(True)
+        self.sortByColumn(0, Qt.SortOrder.AscendingOrder)
+        self.setAlternatingRowColors(True)
+        with the(self.horizontalHeader()) as header:
+            header.setDefaultSectionSize(90)
+            header.setHighlightSections(False)
+            header.setStretchLastSection(True)
+            header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+            header.customContextMenuRequested.connect(popup)
+            header.sectionCountChanged.connect(self.on_column_count_changed)
+        with the(self.verticalHeader()) as header:
+            header.setVisible(False)
+            header.setHighlightSections(False)
+        if self.model() is not None:
+            self.setItemDelegateForColumn(
+                self.model().columnCount() - 1,
+                RichComboBoxDelegate(self),
+            )
 
     @Slot(int, int)
     def on_column_count_changed(self, old: int, new: int) -> None:
@@ -81,10 +107,13 @@ class TableView(QTableView):
         super().setModel(model)
         if model is None:
             return
-        model.modelReset.connect(self.adjust_columns_widths)
-
-    def adjust_columns_widths(self) -> None:
-        self.resizeColumnsToContents()
+        for column in range(model.columnCount() - 1):
+            self.setItemDelegateForColumn(column, None)
+        self.setItemDelegateForColumn(
+            model.columnCount() - 1,
+            RichComboBoxDelegate(self),
+        )
+        model.modelReset.connect(self.resizeColumnsToContents)
 
     def stringify_table_plain_text(self, whole_table: bool = True) -> str:
         """Convert selected cells to string for copying as plain text.
@@ -99,7 +128,7 @@ class TableView(QTableView):
         if whole_table:
             text_matrix = [
                 [
-                    model.formatted_item(row, column)
+                    remove_html(model.formatted_item(row, column, force_plain=True))
                     for column in range(model.columnCount())
                     if not self.isColumnHidden(column)
                 ]
@@ -112,7 +141,9 @@ class TableView(QTableView):
             text_matrix = [["" for _ in range(len(cols))] for _ in range(len(rows))]
             for si in self.selectedIndexes():
                 text_matrix[rows.index(si.row())][cols.index(si.column())] = (
-                    model.formatted_item(si.row(), si.column())
+                    remove_html(
+                        model.formatted_item(si.row(), si.column(), force_plain=True)
+                    )
                 )
         text: list[str] = [
             self.settings.csv_separator.join(row_texts) for row_texts in text_matrix
@@ -132,7 +163,11 @@ class TableView(QTableView):
         if whole_table:
             text_matrix = [
                 [
-                    ("<td>" + model.formatted_item(row, column) + "</td>")
+                    (
+                        "<td>"
+                        + model.index(row, column).data(Qt.ItemDataRole.DisplayRole)
+                        + "</td>"
+                    )
                     for column in range(model.columnCount())
                     if not self.isColumnHidden(column)
                 ]
@@ -145,7 +180,7 @@ class TableView(QTableView):
             text_matrix = [["" for _ in range(len(cols))] for _ in range(len(rows))]
             for si in self.selectedIndexes():
                 text_matrix[rows.index(si.row())][cols.index(si.column())] = (
-                    "<td>" + model.formatted_item(si.row(), si.column()) + "</td>"
+                    "<td>" + si.data(Qt.ItemDataRole.DisplayRole) + "</td>"
                 )
         text: list[str] = [
             ("<tr>" + self.settings.csv_separator.join(row_texts) + "</tr>")
@@ -166,3 +201,5 @@ class TableView(QTableView):
         elif e.matches(QKeySequence.StandardKey.SelectAll):
             self.selectAll()
             e.accept()
+        else:
+            super().keyPressEvent(e)

@@ -25,7 +25,7 @@ from qtpy.QtWidgets import (
 from ..settings import Settings
 from .colorselector import ColorSelector
 from .font_selector import FontSelector
-from .open_file_path_entry import OpenFilePathEntry
+from .open_file_path_entry import OpenFilePathEntry, OpenFilePathsEntry
 
 __all__ = ["Preferences"]
 
@@ -35,25 +35,7 @@ class BaseLogger:
 
     logger: ClassVar[Logger]
 
-    try:
-        from typing import ParamSpec
-    except ImportError:
-        # noinspection PyUnusedLocal
-        class ParamSpec:
-            def __init__(
-                self,
-                name: str,
-                *,
-                bound: object | None = None,
-                contravariant: bool = False,
-                covariant: bool = False,
-                infer_variance: bool = False,
-                default: object = ...,
-            ) -> None: ...
-
-    _P = ParamSpec("_P")
-
-    def __new__(cls, *args: _P.args, **kwargs: _P.kwargs) -> "BaseLogger":
+    def __new__(cls, *args: object, **kwargs: object) -> "BaseLogger":
         cls.logger = getLogger(cls.__name__)
         return super().__new__(cls)
 
@@ -67,6 +49,7 @@ class PreferencePage(BaseLogger, QScrollArea):
             str,
             Settings.CallbackOnly
             | Settings.PathCallbackOnly
+            | Settings.PathsCallbackOnly
             | Settings.SpinboxAndCallback
             | Settings.ComboboxAndCallback
             | Settings.EditableComboboxAndCallback,
@@ -108,6 +91,7 @@ class PreferencePage(BaseLogger, QScrollArea):
 
         check_box: QCheckBox
         path_entry: OpenFilePathEntry
+        paths_entry: OpenFilePathsEntry
         spin_box: pg.SpinBox
         combo_box: QComboBox
         color_selector: ColorSelector
@@ -156,6 +140,19 @@ class PreferencePage(BaseLogger, QScrollArea):
                         partial(_on_event, callback=value2.callback)
                     )
                     layout.addRow(key2, path_entry)
+                else:
+                    PreferencePage.logger.error(
+                        f"The type of {value2.callback!r} is not supported"
+                    )
+            elif isinstance(value2, Settings.PathsCallbackOnly):
+                if isinstance(current_value, list):
+                    paths_entry = OpenFilePathsEntry(current_value, widget)
+                    if value2.name_filters:
+                        paths_entry.set_name_filters(value2.name_filters)
+                    paths_entry.changed.connect(
+                        partial(_on_event, callback=value2.callback)
+                    )
+                    layout.addRow(key2, paths_entry)
                 else:
                     PreferencePage.logger.error(
                         f"The type of {value2.callback!r} is not supported"

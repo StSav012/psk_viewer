@@ -1,4 +1,4 @@
-from collections.abc import Collection, Iterator, Sequence
+from collections.abc import Collection, Iterable, Iterator, Sequence
 from contextlib import contextmanager, suppress
 from os import PathLike, linesep
 from pathlib import Path
@@ -9,7 +9,7 @@ from qtpy.QtCore import QByteArray, QCoreApplication, QObject, QSettings
 from qtpy.QtGui import QColor, QFont, QGuiApplication
 from qtpy.QtWidgets import QWidget
 
-from .widgets.open_file_path_entry import OpenFilePathEntry
+from .widgets.open_file_path_entry import OpenFilePathEntry, OpenFilePathsEntry
 
 __all__ = ["Settings"]
 
@@ -26,6 +26,10 @@ class Settings(QSettings):
         callback: str
         name_filters: Collection[OpenFilePathEntry.NameFilter] = []
 
+    class PathsCallbackOnly(NamedTuple):
+        callback: str
+        name_filters: Collection[OpenFilePathEntry.NameFilter] = []
+
     class SpinboxAndCallback(NamedTuple):
         spinbox_opts: dict[str, bool | int | float | str]
         callback: str
@@ -38,7 +42,12 @@ class Settings(QSettings):
         combobox_items: Sequence[str]
         callback: str
 
-    def __init__(self, organization: str, application: str, parent: QObject) -> None:
+    def __init__(
+        self,
+        organization: str,
+        application: str,
+        parent: QObject | None,
+    ) -> None:
         super().__init__(organization, application, parent)
         self.display_processing: bool = True
 
@@ -68,7 +77,7 @@ class Settings(QSettings):
     ) -> dict[
         tuple[str, tuple[str]] | tuple[str, tuple[str, str], object],
         dict[str, CallbackOnly | SpinboxAndCallback]
-        | dict[str, PathCallbackOnly]
+        | dict[str, PathCallbackOnly | PathsCallbackOnly]
         | dict[str, SpinboxAndCallback]
         | dict[str, ComboboxAndCallback],
     ]:
@@ -199,6 +208,51 @@ class Settings(QSettings):
                             name=self.tr("Translations"),
                             suffixes=[".qm"],
                         )
+                    ],
+                ),
+            },
+            (self.tr("Catalog"), ("mdi6.card-search",)): {
+                self.tr("Files:"): Settings.PathsCallbackOnly(
+                    Settings.catalog_paths.fget.__name__,
+                    name_filters=[
+                        OpenFilePathsEntry.NameFilter(
+                            name=_translate("file type", "JSON file"),
+                            suffixes=[".json"],
+                        ),
+                        OpenFilePathsEntry.NameFilter(
+                            name=_translate("file type", "TAR file"),
+                            suffixes=[".tar"],
+                        ),
+                        OpenFilePathsEntry.NameFilter(
+                            name=_translate("file type", "JSON with GZip compression"),
+                            suffixes=[".json.gz"],
+                        ),
+                        OpenFilePathsEntry.NameFilter(
+                            name=_translate("file type", "JSON with Bzip2 compression"),
+                            suffixes=[".json.bz2"],
+                        ),
+                        OpenFilePathsEntry.NameFilter(
+                            name=_translate("file type", "JSON with LZMA2 compression"),
+                            suffixes=[".json.xz", ".json.lzma"],
+                        ),
+                        OpenFilePathsEntry.NameFilter(
+                            name=_translate(
+                                "file type", "Tar archive with GZip compression"
+                            ),
+                            suffixes=[".tar.gz", ".tgz"],
+                        ),
+                        OpenFilePathsEntry.NameFilter(
+                            name=_translate(
+                                "file type", "Tar archive with Bzip2 compression"
+                            ),
+                            suffixes=[".tar.bz2", ".tbz2"],
+                        ),
+                        OpenFilePathsEntry.NameFilter(
+                            name=_translate(
+                                "file type", "Tar archive with LZMA2 compression"
+                            ),
+                            suffixes=[".tar.xz", ".txz"],
+                        ),
                     ],
                 ),
             },
@@ -455,7 +509,47 @@ class Settings(QSettings):
     @translation_path.setter
     def translation_path(self, new_value: str | PathLike[str] | None) -> None:
         with self.section("translation"):
-            self.setValue("filePath", str(new_value) if new_value is not None else "")
+            self.setValue(
+                "filePath",
+                str(Path(new_value).resolve()) if new_value is not None else "",
+            )
+
+    @property
+    def catalog_paths(self) -> list[Path]:
+        paths: list[Path] = []
+        if "catalog" not in self.childGroups():
+            cat_search_settings: Settings = Settings(
+                self.organizationName(),
+                "CatSearch",
+                self.parent(),
+            )
+            with (
+                cat_search_settings.section("search"),
+                cat_search_settings.read_array("catalogFiles") as count,
+            ):
+                for i in range(count):
+                    cat_search_settings.setArrayIndex(i)
+                    if (
+                        path := cat_search_settings.value("path", "", str)
+                    ) and isinstance(path, str):
+                        paths.append(Path(path).resolve())
+
+        with self.section("catalog"), self.read_array("file") as count:
+            for i in range(count):
+                self.setArrayIndex(i)
+                v: str = cast(str, self.value("location", "", str))
+                if v:
+                    paths.append(Path(v).resolve())
+        return [path for path in paths if path.is_file()]
+
+    @catalog_paths.setter
+    def catalog_paths(self, paths: Iterable[str | PathLike[str]]) -> None:
+        paths = list(paths)
+        count: int = len(paths)
+        with self.section("catalog"), self.write_array("file", count):
+            for i in range(count):
+                self.setArrayIndex(i)
+                self.setValue("location", str(Path(paths[i]).resolve()))
 
     @property
     def opened_file_name(self) -> Path | None:
@@ -466,6 +560,8 @@ class Settings(QSettings):
     @opened_file_name.setter
     def opened_file_name(self, filename: str | PathLike[str] | None) -> None:
         with self.section("location"):
+            if isinstance(filename, (str, PathLike)):
+                filename = Path(filename).resolve()
             self.setValue("open", str(filename or ""))
 
     @property
@@ -477,6 +573,8 @@ class Settings(QSettings):
     @saved_file_name.setter
     def saved_file_name(self, filename: str | PathLike[str] | None) -> None:
         with self.section("location"):
+            if isinstance(filename, (str, PathLike)):
+                filename = Path(filename).resolve()
             self.setValue("save", str(filename or ""))
 
     def save(self, o: QWidget) -> None:

@@ -1,7 +1,9 @@
 from collections.abc import Iterable
+from contextlib import suppress
 from typing import Final, NamedTuple, cast
 
 import numpy as np
+from numpy import complex128, float64
 from numpy.typing import NDArray
 from qtpy.QtCore import (
     QAbstractTableModel,
@@ -23,16 +25,16 @@ class DataModel(QAbstractTableModel):
         precision: int
         scale: float
         fancy: bool = False
+        log10: bool = False
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        self._data: NDArray[np.double] | NDArray[np.cdouble] = np.empty((0, 0))
-        self._rows_loaded: int = self.ROW_BATCH_COUNT
+        self._data: dict[tuple[int, int], dict[Qt.ItemDataRole | int, object]] = {}
+        self._numeric_data: NDArray[np.double] | NDArray[np.cdouble] = np.empty((0, 0))
+        self._rows_loaded: int = DataModel.ROW_BATCH_COUNT
 
         self._header: list[str | HeaderWithUnit] = []
         self._format: list[DataModel.Format] = []
-        self._sort_column: int = 0
-        self._sort_order: Qt.SortOrder = Qt.SortOrder.AscendingOrder
 
     @property
     def header(self) -> list[str | HeaderWithUnit]:
@@ -42,13 +44,21 @@ class DataModel(QAbstractTableModel):
     def header(self, new_header: Iterable[str | HeaderWithUnit]) -> None:
         self._header = list(new_header)
 
+    def all_data(
+        self,
+        column: int | None = None,
+    ) -> NDArray[float64] | NDArray[complex128]:
+        if column is None:
+            return self._numeric_data
+        return self._numeric_data[:, column]
+
     @property
-    def all_data(self) -> NDArray[np.double] | NDArray[np.cdouble]:
-        return self._data
+    def data_column_count(self) -> int:
+        return self._numeric_data.shape[1]
 
     @property
     def is_empty(self) -> bool:
-        return bool(self._data.size == 0)
+        return bool(self._numeric_data.size == 0)
 
     def rowCount(
         self,
@@ -57,16 +67,21 @@ class DataModel(QAbstractTableModel):
         available_count: bool = False,
     ) -> int:
         if available_count:
-            return cast(int, self._data.shape[0])
-        return min(cast(int, self._data.shape[0]), self._rows_loaded)
+            return cast(int, self._numeric_data.shape[0])
+        return min(cast(int, self._numeric_data.shape[0]), self._rows_loaded)
 
     def columnCount(
-        self, parent: QModelIndex | QPersistentModelIndex | None = None
+        self,
+        parent: QModelIndex | QPersistentModelIndex | None = None,
     ) -> int:
-        return cast(int, self._data.shape[1])
+        return len(self._header)
 
     def formatted_item(
-        self, row: int, column: int, replace_hyphen: bool = False
+        self,
+        row: int,
+        column: int,
+        replace_hyphen: bool = False,
+        force_plain: bool = False,
     ) -> str:
         def fancy_format(v: float) -> str:
             s: str = f"{v:.{precision}e}"
@@ -83,52 +98,151 @@ class DataModel(QAbstractTableModel):
                 s = s.replace("-", "−")
             return superscript_tag(s)
 
-        value: float | complex = self.item(row, column)
+        value: object | None = self.item(row, column)
+        if value is None:
+            return "???"
+        if isinstance(value, str):
+            return value
         if np.isnan(value):
             return ""
         if isinstance(value, complex) and value.imag == 0.0:
             value = value.real
-        if column >= len(self._format):
-            if replace_hyphen:
-                return str(value).replace("-", "−")
-            return str(value)
+        if not isinstance(value, (float, complex)) or column >= len(self._format):
+            return str(value).replace("-", "−", -int(replace_hyphen))
         precision: int
         scale: float
         fancy: bool
-        precision, scale, fancy = self._format[column]
+        log10: bool
+        precision, scale, fancy, log10 = self._format[column]
+        if log10 and isinstance(value, float):
+            value = np.log10(np.complex128(value)).item()
+            if isinstance(value, complex) and value.imag == 0.0:
+                value = value.real
         if np.isnan(scale):
-            if fancy:
+            if fancy and not force_plain:
                 if isinstance(value, float):
                     return fancy_format(value)
-                re_s: str = fancy_format(value.real)
-                im_s: str = fancy_format(value.imag)
-                if value.imag < 0:
-                    return re_s + im_s + "j"
-                return re_s + "+" + im_s + "j"
-            if replace_hyphen:
-                return f"{value:.{precision}e}".replace("-", "−")
-            return f"{value:.{precision}e}"
-        if replace_hyphen:
-            return f"{value * scale:.{precision}f}".replace("-", "−")
-        return f"{value * scale:.{precision}f}"
+                if isinstance(value, complex):
+                    re_s: str = fancy_format(value.real)
+                    im_s: str = fancy_format(value.imag)
+                    if value.imag < 0:
+                        return re_s + im_s + "j"
+                    return re_s + "+" + im_s + "j"
+            if isinstance(value, float):
+                if log10:
+                    return f"{value:.{precision}f}".replace(
+                        "-", "−", -int(replace_hyphen)
+                    )
+                return f"{value:.{precision}e}".replace("-", "−", -int(replace_hyphen))
+        if isinstance(value, float):
+            return f"{value * scale:.{precision}f}".replace(
+                "-", "−", -int(replace_hyphen)
+            )
+        return repr(value)
+
+    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
+        if 0 <= index.column() < self.data_column_count:
+            return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
+        return (
+            Qt.ItemFlag.ItemIsEnabled
+            | Qt.ItemFlag.ItemIsSelectable
+            | Qt.ItemFlag.ItemIsEditable
+        )
 
     def data(
         self,
         index: QModelIndex | QPersistentModelIndex,
-        role: int = Qt.ItemDataRole.DisplayRole,
-    ) -> str | None:
-        if index.isValid() and role == Qt.ItemDataRole.DisplayRole:
-            return self.formatted_item(index.row(), index.column(), replace_hyphen=True)
+        role: Qt.ItemDataRole | int = Qt.ItemDataRole.DisplayRole,
+    ) -> object | None:
+        if index.isValid():
+            row_index: int = index.row()
+            column_index: int = index.column()
+            key: tuple[int, int] = row_index, column_index
+            with suppress(LookupError):
+                return self._data[key][role]
+            if 0 <= column_index < self.data_column_count:
+                if role == Qt.ItemDataRole.DisplayRole:
+                    data = self.formatted_item(
+                        row_index,
+                        column_index,
+                        replace_hyphen=True,
+                    )
+                elif role == Qt.ItemDataRole.UserRole:
+                    data = self.formatted_item(
+                        row_index,
+                        column_index,
+                        replace_hyphen=False,
+                        force_plain=True,
+                    )
+                else:
+                    data = None
+            else:
+                data = self.substitution_for_cell(
+                    index,
+                    tuple(self._numeric_data[row_index]),
+                    role,
+                )
+            if key not in self._data:
+                self._data[key] = {}
+            self._data[key][role] = data
+            return data
         return None
 
-    def item(self, row_index: int, column_index: int) -> float | complex:
-        if (
-            0 <= row_index < self._data.shape[0]
-            and 0 <= column_index < self._data.shape[1]
-        ):
-            if self._data[row_index, column_index].imag == 0.0:
-                return self._data[row_index, column_index].real.item()
-            return self._data[row_index, column_index].item()
+    def setData(
+        self,
+        index: QModelIndex | QPersistentModelIndex,
+        value: object,
+        role: Qt.ItemDataRole | int = Qt.ItemDataRole.EditRole,
+    ) -> bool:
+        if not index.isValid():
+            return False
+        key: tuple[int, int] = index.row(), index.column()
+        if key not in self._data:
+            self._data[key] = {}
+        self._data[key][role] = value
+        self.dataChanged.emit(index, index, [role])
+        return True
+
+    def setItemData(
+        self,
+        index: QModelIndex | QPersistentModelIndex,
+        roles: dict[Qt.ItemDataRole | int, object],
+    ) -> bool:
+        if not index.isValid():
+            return False
+        key: tuple[int, int] = index.row(), index.column()
+        if key not in self._data:
+            self._data[key] = {}
+        for role, value in roles.items():
+            self._data[key][role] = value
+        self.dataChanged.emit(index, index, list(roles))
+        return True
+
+    def substitution_for_cell(
+        self,
+        index: QModelIndex | QPersistentModelIndex,
+        content: tuple[object],
+        role: Qt.ItemDataRole | int,
+    ) -> object:
+        return None
+
+    def item(self, row: int, column: int) -> object:
+        if not (0 <= row < self._numeric_data.shape[0]):
+            return np.nan
+        if 0 <= column < self.data_column_count:
+            if self._numeric_data[row, column].imag == 0.0:
+                return self._numeric_data[row, column].real.item()
+            return self._numeric_data[row, column].item()
+        with suppress(LookupError):
+            return self._data[row, column][Qt.ItemDataRole.DisplayRole]
+        if self.data_column_count <= column < self.columnCount():
+            text: object | None = self.substitution_for_cell(
+                self.index(row, column),
+                tuple(self._numeric_data[row]),
+                Qt.ItemDataRole.DisplayRole,
+            )
+            if isinstance(text, (str, float, complex)):
+                return text
         return np.nan
 
     def headerData(
@@ -168,122 +282,71 @@ class DataModel(QAbstractTableModel):
                 precision=int(round(f.precision)),
                 scale=float(f.scale),
                 fancy=bool(f.fancy),
+                log10=bool(f.log10),
             )
             for f in new_format
         ]
         self.endResetModel()
 
     def set_data(
-        self, new_data: list[list[float]] | NDArray[np.double] | NDArray[np.cdouble]
+        self,
+        new_data: list[list[float]] | NDArray[np.double] | NDArray[np.cdouble],
     ) -> None:
         self.beginResetModel()
-        self._data = np.asarray(new_data)
-        if np.all(self._data[:, self._sort_column].imag == 0.0):
-            self._data = self._data.real
-        self._rows_loaded = self.ROW_BATCH_COUNT
-        if self._sort_column < self._data.shape[1]:
-            sort_indices: NDArray[np.int64] = np.argsort(
-                self._data[:, self._sort_column].real
-                if np.all(self._data[:, self._sort_column].imag == 0.0)
-                else np.abs(self._data[:, self._sort_column]),
-                kind="heapsort",
-            )
-            if self._sort_order == Qt.SortOrder.DescendingOrder:
-                sort_indices = sort_indices[::-1]
-            self._data = self._data[sort_indices]
-        self.endResetModel()
-
-    def append_data(
-        self, new_data_line: list[float] | NDArray[np.double] | NDArray[np.cdouble]
-    ) -> None:
-        self.beginResetModel()
-        if self._data.shape[1] == len(new_data_line):
-            new_data_line = np.asarray(new_data_line)
-            if np.all(new_data_line.imag == 0.0):
-                new_data_line = new_data_line.real
-            self._data = np.vstack((self._data, new_data_line))
-            if self._sort_column < self._data.shape[1]:
-                sort_indices: NDArray[np.int64] = np.argsort(
-                    self._data[:, self._sort_column].real
-                    if np.all(self._data[:, self._sort_column].imag == 0.0)
-                    else np.abs(self._data[:, self._sort_column]),
-                    kind="heapsort",
-                )
-                if self._sort_order == Qt.SortOrder.DescendingOrder:
-                    sort_indices = sort_indices[::-1]
-                self._data = self._data[sort_indices]
-        else:
-            self._data = np.array([new_data_line])
+        self._data.clear()
+        self._numeric_data = np.asarray(new_data)
+        if np.all(self._numeric_data.imag == 0.0):
+            self._numeric_data = self._numeric_data.real
+        self._rows_loaded = DataModel.ROW_BATCH_COUNT
         self.endResetModel()
 
     def extend_data(
         self,
         new_data_lines: list[list[float]] | NDArray[np.double] | NDArray[np.cdouble],
     ) -> None:
-        self.beginResetModel()
-        if isinstance(new_data_lines, np.ndarray):
-            if np.all(new_data_lines.imag == 0.0):
-                new_data_lines = new_data_lines.real
-            if self._data.shape[1] == new_data_lines.shape[1]:
-                self._data = np.vstack((self._data, new_data_lines))
+        data_column_count: int = self.data_column_count
+        new_data_lines = np.asarray(
+            [
+                (
+                    list(new_data_line[:data_column_count])
+                    + [np.nan] * max(0, data_column_count - len(new_data_line))
+                )
+                if 0 < data_column_count != len(new_data_line)
+                else new_data_line
+                for new_data_line in new_data_lines
+            ]
+        )
+        if np.all(new_data_lines.imag == 0.0):
+            new_data_lines = new_data_lines.real
+        self.beginInsertRows(
+            QModelIndex(),
+            self.rowCount(),
+            self.rowCount() + new_data_lines.shape[0] - 1,
+        )
+        if self._numeric_data.size != 0:
+            self._numeric_data = np.vstack((self._numeric_data, new_data_lines))
         else:
-            for new_data_line in new_data_lines:
-                if self._data.shape[1] == len(new_data_line):
-                    self._data = np.vstack((self._data, new_data_line))
-        if self._sort_column < self._data.shape[1]:
-            sort_indices: NDArray[np.int64] = np.argsort(
-                self._data[:, self._sort_column].real
-                if np.all(self._data[:, self._sort_column].imag == 0.0)
-                else np.abs(self._data[:, self._sort_column]),
-                kind="heapsort",
-            )
-            if self._sort_order == Qt.SortOrder.DescendingOrder:
-                sort_indices = sort_indices[::-1]
-            self._data = self._data[sort_indices]
-        self.endResetModel()
+            self._numeric_data = new_data_lines
+        self.endInsertRows()
 
     def clear(self) -> None:
         self.beginResetModel()
-        self._data = np.empty((0, 0))
-        self._rows_loaded = self.ROW_BATCH_COUNT
+        self._numeric_data = np.empty((0, 0))
+        self._data.clear()
+        self._rows_loaded = DataModel.ROW_BATCH_COUNT
         self.endResetModel()
 
-    def sort(
-        self,
-        column: int,
-        order: Qt.SortOrder = Qt.SortOrder.AscendingOrder,
-    ) -> None:
-        if column >= self._data.shape[1]:
-            return
-        sort_indices: NDArray[np.int64] = np.argsort(
-            self._data[:, column].real
-            if np.all(self._data[:, column].imag == 0.0)
-            else np.abs(self._data[:, column]),
-            kind="heapsort",
-        )
-        if order == Qt.SortOrder.DescendingOrder:
-            sort_indices = sort_indices[::-1]
-        self._sort_column = column
-        self._sort_order = order
-        self.beginResetModel()
-        self._data = self._data[sort_indices]
-        self.endResetModel()
+    def canFetchMore(self, index: QModelIndex | QPersistentModelIndex) -> bool:
+        return self._numeric_data.shape[0] > self._rows_loaded
 
-    def canFetchMore(
-        self,
-        index: QModelIndex | QPersistentModelIndex | None = None,
-    ) -> bool:
-        return self._data.shape[0] > self._rows_loaded
-
-    def fetchMore(
-        self,
-        index: QModelIndex | QPersistentModelIndex | None = None,
-    ) -> None:
+    def fetchMore(self, index: QModelIndex | QPersistentModelIndex) -> None:
         # https://sateeshkumarb.wordpress.com/2012/04/01/paginated-display-of-table-data-in-pyqt/
-        remainder: int = self._data.shape[0] - self._rows_loaded
-        items_to_fetch: int = min(remainder, self.ROW_BATCH_COUNT)
+        remainder: int = self._numeric_data.shape[0] - self._rows_loaded
+        items_to_fetch: int = min(remainder, DataModel.ROW_BATCH_COUNT)
         self.beginInsertRows(
-            QModelIndex(), self._rows_loaded, self._rows_loaded + items_to_fetch - 1
+            index,
+            self._rows_loaded,
+            self._rows_loaded + items_to_fetch - 1,
         )
         self._rows_loaded += items_to_fetch
         self.endInsertRows()

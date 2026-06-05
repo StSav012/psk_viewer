@@ -1,10 +1,14 @@
 import enum
+import html
+import html.entities
+import re
 import sys
+import unicodedata
 from collections.abc import Collection, Iterable, Iterator
 from contextlib import contextmanager, suppress
-from os import PathLike
+from os import PathLike, linesep
 from pathlib import Path
-from typing import Any, BinaryIO, Final, NamedTuple, TypeVar
+from typing import TYPE_CHECKING, Any, BinaryIO, Final, NamedTuple, TypeVar
 
 import numpy as np
 from numpy.typing import NDArray
@@ -34,6 +38,11 @@ __all__ = [
     "XValues",
     "DataMode",
     "the",
+    "tag",
+    "p_tag",
+    "wrap_in_html",
+    "remove_html",
+    "best_name",
 ]
 
 VOLTAGE_GAIN: Final[float] = 5.0
@@ -41,9 +50,7 @@ VOLTAGE_GAIN: Final[float] = 5.0
 
 # https://www.reddit.com/r/learnpython/comments/4kjie3/how_to_include_gui_images_with_pyinstaller/d3gjmom
 def resource_path(relative_path: str | Path) -> Path:
-    if hasattr(sys, "_MEIPASS"):
-        return Path(sys._MEIPASS) / relative_path
-    return Path(__file__).parent / relative_path
+    return Path(getattr(sys, "_MEIPASS", Path(__file__).parent)) / relative_path
 
 
 IMAGE_EXT: str = ".svg"
@@ -227,9 +234,9 @@ def superscript_number(number: str) -> str:
     return number
 
 
-def superscript_tag(html: str) -> str:
+def superscript_tag(html_code: str) -> str:
     """Replace numbers within <sup></sup> with their Unicode superscript analogs."""
-    text: str = html
+    text: str = html_code
     j: int = 0
     while j >= 0:
         i: int = text.casefold().find("<sup>", j)
@@ -241,6 +248,80 @@ def superscript_tag(html: str) -> str:
         text = text[:i] + superscript_number(text[i + 5 : j]) + text[j + 6 :]
         j -= 5
     return text
+
+
+tag_pattern: re.Pattern[str] = re.compile(
+    r"<\s*(?P<tag_name>\w+)(?:\s+[^>]*)?>(?P<content>.*?)</\s*(?P=tag_name)>"
+)
+
+tag_repl: dict[str, str] = {
+    "html": r"rtf1\ansi{\fonttbl\f0\fnil}",
+    "sup": "superscript",
+}
+char_repl: dict[str, str] = {"–": "-"}
+
+
+def rtf_escape(s: str) -> str:
+    return "".join(
+        (
+            c
+            if ord(c) < 128
+            else "\\u"
+            + str(int.from_bytes(c.encode("utf-16be")))
+            + char_repl.get(
+                c,
+                html.entities.codepoint2name.get(
+                    ord(c),
+                    unicodedata.name(c).split()[-1],
+                )[0],
+            )
+        )
+        for c in s
+    )
+
+
+def rtf_table(t: str) -> str:
+    r: list[str] = [r"\trowd"]
+    cols: int = 0
+    for tr, row in tag_pattern.findall(t):
+        if tr.lower() != "tr":
+            continue
+        # noinspection PyTypeChecker
+        cells: list[tuple[str, str]] = tag_pattern.findall(row)
+        cols = max(cols, len(cells))
+        for td, cell in cells:
+            if td.lower() != "td":
+                continue
+            r.append(cell + r"\cell")
+        r.append(r"\row")
+
+    r.insert(1, r"\cellx" * cols)
+    return "\n".join(r)
+
+
+def html_tag_to_rtf_tag(m: re.Match[str]) -> str:
+    tag_name: str = m.group("tag_name").casefold()
+    content: str = m.group("content")
+    if tag_name == "table":
+        return rtf_table(content)
+    tag_name = tag_repl.get(tag_name, tag_name)
+    return "{\\" + tag_name + " " + content + "}"
+
+
+def html_to_rtf(htm: str) -> str:
+    htm = htm.replace(r"\&", "&").replace("\n", r"\par")
+    htm, n = tag_pattern.subn(html_tag_to_rtf_tag, htm)
+    while n:
+        htm, n = tag_pattern.subn(html_tag_to_rtf_tag, htm)
+    return rtf_escape(html.unescape(htm))
+
+
+def tag(tag_name: str, content: str) -> str:
+    return f"<{tag_name}>{content}</{tag_name}>"
+
+
+def p_tag(content: str) -> str:
+    return tag("p", content)
 
 
 def copy_to_clipboard(
@@ -258,7 +339,11 @@ def copy_to_clipboard(
     if isinstance(text_type, str):
         mime_data.setData(text_type, plain_text.encode())
     elif text_type == Qt.TextFormat.RichText:
-        mime_data.setHtml(rich_text)
+        mime_data.setData(
+            "text/rtf", html_to_rtf(tag("html", rich_text)).encode("utf-8")
+        )
+        mime_data.setData("text/markdown", rich_text.encode("utf-8"))
+        mime_data.setHtml(wrap_in_html(rich_text))
         mime_data.setText(plain_text)
     else:
         mime_data.setText(plain_text)
@@ -687,3 +772,256 @@ _T = TypeVar("_T")
 @contextmanager
 def the(obj: _T) -> Iterator[_T]:
     yield obj
+
+
+def is_good_html(text: str) -> bool:
+    _1, _2, _3 = text.count("<"), text.count(">"), 2 * text.count("</")
+    return _1 == _2 and _1 == _3
+
+
+def wrap_in_html(text: str, line_end: str = linesep) -> str:
+    """Make a full HTML document out of a piece of the markup."""
+    new_text: list[str] = [
+        '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">',
+        '<html lang="en" xml:lang="en">',
+        "<head>",
+        '<meta http-equiv="content-type" content="text/html; charset=utf-8">',
+        "</head>",
+        "<body>",
+        text,
+        "</body>",
+        "</html>",
+    ]
+
+    return line_end.join(new_text)
+
+
+def remove_html(line: str) -> str:
+    """Remove HTML tags and decode HTML entities."""
+    from html import unescape
+
+    if not is_good_html(line):
+        return unescape(line)
+
+    new_line: str = line
+    tag_start: int = new_line.find("<")
+    tag_end: int = new_line.find(">", tag_start)
+    while tag_start != -1 and tag_end != -1:
+        new_line = new_line[:tag_start] + new_line[tag_end + 1 :]
+        tag_start = new_line.find("<")
+        tag_end = new_line.find(">", tag_start)
+    return unescape(new_line).lstrip()
+
+
+def best_name(entry: object, allow_html: bool = True) -> str:
+    import html.entities
+    from html import escape, unescape
+
+    try:
+        from pycatsearch.utils import (
+            NAME,
+            STOICHIOMETRIC_FORMULA,
+            STRUCTURAL_FORMULA,
+            CatalogEntryType,
+        )
+    except ImportError:
+        return repr(entry)
+
+    if not isinstance(entry, CatalogEntryType):
+        raise TypeError("Unsupported entry type")
+
+    species_tag: int = entry.speciestag
+    last: str = (
+        best_name.__dict__.get("last", dict())
+        .get(species_tag, dict())
+        .get(allow_html, "")
+    )
+    if last:
+        return last
+
+    def chem_html(formula: str) -> str:
+        """Convert plain text chemical formula into HTML markup."""
+        if "<" in formula or ">" in formula:
+            # we can not tell whether it's a tag or a mathematical sign
+            return formula
+
+        def sub_tag(s: str) -> str:
+            return "<sub>" + s + "</sub>"
+
+        def sup_tag(s: str) -> str:
+            return "<sup>" + s + "</sup>"
+
+        def i_tag(s: str) -> str:
+            return "<i>" + s + "</i>"
+
+        def subscript(s: str) -> str:
+            number_start: int = -1
+            number_started: bool = False
+            cap_alpha_started: bool = False
+            low_alpha_started: bool = False
+            _i: int = 0
+            while _i < len(s):
+                _c: str = s[_i]
+                if number_started and not _c.isdigit():
+                    number_started = False
+                    s = s[:number_start] + sub_tag(s[number_start:_i]) + s[_i:]
+                    _i += 1
+                if (
+                    (cap_alpha_started or low_alpha_started)
+                    and _c.isdigit()
+                    and not number_started
+                ):
+                    number_start = _i
+                    number_started = True
+                if low_alpha_started:
+                    cap_alpha_started = False
+                    low_alpha_started = False
+                if cap_alpha_started and _c.islower() or _c == ")":
+                    low_alpha_started = True
+                cap_alpha_started = _c.isupper()
+                _i += 1
+            if number_started:
+                s = s[:number_start] + sub_tag(s[number_start:])
+            return s
+
+        def prefix(s: str) -> str:
+            no_digits: bool = False
+            _i: int = len(s)
+            while not no_digits:
+                _i = s.rfind("-", 0, _i)
+                if _i == -1:
+                    break
+                if s[:_i].isalpha() and s[:_i].isupper():
+                    break
+                no_digits = True
+                _c: str
+                unescaped_prefix: str = unescape(s[:_i])
+                for _c in unescaped_prefix:
+                    if _c.isdigit() or _c == "<":
+                        no_digits = False
+                        break
+                if no_digits and (
+                    unescaped_prefix[0].islower() or unescaped_prefix[0] == "("
+                ):
+                    return i_tag(s[:_i]) + s[_i:]
+            return s
+
+        def charge(s: str) -> str:
+            if s[-1] in "+-":
+                return s[:-1] + sup_tag(s[-1])
+            return s
+
+        def v(s: str) -> str:
+            if "=" not in s:
+                return s[0] + " = " + s[1:]
+            ss: list[str] = list(map(str.strip, s.split("=")))
+            for _i in range(len(ss)):
+                if ss[_i].startswith("v"):
+                    ss[_i] = ss[_i][0] + sub_tag(ss[_i][1:])
+            return " = ".join(ss)
+
+        html_formula: str = escape(formula)
+        html_formula_pieces: list[str] = list(map(str.strip, html_formula.split(",")))
+        for i in range(len(html_formula_pieces)):
+            if html_formula_pieces[i].startswith("v"):
+                html_formula_pieces = html_formula_pieces[:i] + [
+                    ", ".join(html_formula_pieces[i:])
+                ]
+                break
+        for i in range(len(html_formula_pieces)):
+            if html_formula_pieces[i].startswith("v"):
+                html_formula_pieces[i] = v(html_formula_pieces[i])
+                break
+            for function in (subscript, prefix, charge):
+                html_formula_pieces[i] = function(html_formula_pieces[i])
+        return ", ".join(html_formula_pieces)
+
+    def tex_to_html_entity(s: str) -> str:
+        r"""Change LaTeX entities syntax to HTML one.
+
+        Get ‘\alpha’ to be ‘&alpha;’ and so on.
+        Unknown LaTeX entities do not get replaced.
+
+        :param s: A line to convert
+        :return: a line with all LaTeX entities renamed
+        """
+        word_start: int = -1
+        word_started: bool = False
+        backslash_found: bool = False
+        _i: int = 0
+        fixes: dict[str, str] = {
+            "neq": "#8800",
+        }
+        while _i < len(s):
+            _c: str = s[_i]
+            if word_started and not _c.isalpha():
+                word_started = False
+                if s[word_start:_i] + ";" in html.entities.entitydefs:
+                    s = s[: word_start - 1] + "&" + s[word_start:_i] + ";" + s[_i:]
+                    _i += 2
+                elif s[word_start:_i] in fixes:
+                    s = (
+                        s[: word_start - 1]
+                        + "&"
+                        + fixes[s[word_start:_i]]
+                        + ";"
+                        + s[_i:]
+                    )
+                    _i += 2
+            if backslash_found and _c.isalpha() and not word_started:
+                word_start = _i
+                word_started = True
+            backslash_found = _c == "\\"
+            _i += 1
+        if word_started:
+            if s[word_start:_i] + ";" in html.entities.entitydefs:
+                s = s[: word_start - 1] + "&" + s[word_start:_i] + ";" + s[_i:]
+                _i += 2
+            elif s[word_start:_i] in fixes:
+                s = s[: word_start - 1] + "&" + fixes[s[word_start:_i]] + ";" + s[_i:]
+                _i += 2
+        return s
+
+    def _best_name() -> str:
+        if TYPE_CHECKING and not isinstance(entry, CatalogEntryType):
+            raise TypeError("Unsupported entry type")
+
+        if isotopolog := entry.isotopolog:
+            if allow_html:
+                if is_good_html(str(molecule_symbol := entry.moleculesymbol)) and (
+                    entry.structuralformula == isotopolog
+                    or entry.stoichiometricformula == isotopolog
+                ):
+                    if state_html := entry.state_html:
+                        # span tags are needed when the molecule symbol is malformed
+                        return f"<span>{molecule_symbol}</span>, {chem_html(tex_to_html_entity(str(state_html)))}"
+                    return str(molecule_symbol)
+                if state_html := entry.state_html:
+                    return f"{chem_html(str(isotopolog))}, {chem_html(tex_to_html_entity(str(state_html)))}"
+                return chem_html(str(isotopolog))
+            if state_html := entry.state_html:
+                return f"{isotopolog}, {remove_html(tex_to_html_entity(state_html))}"
+            if state := entry.state:
+                return (
+                    f"{isotopolog}, {remove_html(tex_to_html_entity(state.strip('$')))}"
+                )
+            return isotopolog
+
+        for key in (NAME, STRUCTURAL_FORMULA, STOICHIOMETRIC_FORMULA):
+            if candidate := getattr(entry, key, ""):
+                return chem_html(str(candidate)) if allow_html else str(candidate)
+        if trivial_name := entry.trivialname:
+            return str(trivial_name)
+        if species_tag:
+            return str(species_tag)
+        return "no name"
+
+    res: str = _best_name()
+    if not species_tag:
+        return res
+    if "last" not in best_name.__dict__:
+        best_name.__dict__["last"] = dict()
+    if species_tag not in best_name.__dict__["last"]:
+        best_name.__dict__["last"][species_tag] = dict()
+    best_name.__dict__["last"][species_tag][allow_html] = res
+    return res

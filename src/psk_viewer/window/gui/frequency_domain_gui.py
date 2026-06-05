@@ -4,7 +4,6 @@ import numpy as np
 import pyqtgraph as pg  # type: ignore
 from qtpy.QtCore import QCoreApplication, Qt
 from qtpy.QtWidgets import (
-    QAbstractItemView,
     QCheckBox,
     QDockWidget,
     QFormLayout,
@@ -16,7 +15,6 @@ from qtpy.QtWidgets import (
 )
 
 from ...utils import the
-from ...widgets.data_model import DataModel
 from ...widgets.found_lines_model import FoundLinesModel
 from ...widgets.table_view import TableView
 from ...widgets.toolbar import FrequencyDomainToolbar
@@ -104,8 +102,15 @@ class FrequencyDomainGUI(GUI):
         # Found Lines table
         self.box_found_lines: QDockWidget = QDockWidget(self.central_widget)
         self.box_found_lines.setObjectName("box_found_lines")
+        self.group_found_lines: QWidget = QWidget(self.box_found_lines)
+        self.v_layout_found_lines: QVBoxLayout = QVBoxLayout(self.group_found_lines)
+        self.form_layout_found_lines: QFormLayout = QFormLayout()
+        self.spin_df: pg.SpinBox = pg.SpinBox(self.group_found_lines)
+        self.spin_df.setMinimum(0.01e6)
+        self.spin_df.setMaximum(10.0e6)
+        self.spin_df.setOpts(scaleAtZero=1e6)
         self.table_found_lines: TableView = TableView(
-            self.settings, self.box_found_lines
+            self.settings, self.group_found_lines
         )
         self.model_found_lines: FoundLinesModel = FoundLinesModel(self)
 
@@ -171,8 +176,17 @@ class FrequencyDomainGUI(GUI):
             layout.addWidget(self.button_prev_found_line, 2, 0)
             layout.addWidget(self.button_next_found_line, 2, 1)
 
-        self.v_layout_find_lines.addLayout(self.form_layout_find_lines)
-        self.v_layout_find_lines.addLayout(self.grid_layout_find_lines)
+        with the(self.v_layout_find_lines) as layout:
+            layout.addLayout(self.form_layout_find_lines)
+            layout.addLayout(self.grid_layout_find_lines)
+
+        self.form_layout_found_lines.addRow(
+            self.tr("Frequency uncertainty:"), self.spin_df
+        )
+
+        with the(self.v_layout_found_lines) as layout:
+            layout.addWidget(self.table_found_lines, 1)
+            layout.addLayout(self.form_layout_found_lines)
 
         # TODO: adjust size when undocked
         self.box_frequency.setWidget(self.group_frequency)
@@ -187,7 +201,7 @@ class FrequencyDomainGUI(GUI):
         self.toolbar.toolboxes_menu.addAction(self.box_find_lines.toggleViewAction())
         self.addDockWidget(Qt.DockWidgetArea.LeftDockWidgetArea, self.box_find_lines)
 
-        self.box_found_lines.setWidget(self.table_found_lines)
+        self.box_found_lines.setWidget(self.group_found_lines)
         self.toolbar.toolboxes_menu.addAction(self.box_found_lines.toggleViewAction())
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.box_found_lines)
 
@@ -197,30 +211,18 @@ class FrequencyDomainGUI(GUI):
 
         self.model_found_lines.set_format(
             [
-                DataModel.Format(3, 1e-6),
-                DataModel.Format(4, 1e3),
-                DataModel.Format(4, np.nan, self.settings.fancy_table_numbers),
+                FoundLinesModel.Format(3, 1e-6),
+                FoundLinesModel.Format(4, 1e3),
+                FoundLinesModel.Format(
+                    precision=4,
+                    scale=np.nan,
+                    fancy=self.settings.fancy_table_numbers,
+                    log10=self.settings.log10_gamma,
+                ),
             ]
         )
 
-        with the(self.table_found_lines) as table:
-            table.setModel(self.model_found_lines)
-            table.setMouseTracking(True)
-            table.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
-            table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-            table.setDropIndicatorShown(False)
-            table.setDragDropOverwriteMode(False)
-            table.setCornerButtonEnabled(False)
-            table.setSortingEnabled(True)
-            table.sortByColumn(0, Qt.SortOrder.AscendingOrder)
-            table.setAlternatingRowColors(True)
-            with the(table.horizontalHeader()) as header:
-                header.setDefaultSectionSize(90)
-                header.setHighlightSections(False)
-                header.setStretchLastSection(True)
-            with the(table.verticalHeader()) as header:
-                header.setVisible(False)
-                header.setHighlightSections(False)
+        self.table_found_lines.setModel(self.model_found_lines)
 
         with the(
             dict(
@@ -248,6 +250,13 @@ class FrequencyDomainGUI(GUI):
             self.spin_y_max.setOpts(**opts)
 
         self.spin_threshold.setOpts(compactHeight=False)
+        self.spin_df.setOpts(
+            siPrefix=True,
+            decimals=1,
+            dec=True,
+            compactHeight=False,
+            format="{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}",
+        )
 
         self.figure.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
@@ -275,6 +284,11 @@ class FrequencyDomainGUI(GUI):
         with the(self.form_layout_find_lines.labelForField) as labelForField:
             cast(QLabel, labelForField(self.spin_threshold)).setText(
                 self.tr("Search threshold:")
+            )
+
+        with the(self.form_layout_found_lines.labelForField) as labelForField:
+            cast(QLabel, labelForField(self.spin_df)).setText(
+                self.tr("Frequency uncertainty:")
             )
 
         with (
@@ -326,6 +340,7 @@ class FrequencyDomainGUI(GUI):
             self.spin_x_max.setSuffix(unit_x)
             self.spin_x_center.setSuffix(unit_x)
             self.spin_x_span.setSuffix(unit_x)
+            self.spin_df.setSuffix(unit_x)
 
             self.spin_y_min.setSuffix(unit_y)
             self.spin_y_max.setSuffix(unit_y)

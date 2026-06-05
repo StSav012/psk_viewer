@@ -1,3 +1,4 @@
+import importlib.util
 import mimetypes
 from collections.abc import Callable, Collection, Iterable, Sequence
 from contextlib import suppress
@@ -7,7 +8,7 @@ from threading import Lock
 from typing import TYPE_CHECKING, Any, Final, cast
 
 import numpy as np
-import pandas as pd  # type: ignore
+import pandas as pd
 import pyqtgraph as pg  # type: ignore
 from numpy.typing import NDArray
 from pyqtgraph import GraphicsScene, PlotWidget
@@ -27,6 +28,7 @@ from qtpy.QtGui import (
     QBrush,
     QCloseEvent,
     QColor,
+    QCursor,
     QFont,
     QGuiApplication,
     QPalette,
@@ -40,16 +42,20 @@ from ..detection import correlation, peaks_positions
 from ..plot_data_item import PlotDataItem
 from ..utils import (
     DataMode,
+    HeaderWithUnit,
     SpectrometerData,
     copy_to_clipboard,
     load_data,
+    p_tag,
     resource_path,
+    tag,
     the,
 )
 from ..widgets.preferences import Preferences
 from .gui.frequency_domain_gui import FrequencyDomainGUI
 
 __all__ = ["FrequencyDomainWindow"]
+
 
 _translate = QCoreApplication.translate
 
@@ -125,6 +131,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             self.toolbar.load_trace_action.setEnabled(loaded)
             if loaded:
                 self.set_config_value("open", "location", file_path.parent)
+                self.load_catalog()
 
     def setup_ui(self) -> None:
         self.hide_cursors()
@@ -253,6 +260,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             self.spin_threshold.setValue(
                 self.get_config_value("lineSearch", "threshold", 12.0, float)
             )
+            self.spin_df.setValue(self.get_config_value("catalog", "df", 0.6e6, float))
 
             if (
                 self.get_config_value("display", "unit", PlotDataItem.VOLTAGE_DATA, str)
@@ -357,6 +365,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         self.button_next_found_line.clicked.connect(self.on_next_found_line_clicked)
 
         self.table_found_lines.doubleClicked.connect(self.on_table_cell_double_clicked)
+        self.spin_df.valueChanged.connect(self.on_spin_df_changed)
 
         line: pg.PlotDataItem
         for line in (self.automatically_found_lines, self.user_found_lines):
@@ -435,7 +444,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
 
         elif ev.modifiers() == Qt.KeyboardModifier.NoModifier:
             found_lines_frequencies: NDArray[np.float64] = (
-                self.model_found_lines.all_data[:, 0].real
+                self.model_found_lines.all_data(0).real
             )
             selected_points: list[int] = [
                 cast(int, np.argmin(np.abs(point.pos().x() - found_lines_frequencies)))
@@ -798,13 +807,14 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         self.set_crosshair_lines_appearance()
         self.model_found_lines.fancy_table_numbers = self.settings.fancy_table_numbers
         self.model_found_lines.log10_gamma = self.settings.log10_gamma
+        self.load_catalog()
         if self._data_mode == DataMode.PSK and self._plot_data.frequency_span > 0.0:
             jump: float = (
                 round(self.settings.jump / self._plot_data.frequency_step)
                 * self._plot_data.frequency_step
             )
             self.toolbar.differentiate_action.setEnabled(
-                0.0 < jump < 0.25 * self._plot_data.frequency_span
+                bool(0.0 < jump < 0.25 * self._plot_data.frequency_span)
             )
             if not (0.0 < jump < 0.25 * self._plot_data.frequency_span):
                 self.toolbar.differentiate_action.blockSignals(True)
@@ -825,6 +835,70 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         self.toolbar.load_trace_action.setEnabled(
             loaded or self.toolbar.load_trace_action.isEnabled()
         )
+        if loaded:
+            self.load_catalog()
+
+    def load_catalog(self) -> None:
+        if frozenset(self.model_found_lines.catalog_file_names) == frozenset(
+            catalog_file_names := self.settings.catalog_paths
+        ):
+            return
+        if not catalog_file_names:
+            return
+        self.setDisabled(True)
+        last_cursor: QCursor = self.cursor()
+        self.setCursor(Qt.CursorShape.WaitCursor)
+        self.repaint()
+        label: str
+        if len(catalog_file_names) > 1:
+            label = tag(
+                "html",
+                "\n".join(
+                    (
+                        p_tag(self.tr("Loading catalogs:")),
+                        tag(
+                            "ul",
+                            "\n".join(tag("li", str(fn)) for fn in catalog_file_names),
+                        ),
+                    )
+                ),
+            )
+        else:
+            label = tag(
+                "html",
+                p_tag(
+                    self.tr("Loading a catalog from<br>{}").format(
+                        catalog_file_names[0]
+                    )
+                ),
+            )
+        try:
+            from pycatsearch.catalog import Catalog
+        except ImportError:
+            self.status_bar.showMessage(
+                self.tr("Unable to load a catalog: Python package missing.")
+            )
+        else:
+            from ..widgets.waiting_screen import WaitingScreen
+
+            ws: WaitingScreen[Catalog] = WaitingScreen(
+                parent=self,
+                label=label,
+                target=Catalog,
+                args=catalog_file_names,
+                label_alignment=Qt.AlignmentFlag.AlignLeading,
+            )
+            cat: Catalog | None = ws.exec()
+            if cat is None or cat.is_empty:
+                if ws.is_cancelled():
+                    self.status_bar.showMessage(self.tr("Loading has been cancelled."))
+                else:
+                    self.status_bar.showMessage(self.tr("Failed to load a catalog."))
+            else:
+                self.status_bar.showMessage(self.tr("Catalogs loaded."))
+            self.model_found_lines.catalog = cat or self.model_found_lines.catalog
+        self.setCursor(last_cursor)
+        self.setEnabled(True)
 
     @property
     def line(self) -> PlotDataItem:
@@ -1028,6 +1102,13 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         self.spin_x_center.setValue(self.model_found_lines.item(index.row(), 0))
         self.ensure_y_fits()
 
+    @Slot(float)
+    def on_spin_df_changed(self, new_value: float) -> None:
+        if self._loading.locked():
+            return
+        self.model_found_lines.df = new_value
+        self.set_config_value("catalog", "df", new_value)
+
     def ensure_y_fits(self) -> None:
         if self._plot_line.xData is None or self._plot_line.xData.size < 2:
             return
@@ -1107,8 +1188,9 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         supported_formats_callbacks: dict[str, Callable[[Path], Sequence[float]]] = {
             mimetypes.types_map[".csv"]: load_csv,
             mimetypes.types_map[".txt"]: load_csv,
-            mimetypes.types_map[".xlsx"]: load_xlsx,
         }
+        if importlib.util.find_spec("openpyxl") is not None:
+            supported_formats_callbacks[mimetypes.types_map[".xlsx"]] = load_xlsx
 
         if not (filename := self._open_table_dialog.get_open_filename()):
             return
@@ -1153,61 +1235,65 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
     @Slot()
     def on_save_found_lines_triggered(self) -> None:
         def save_csv(fn: Path) -> None:
+            from ..utils import remove_html
+
             sep: str = self.settings.csv_separator
-            with open(fn, "w", encoding="utf-8") as f_out:
+            with (
+                open(fn, "w", encoding="utf-8") as f_out,
+                the(self.model_found_lines.header) as header,
+            ):
                 f_out.writelines(
                     map(
                         lambda s: "# " + s + "\n",
                         [
-                            sep.join(h.name for h in self.model_found_lines.header),
-                            sep.join(h.unit for h in self.model_found_lines.header),
+                            sep.join(
+                                h.name if isinstance(h, HeaderWithUnit) else h
+                                for h in header
+                            ),
+                            sep.join(
+                                h.unit if isinstance(h, HeaderWithUnit) else ""
+                                for h in header
+                            ),
                         ],
                     )
                 )
                 for row in data:
-                    f_out.write(
-                        sep.join(
-                            map(lambda x: str(x.real if x.imag == 0.0 else x), row)
-                        )
-                        + "\n"
-                    )
+                    f_out.write(remove_html(sep.join(map(str, row))) + "\n")
 
         def save_xlsx(fn: Path) -> None:
             with pd.ExcelWriter(fn) as writer:
-                df: pd.DataFrame = pd.DataFrame(
-                    [[(x.real if x.imag == 0.0 else x) for x in col] for col in data]
-                )
+                df: pd.DataFrame = pd.DataFrame(data)
                 df.to_excel(
                     writer,
                     index=False,
-                    header=self.model_found_lines.header,
+                    header=list(map(str, self.model_found_lines.header)),
                     sheet_name=_translate("workbook", "Sheet1"),
                 )
 
         supported_formats_callbacks: dict[str, Callable[[Path], None]] = {
             ".csv": save_csv,
-            ".xlsx": save_xlsx,
         }
+        if importlib.util.find_spec("openpyxl") is not None:
+            supported_formats_callbacks[".xlsx"] = save_xlsx
 
         if not (filename := self._save_table_dialog.get_save_filename()):
             return
 
-        f: NDArray[np.double] | NDArray[np.cdouble] = (
-            self.model_found_lines.all_data[:, 0] * 1e-6
-        )
-        v: NDArray[np.double] | NDArray[np.cdouble] = (
-            self.model_found_lines.all_data[:, 1] * 1e3
-        )
-        data: NDArray[np.complex128] | NDArray[np.float64]
-        if self.model_found_lines.all_data.shape[1] > 2:
-            g: NDArray[np.complex128] | NDArray[np.float64] = (
-                self.model_found_lines.all_data[:, 2]
-            )
-            data = np.column_stack((f, v, g))
-        else:
-            data = np.column_stack((f, v))
-        if np.all(data.imag == 0.0):
-            data = data.real
+        data: list[list[object]] = [
+            [
+                (
+                    item * 1e-6
+                    if isinstance(
+                        item := self.model_found_lines.item(row, column),
+                        float,
+                    )
+                    and column == 0
+                    else item
+                )
+                for column in range(self.model_found_lines.columnCount())
+            ]
+            for row in range(self.model_found_lines.rowCount(available_count=True))
+        ]
 
         filename_ext: str = filename.suffix.casefold()
         if filename_ext in supported_formats_callbacks:
@@ -1357,6 +1443,9 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             w = FrequencyDomainWindow(parent=self.parent(), flags=self.windowFlags())
             r: bool = w.set_data(data)
             if r:
+                if self.model_found_lines.catalog is None:
+                    self.load_catalog()
+                w.model_found_lines.catalog = self.model_found_lines.catalog
                 w.show()
                 if self._data_mode == DataMode.unknown:
                     self.close()
@@ -1479,10 +1568,10 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         self.toolbar.trace_action.setChecked(False)
 
     @Slot(bool)
-    def on_differentiate_action_toggled(self, _: bool) -> None:
-        self._data_mode = DataMode.PSK_WITH_JUMP
+    def on_differentiate_action_toggled(self, on: bool) -> None:
+        self._data_mode = DataMode.PSK_WITH_JUMP if on else DataMode.PSK
         self.display_gamma_or_voltage()
-        self.model_found_lines.refresh()
+        self.model_found_lines.refresh(self._plot_data)
 
     @Slot(bool)
     def on_switch_data_action_toggled(self, new_state: bool) -> None:
@@ -1550,7 +1639,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         if display_gamma is None:
             display_gamma = self.switch_data_action.isChecked()
 
-        if self.toolbar.differentiate_action.isChecked():
+        if self._data_mode == DataMode.PSK_WITH_JUMP:
             self._plot_data.jump = self.settings.jump
             self._ghost_data.jump = self.settings.jump
         else:
@@ -1715,10 +1804,15 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
                     df.to_excel(
                         writer,
                         index=False,
-                        header=[
-                            self.model_found_lines.header[0],
-                            self.model_found_lines.header[2],
-                        ],
+                        header=list(
+                            map(
+                                str,
+                                [
+                                    self.model_found_lines.header[0],
+                                    self.model_found_lines.header[2],
+                                ],
+                            )
+                        ),
                         sheet_name=self._plot_line.name()
                         or _translate("workbook", "Sheet1"),
                     )
@@ -1728,10 +1822,15 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
                     df.to_excel(
                         writer,
                         index=False,
-                        header=[
-                            self.model_found_lines.header[0],
-                            self.model_found_lines.header[1],
-                        ],
+                        header=list(
+                            map(
+                                str,
+                                [
+                                    self.model_found_lines.header[0],
+                                    self.model_found_lines.header[1],
+                                ],
+                            )
+                        ),
                         sheet_name=self._plot_line.name()
                         or _translate("workbook", "Sheet1"),
                     )

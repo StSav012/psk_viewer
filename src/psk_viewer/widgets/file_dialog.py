@@ -7,16 +7,20 @@ from os import PathLike
 from pathlib import Path
 from typing import NamedTuple
 
+from qtpy.QtCore import QCoreApplication
 from qtpy.QtWidgets import QFileDialog, QWidget
 
 from ..settings import Settings
 
 __all__ = ["OpenFileDialog", "SaveFileDialog"]
 
+_translate = QCoreApplication.translate
+
 
 def ensure_matches(fn: str, selected_filter: str) -> str:
     patterns: list[str] = sum(
-        (e.split() for e in re.findall(r"\((.*?)\)$", selected_filter)), []
+        (e.split() for e in re.findall(r"\((.*?)\)$", selected_filter)),
+        [],
     )
     for p in patterns:
         if fnmatch(fn, p):
@@ -159,7 +163,7 @@ class OpenFileDialog(FileDialog):
                 0,
                 "".join(
                     (
-                        self.tr("All supported"),
+                        _translate("file type", "All supported"),
                         _space_before_extensions,
                         "(",
                         " ".join(all_extensions_unique),
