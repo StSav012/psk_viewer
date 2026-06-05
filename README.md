@@ -1,6 +1,6 @@
 # IPM RAS PSK and FS spectrometer files viewer
 
-**Required packages:**
+###### Required packages:
 
 * `pandas`,
 * `packaging`,
