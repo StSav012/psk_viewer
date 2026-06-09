@@ -174,6 +174,7 @@ def load_icon(widget: QWidget, icon_name: str) -> QIcon:
             ),
             "toolbox": QTAData(("mdi6.toolbox",)),
             "configure": QTAData(("mdi6.cogs",)),
+            "target": QTAData(("mdi6.target",)),
             "qt_logo": b"""\
                 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 158 120" fill="foreground">
                     <path d="M142.6,0h-5.5H21.9v0L0,21.9V95v6v15.2h15.2h5.5h115.2v0l21.9-21.9V21.1v-6V0H142.6z
