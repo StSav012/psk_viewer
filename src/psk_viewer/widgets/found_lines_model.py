@@ -95,7 +95,7 @@ class _FoundLinesModel(DataModel):
                 ),
             ]
         )
-        if self.data_column_count >= 3:
+        if self.columnCount() >= 3:
             for row, column in self._data:
                 if column == 2:
                     del self._data[row, column][Qt.ItemDataRole.DisplayRole]
@@ -125,7 +125,7 @@ class _FoundLinesModel(DataModel):
                 ),
             ]
         )
-        if self.data_column_count >= 3:
+        if self.columnCount() >= 3:
             for row, column in self._data:
                 if column == 2:
                     del self._data[row, column][Qt.ItemDataRole.DisplayRole]
@@ -301,6 +301,7 @@ class _FoundLinesModel(DataModel):
                     (
                         plot_data.frequency_data[frequency_indices],
                         plot_data.voltage_data[frequency_indices],
+                        np.ones_like(frequency_indices) * np.nan,
                     )
                 )
             )
