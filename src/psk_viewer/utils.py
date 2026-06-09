@@ -251,12 +251,14 @@ def superscript_tag(html_code: str) -> str:
 
 
 tag_pattern: re.Pattern[str] = re.compile(
-    r"<\s*(?P<tag_name>\w+)(?:\s+[^>]*)?>(?P<content>.*?)</\s*(?P=tag_name)>"
+    r"<\s*(?P<tag_name>\w+)(?:\s+[^>]*)?>(?P<content>.*?)(?:</\s*(?P=tag_name)\s*>|$)"
 )
 
 tag_repl: dict[str, str] = {
     "html": r"rtf1\ansi{\fonttbl\f0\fnil}",
-    "sup": "superscript",
+    "sup": "super",
+    "u": "ul",
+    "s": "strike",
 }
 char_repl: dict[str, str] = {"–": "-"}
 
@@ -304,8 +306,10 @@ def html_tag_to_rtf_tag(m: re.Match[str]) -> str:
     content: str = m.group("content")
     if tag_name == "table":
         return rtf_table(content)
+    if tag_name == "font":  # do nothing
+        return content
     tag_name = tag_repl.get(tag_name, tag_name)
-    return "{\\" + tag_name + " " + content + "}"
+    return "{\\" + tag_name + "\n" + content + "}"
 
 
 def html_to_rtf(htm: str) -> str:
