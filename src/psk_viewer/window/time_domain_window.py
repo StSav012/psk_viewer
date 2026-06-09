@@ -964,7 +964,7 @@ class TimeDomainWindow(TimeDomainGUI):
                 data = np.column_stack((x, y * 1e3))
                 # noinspection PyTypeChecker
                 np.savetxt(
-                    filename,
+                    fn,
                     data,
                     delimiter=sep,
                     header=(
