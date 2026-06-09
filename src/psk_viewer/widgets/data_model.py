@@ -154,9 +154,12 @@ class DataModel(QAbstractTableModel):
         index: QModelIndex | QPersistentModelIndex,
         role: Qt.ItemDataRole | int = Qt.ItemDataRole.DisplayRole,
     ) -> object | None:
-        if index.isValid():
-            row_index: int = index.row()
-            column_index: int = index.column()
+        row_index: int = index.row()
+        column_index: int = index.column()
+        if (
+            0 <= row_index < self.rowCount(available_count=True)
+            and 0 <= column_index < self.columnCount()
+        ):
             key: tuple[int, int] = row_index, column_index
             with suppress(LookupError):
                 return self._data[key][role]
