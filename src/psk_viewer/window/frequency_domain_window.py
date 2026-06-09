@@ -1692,107 +1692,55 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             data: NDArray[np.float64]
             sep: str = self.settings.csv_separator
             if self.switch_data_action.isChecked():
-                if self._data_mode == DataMode.TIME_DOMAIN:
-                    data = np.column_stack((x, y))
-                    # noinspection PyTypeChecker
-                    np.savetxt(
-                        fn,
-                        data,
-                        delimiter=sep,
-                        header=(
-                            sep.join(
-                                (
-                                    _translate("plot axes labels", "Time"),
-                                    _translate("plot axes labels", "Absorption"),
-                                )
+                data = np.column_stack((x * 1e-6, y))
+                # noinspection PyTypeChecker
+                np.savetxt(
+                    fn,
+                    data,
+                    delimiter=sep,
+                    header=(
+                        sep.join(
+                            (
+                                _translate("plot axes labels", "Frequency"),
+                                _translate("plot axes labels", "Absorption"),
                             )
-                            + "\n"
-                            + sep.join(
-                                (
-                                    _translate("unit", "s"),
-                                    _translate("unit", "cm⁻¹"),
-                                )
+                        )
+                        + "\n"
+                        + sep.join(
+                            (
+                                _translate("unit", "MHz"),
+                                _translate("unit", "cm⁻¹"),
                             )
-                        ),
-                        fmt=("%.8e", "%.6e"),
-                        encoding="utf-8",
-                    )
-                else:
-                    data = np.column_stack((x * 1e-6, y))
-                    # noinspection PyTypeChecker
-                    np.savetxt(
-                        fn,
-                        data,
-                        delimiter=sep,
-                        header=(
-                            sep.join(
-                                (
-                                    _translate("plot axes labels", "Frequency"),
-                                    _translate("plot axes labels", "Absorption"),
-                                )
-                            )
-                            + "\n"
-                            + sep.join(
-                                (
-                                    _translate("unit", "MHz"),
-                                    _translate("unit", "cm⁻¹"),
-                                )
-                            )
-                        ),
-                        fmt=("%.3f", "%.6e"),
-                        encoding="utf-8",
-                    )
+                        )
+                    ),
+                    fmt=("%.3f", "%.6e"),
+                    encoding="utf-8",
+                )
             else:
-                if self._data_mode == DataMode.TIME_DOMAIN:
-                    data = np.column_stack((x, y * 1e3))
-                    # noinspection PyTypeChecker
-                    np.savetxt(
-                        filename,
-                        data,
-                        delimiter=sep,
-                        header=(
-                            sep.join(
-                                (
-                                    _translate("plot axes labels", "Time"),
-                                    _translate("plot axes labels", "Voltage"),
-                                )
+                data = np.column_stack((x * 1e-6, y * 1e3))
+                # noinspection PyTypeChecker
+                np.savetxt(
+                    fn,
+                    data,
+                    delimiter=sep,
+                    header=(
+                        sep.join(
+                            (
+                                _translate("plot axes labels", "Frequency"),
+                                _translate("plot axes labels", "Voltage"),
                             )
-                            + "\n"
-                            + sep.join(
-                                (
-                                    _translate("unit", "s"),
-                                    _translate("unit", "mV"),
-                                )
+                        )
+                        + "\n"
+                        + sep.join(
+                            (
+                                _translate("unit", "MHz"),
+                                _translate("unit", "mV"),
                             )
-                        ),
-                        fmt=("%.8e", "%.6f"),
-                        encoding="utf-8",
-                    )
-                else:
-                    data = np.column_stack((x * 1e-6, y * 1e3))
-                    # noinspection PyTypeChecker
-                    np.savetxt(
-                        filename,
-                        data,
-                        delimiter=sep,
-                        header=(
-                            sep.join(
-                                (
-                                    _translate("plot axes labels", "Frequency"),
-                                    _translate("plot axes labels", "Voltage"),
-                                )
-                            )
-                            + "\n"
-                            + sep.join(
-                                (
-                                    _translate("unit", "MHz"),
-                                    _translate("unit", "mV"),
-                                )
-                            )
-                        ),
-                        fmt=("%.3f", "%.6f"),
-                        encoding="utf-8",
-                    )
+                        )
+                    ),
+                    fmt=("%.3f", "%.6f"),
+                    encoding="utf-8",
+                )
 
         def save_xlsx(fn: Path) -> None:
             data: NDArray[np.float64]
