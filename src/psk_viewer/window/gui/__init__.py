@@ -1,5 +1,7 @@
 import re
 import sys
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from threading import Lock
 from typing import Any, Literal, TypeVar, cast
@@ -16,7 +18,7 @@ from qtpy.QtCore import (
     QTranslator,
     Qt,
 )
-from qtpy.QtGui import QAction
+from qtpy.QtGui import QAction, QCursor
 from qtpy.QtWidgets import (
     QApplication,
     QGridLayout,
@@ -231,6 +233,18 @@ class GUI(QMainWindow):
                 ):
                     QApplication.installTranslator(translator)
         self._setup_translation()
+
+    @contextmanager
+    def show_loading(self) -> Iterator[None]:
+        last_cursor: QCursor = self.cursor()
+        try:
+            self.setDisabled(True)
+            self.setCursor(Qt.CursorShape.WaitCursor)
+            self.repaint()
+            yield None
+        finally:
+            self.setCursor(last_cursor)
+            self.setEnabled(True)
 
     def get_config_value(
         self,

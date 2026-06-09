@@ -1036,7 +1036,8 @@ class TimeDomainWindow(TimeDomainGUI):
 
         filename_ext: str = filename.suffix.casefold()
         if filename_ext in supported_formats_callbacks:
-            supported_formats_callbacks[filename_ext](filename)
+            with self.show_loading():
+                supported_formats_callbacks[filename_ext](filename)
 
     @Slot()
     def on_copy_figure_triggered(self) -> None:

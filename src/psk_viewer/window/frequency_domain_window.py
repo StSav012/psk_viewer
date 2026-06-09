@@ -28,7 +28,6 @@ from qtpy.QtGui import (
     QBrush,
     QCloseEvent,
     QColor,
-    QCursor,
     QFont,
     QGuiApplication,
     QPalette,
@@ -458,6 +457,8 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
 
     @Slot()
     def on_button_find_lines_clicked(self) -> None:
+        with self.show_loading():
+            count: int = self.find_lines(self.spin_threshold.value())
         self.status_bar.showMessage(
             self.box_find_lines.tr("Found {} lines").format(count)
         )
@@ -845,60 +846,62 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             return
         if not catalog_file_names:
             return
-        self.setDisabled(True)
-        last_cursor: QCursor = self.cursor()
-        self.setCursor(Qt.CursorShape.WaitCursor)
-        self.repaint()
-        label: str
-        if len(catalog_file_names) > 1:
-            label = tag(
-                "html",
-                "\n".join(
-                    (
-                        p_tag(self.tr("Loading catalogs:")),
-                        tag(
-                            "ul",
-                            "\n".join(tag("li", str(fn)) for fn in catalog_file_names),
-                        ),
-                    )
-                ),
-            )
-        else:
-            label = tag(
-                "html",
-                p_tag(
-                    self.tr("Loading a catalog from<br>{}").format(
-                        catalog_file_names[0]
-                    )
-                ),
-            )
-        try:
-            from pycatsearch.catalog import Catalog
-        except ImportError:
-            self.status_bar.showMessage(
-                self.tr("Unable to load a catalog: Python package missing.")
-            )
-        else:
-            from ..widgets.waiting_screen import WaitingScreen
-
-            ws: WaitingScreen[Catalog] = WaitingScreen(
-                parent=self,
-                label=label,
-                target=Catalog,
-                args=catalog_file_names,
-                label_alignment=Qt.AlignmentFlag.AlignLeading,
-            )
-            cat: Catalog | None = ws.exec()
-            if cat is None or cat.is_empty:
-                if ws.is_cancelled():
-                    self.status_bar.showMessage(self.tr("Loading has been cancelled."))
-                else:
-                    self.status_bar.showMessage(self.tr("Failed to load a catalog."))
+        with self.show_loading():
+            label: str
+            if len(catalog_file_names) > 1:
+                label = tag(
+                    "html",
+                    "\n".join(
+                        (
+                            p_tag(self.tr("Loading catalogs:")),
+                            tag(
+                                "ul",
+                                "\n".join(
+                                    tag("li", str(fn)) for fn in catalog_file_names
+                                ),
+                            ),
+                        )
+                    ),
+                )
             else:
-                self.status_bar.showMessage(self.tr("Catalogs loaded."))
-            self.model_found_lines.catalog = cat or self.model_found_lines.catalog
-        self.setCursor(last_cursor)
-        self.setEnabled(True)
+                label = tag(
+                    "html",
+                    p_tag(
+                        self.tr("Loading a catalog from<br>{}").format(
+                            catalog_file_names[0]
+                        )
+                    ),
+                )
+            try:
+                # noinspection PyPackageRequirements,PyUnusedImports
+                from pycatsearch.catalog import Catalog
+            except ImportError:
+                self.status_bar.showMessage(
+                    self.tr("Unable to load a catalog: Python package missing.")
+                )
+            else:
+                from ..widgets.waiting_screen import WaitingScreen
+
+                ws: WaitingScreen[Catalog] = WaitingScreen(
+                    parent=self,
+                    label=label,
+                    target=Catalog,
+                    args=catalog_file_names,
+                    label_alignment=Qt.AlignmentFlag.AlignLeading,
+                )
+                cat: Catalog | None = ws.exec()
+                if cat is None or cat.is_empty:
+                    if ws.is_cancelled():
+                        self.status_bar.showMessage(
+                            self.tr("Loading has been cancelled.")
+                        )
+                    else:
+                        self.status_bar.showMessage(
+                            self.tr("Failed to load a catalog.")
+                        )
+                else:
+                    self.status_bar.showMessage(self.tr("Catalogs loaded."))
+                self.model_found_lines.catalog = cat or self.model_found_lines.catalog
 
     @property
     def line(self) -> PlotDataItem:
@@ -1226,11 +1229,12 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
 
     @Slot()
     def on_copy_found_lines_triggered(self) -> None:
-        copy_to_clipboard(
-            self.table_found_lines.stringify_table_plain_text(),
-            self.table_found_lines.stringify_table_html(),
-            Qt.TextFormat.RichText,
-        )
+        with self.show_loading():
+            copy_to_clipboard(
+                self.table_found_lines.stringify_table_plain_text(),
+                self.table_found_lines.stringify_table_html(),
+                Qt.TextFormat.RichText,
+            )
 
     @Slot()
     def on_save_found_lines_triggered(self) -> None:
@@ -1297,7 +1301,8 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
 
         filename_ext: str = filename.suffix.casefold()
         if filename_ext in supported_formats_callbacks:
-            supported_formats_callbacks[filename_ext](filename)
+            with self.show_loading():
+                supported_formats_callbacks[filename_ext](filename)
 
     @Slot()
     def on_clear_automatically_found_lines_clicked(self) -> None:
@@ -1802,7 +1807,8 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
 
         filename_ext: str = filename.suffix.casefold()
         if filename_ext in supported_formats_callbacks:
-            supported_formats_callbacks[filename_ext](filename)
+            with self.show_loading():
+                supported_formats_callbacks[filename_ext](filename)
 
     @Slot()
     def on_copy_figure_triggered(self) -> None:
