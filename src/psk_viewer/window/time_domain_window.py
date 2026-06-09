@@ -997,7 +997,7 @@ class TimeDomainWindow(TimeDomainGUI):
                         writer,
                         index=False,
                         header=[
-                            _translate("plot axes labels", "Time"),
+                            _translate("plot axes labels", "Time (s)"),
                             _translate("plot axes labels", "Absorption (cm⁻¹)"),
                         ],
                         sheet_name=self._plot_line.name()
@@ -1010,7 +1010,7 @@ class TimeDomainWindow(TimeDomainGUI):
                         writer,
                         index=False,
                         header=[
-                            _translate("plot axes labels", "Time"),
+                            _translate("plot axes labels", "Time (s)"),
                             _translate("plot axes labels", "Voltage (mV)"),
                         ],
                         sheet_name=self._plot_line.name()
