@@ -11,7 +11,7 @@ from qtpy.QtWidgets import (
 )
 
 from ..settings import Settings
-from ..utils import HeaderWithUnit, copy_to_clipboard, remove_html, the
+from ..utils import HeaderWithUnit, copy_to_clipboard, remove_html, tag, the
 from .found_lines_model import FoundLinesModel
 from .rich_combo_box import RichComboBoxDelegate
 
@@ -167,10 +167,8 @@ class TableView(QTableView):
                 model.fetchMore(QModelIndex())
             text_matrix = [
                 [
-                    (
-                        "<td>"
-                        + model.index(row, column).data(Qt.ItemDataRole.DisplayRole)
-                        + "</td>"
+                    tag(
+                        "td", model.index(row, column).data(Qt.ItemDataRole.DisplayRole)
                     )
                     for column in range(model.columnCount())
                     if not self.isColumnHidden(column)
@@ -183,11 +181,11 @@ class TableView(QTableView):
             cols: list[int] = sorted(set(si.column() for si in self.selectedIndexes()))
             text_matrix = [["" for _ in range(len(cols))] for _ in range(len(rows))]
             for si in self.selectedIndexes():
-                text_matrix[rows.index(si.row())][cols.index(si.column())] = (
-                    "<td>" + si.data(Qt.ItemDataRole.DisplayRole) + "</td>"
+                text_matrix[rows.index(si.row())][cols.index(si.column())] = tag(
+                    "td", si.data(Qt.ItemDataRole.DisplayRole)
                 )
         text: list[str] = [
-            ("<tr>" + self.settings.csv_separator.join(row_texts) + "</tr>")
+            tag("tr", self.settings.csv_separator.join(row_texts))
             for row_texts in text_matrix
         ]
         text.insert(0, "<table>")
