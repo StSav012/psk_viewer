@@ -152,7 +152,9 @@ class TableView(QTableView):
         ]
         return self.settings.line_end.join(text)
 
-    def stringify_table_html(self, whole_table: bool = True) -> str:
+    def stringify_table_html(
+        self, whole_table: bool = True, with_headers: bool = False
+    ) -> str:
         """Convert selected cells to string for copying as rich text.
 
         :return: the rich text representation of the selected table lines
@@ -175,6 +177,22 @@ class TableView(QTableView):
                 ]
                 for row in range(model.rowCount())
             ]
+            if with_headers:
+                text_matrix.insert(
+                    0,
+                    [
+                        tag(
+                            "td",
+                            model.headerData(
+                                column,
+                                Qt.Orientation.Horizontal,
+                                Qt.ItemDataRole.DisplayRole,
+                            ),
+                        )
+                        for column in range(model.columnCount())
+                        if not self.isColumnHidden(column)
+                    ],
+                )
         else:
             si: QModelIndex
             rows: list[int] = sorted(set(si.row() for si in self.selectedIndexes()))
@@ -183,6 +201,21 @@ class TableView(QTableView):
             for si in self.selectedIndexes():
                 text_matrix[rows.index(si.row())][cols.index(si.column())] = tag(
                     "td", si.data(Qt.ItemDataRole.DisplayRole)
+                )
+            if with_headers:
+                text_matrix.insert(
+                    0,
+                    [
+                        tag(
+                            "td",
+                            model.headerData(
+                                column,
+                                Qt.Orientation.Horizontal,
+                                Qt.ItemDataRole.DisplayRole,
+                            ),
+                        )
+                        for column in cols
+                    ],
                 )
         text: list[str] = [
             tag("tr", self.settings.csv_separator.join(row_texts))
