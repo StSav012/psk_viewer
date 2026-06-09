@@ -459,7 +459,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
     @Slot()
     def on_button_find_lines_clicked(self) -> None:
         self.status_bar.showMessage(
-            f"Found {self.find_lines(self.spin_threshold.value())} lines"
+            self.box_find_lines.tr("Found {} lines").format(count)
         )
 
     @Slot(tuple)
