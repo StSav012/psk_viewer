@@ -1264,6 +1264,23 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
                 for row in data:
                     f_out.write(remove_html(sep.join(map(str, row))) + "\n")
 
+        def save_rtf(fn: Path) -> None:
+            from ..utils import html_to_rtf, tag
+
+            with (
+                open(fn, "w", encoding="utf-8") as f_out,
+            ):
+                f_out.write(
+                    html_to_rtf(
+                        tag(
+                            "html",
+                            self.table_found_lines.stringify_table_html(
+                                whole_table=True, with_headers=True
+                            ),
+                        )
+                    )
+                )
+
         def save_xlsx(fn: Path) -> None:
             with pd.ExcelWriter(fn) as writer:
                 df: pd.DataFrame = pd.DataFrame(data)
@@ -1276,6 +1293,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
 
         supported_formats_callbacks: dict[str, Callable[[Path], None]] = {
             ".csv": save_csv,
+            ".rtf": save_rtf,
         }
         if importlib.util.find_spec("openpyxl") is not None:
             supported_formats_callbacks[".xlsx"] = save_xlsx
@@ -1747,6 +1765,57 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
                     encoding="utf-8",
                 )
 
+        def save_rtf(fn: Path) -> None:
+            from ..utils import html_to_rtf, tag
+
+            table: list[list[str]] = []
+            if self.switch_data_action.isChecked():
+                table.append(
+                    list(
+                        map(
+                            str,
+                            [
+                                self.model_found_lines.header[0],
+                                self.model_found_lines.header[2],
+                            ],
+                        )
+                    )
+                )
+                for _x, _y in zip(x, y, strict=True):
+                    table.append([f"{_x:.3f}", f"{_y:.6e}"])
+            else:
+                table.append(
+                    list(
+                        map(
+                            str,
+                            [
+                                self.model_found_lines.header[0],
+                                self.model_found_lines.header[1],
+                            ],
+                        )
+                    )
+                )
+                for _x, _y in zip(x, y * 1e3, strict=True):
+                    table.append([f"{_x:.3f}", f"{_y:.6f}"])
+            with open(fn, "w", encoding="utf-8") as f_out:
+                f_out.write(
+                    html_to_rtf(
+                        tag(
+                            "html",
+                            tag(
+                                "table",
+                                "".join(
+                                    tag(
+                                        "tr",
+                                        "".join(tag("td", cell) for cell in row),
+                                    )
+                                    for row in table
+                                ),
+                            ),
+                        )
+                    )
+                )
+
         def save_xlsx(fn: Path) -> None:
             data: NDArray[np.float64]
             with pd.ExcelWriter(fn) as writer:
@@ -1790,6 +1859,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
 
         supported_formats_callbacks: dict[str, Callable[[Path], None]] = {
             ".csv": save_csv,
+            ".rtf": save_rtf,
             ".xlsx": save_xlsx,
         }
 

@@ -986,6 +986,47 @@ class TimeDomainWindow(TimeDomainGUI):
                     encoding="utf-8",
                 )
 
+        def save_rtf(fn: Path) -> None:
+            from ..utils import html_to_rtf, tag
+
+            table: list[list[str]] = []
+            if self.switch_data_action.isChecked():
+                table.append(
+                    [
+                        _translate("plot axes labels", "Time (s)"),
+                        _translate("plot axes labels", "Absorption (cm⁻¹)"),
+                    ]
+                )
+                for _x, _y in zip(x, y, strict=True):
+                    table.append([f"{_x:.8e}", f"{_y:.6e}"])
+            else:
+                table.append(
+                    [
+                        _translate("plot axes labels", "Time (s)"),
+                        _translate("plot axes labels", "Voltage (mV)"),
+                    ]
+                )
+                for _x, _y in zip(x, y * 1e3, strict=True):
+                    table.append([f"{_x:.8e}", f"{_y:.6f}"])
+            with open(fn, "w", encoding="utf-8") as f_out:
+                f_out.write(
+                    html_to_rtf(
+                        tag(
+                            "html",
+                            tag(
+                                "table",
+                                "".join(
+                                    tag(
+                                        "tr",
+                                        "".join(tag("td", cell) for cell in row),
+                                    )
+                                    for row in table
+                                ),
+                            ),
+                        )
+                    )
+                )
+
         def save_xlsx(fn: Path) -> None:
             data: NDArray[np.float64]
             with pd.ExcelWriter(fn) as writer:
@@ -1019,6 +1060,7 @@ class TimeDomainWindow(TimeDomainGUI):
 
         supported_formats_callbacks: dict[str, Callable[[Path], None]] = {
             ".csv": save_csv,
+            ".rtf": save_rtf,
             ".xlsx": save_xlsx,
         }
 

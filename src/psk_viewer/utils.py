@@ -42,6 +42,7 @@ __all__ = [
     "p_tag",
     "wrap_in_html",
     "remove_html",
+    "html_to_rtf",
     "best_name",
 ]
 

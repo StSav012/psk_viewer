@@ -121,6 +121,10 @@ class GUI(QMainWindow):
                     file_extension=".csv",
                 ),
                 SaveFileDialog.SupportedMimetypeItem(
+                    required_packages=[],
+                    file_extension=".rtf",
+                ),
+                SaveFileDialog.SupportedMimetypeItem(
                     required_packages=["openpyxl"],
                     file_extension=".xlsx",
                 ),
