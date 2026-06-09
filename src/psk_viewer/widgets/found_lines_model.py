@@ -1,4 +1,3 @@
-import os
 from collections.abc import Iterable, Sequence
 from contextlib import suppress
 from math import inf
@@ -198,7 +197,7 @@ class _FoundLinesModel(DataModel):
             substances.append((weight, key))
         if not substances:
             return None
-        substances.sort(reverse=True)
+        substances.sort(reverse=True, key=lambda s: s[0])
         best_line_entry: CatalogEntryType = substances[0][1]
         label: str = best_name(best_line_entry)
         data: dict[Qt.ItemDataRole | int, object] = {
