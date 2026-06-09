@@ -126,13 +126,15 @@ class TableView(QTableView):
 
         text_matrix: list[list[str]]
         if whole_table:
+            while model.canFetchMore(QModelIndex()):
+                model.fetchMore(QModelIndex())
             text_matrix = [
                 [
                     remove_html(model.formatted_item(row, column, force_plain=True))
                     for column in range(model.columnCount())
                     if not self.isColumnHidden(column)
                 ]
-                for row in range(model.rowCount(available_count=True))
+                for row in range(model.rowCount())
             ]
         else:
             si: QModelIndex
@@ -161,6 +163,8 @@ class TableView(QTableView):
 
         text_matrix: list[list[str]]
         if whole_table:
+            while model.canFetchMore(QModelIndex()):
+                model.fetchMore(QModelIndex())
             text_matrix = [
                 [
                     (
@@ -171,7 +175,7 @@ class TableView(QTableView):
                     for column in range(model.columnCount())
                     if not self.isColumnHidden(column)
                 ]
-                for row in range(model.rowCount(available_count=True))
+                for row in range(model.rowCount())
             ]
         else:
             si: QModelIndex
