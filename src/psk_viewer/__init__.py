@@ -275,6 +275,7 @@ def main() -> int:
             window: TimeDomainWindow | FrequencyDomainWindow | None = Window(a)
             if window is None:
                 continue
-
+            if isinstance(window, FrequencyDomainWindow):
+                window.load_catalog()
             window.show()
         return app.exec()
