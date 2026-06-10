@@ -1,7 +1,7 @@
 from functools import partial
 from logging import Logger, getLogger
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Protocol, TypeGuard, cast
 
 import pyqtgraph as pg  # type: ignore
 from qtawesome import icon
@@ -30,17 +30,24 @@ from .open_file_path_entry import OpenFilePathEntry, OpenFilePathsEntry
 __all__ = ["Preferences"]
 
 
-class BaseLogger:
-    from typing import ClassVar
-
-    logger: ClassVar[Logger]
-
-    def __new__(cls, *args: object, **kwargs: object) -> "BaseLogger":
-        cls.logger = getLogger(cls.__name__)
-        return super().__new__(cls)
+class HasLogger(Protocol):
+    logger: Logger
+    __call__ = ...
 
 
-class PreferencePage(BaseLogger, QScrollArea):
+def has_logger(cls: type) -> TypeGuard[HasLogger]:
+    return hasattr(cls, "logger")
+
+
+def with_logger(cls: type) -> HasLogger:
+    cls.logger = getLogger(cls.__name__)
+    if has_logger(cls):
+        return cls
+    raise RuntimeError
+
+
+@with_logger
+class PreferencePage(QScrollArea):
     """A page of the Preferences dialog."""
 
     def __init__(
@@ -57,7 +64,7 @@ class PreferencePage(BaseLogger, QScrollArea):
         settings: Settings,
         parent: QWidget | None = None,
     ) -> None:
-        QScrollArea.__init__(self, parent)
+        super().__init__(parent)
 
         widget: QWidget = QWidget(self)
         self.setWidget(widget)
@@ -207,11 +214,12 @@ class PreferencePage(BaseLogger, QScrollArea):
         return self._changed_settings.copy()
 
 
-class PreferencesBody(BaseLogger, QSplitter):
+@with_logger
+class PreferencesBody(QSplitter):
     """The main area of the GUI preferences dialog."""
 
     def __init__(self, settings: Settings, parent: QWidget | None = None) -> None:
-        QSplitter.__init__(self, parent)
+        super().__init__(parent)
         self.setObjectName("preferencesBody")
 
         self.setOrientation(Qt.Orientation.Horizontal)
