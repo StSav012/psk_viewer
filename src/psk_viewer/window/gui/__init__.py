@@ -184,8 +184,8 @@ class GUI(QMainWindow):
         self.status_bar.addWidget(self._cursor_y)
 
         self.figure.addItem(self._cursor_balloon)
-        self.figure.plotItem.addItem(self._crosshair_v_line, ignoreBounds=True)
-        self.figure.plotItem.addItem(self._crosshair_h_line, ignoreBounds=True)
+        self._canvas.addItem(self._crosshair_v_line, ignoreBounds=True)
+        self._canvas.addItem(self._crosshair_h_line, ignoreBounds=True)
 
     def _setup_translation(self) -> None:
         fn.SI_PREFIXES = _translate(
@@ -214,7 +214,7 @@ class GUI(QMainWindow):
         else:
             self.setWindowTitle(self.tr("Spectrometer Data Viewer"))
 
-        if (vb := self._canvas.vb) is not None and (menu := vb.menu) is not None:
+        if (menu := self._canvas.getViewBox().getMenu(self._canvas)) is not None:
             menu.setTitle(_translate("menu", "Plot Options"))
 
     def _install_translation(self) -> None:
