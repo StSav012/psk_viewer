@@ -19,7 +19,9 @@ def _spinner(parent: QWidget | None = None) -> QWidget | None:
         size: int = spinner.fontMetrics().height() * 2
         spinner.setIconSize(QSize(size, size))
         # might raise an `Exception` if the icon is not in the font
-        spinner.setIcon(qta.icon("mdi6.loading", animation=qta.Spin(spinner, interval=16, step=4)))
+        spinner.setIcon(
+            qta.icon("mdi6.loading", animation=qta.Spin(spinner, interval=16, step=4))
+        )
         spinner.setAlignment(Qt.AlignmentFlag.AlignCenter)
         return spinner
 
@@ -71,7 +73,9 @@ class WaitingScreen(QWidget, Generic[_T]):
         label_alignment: Qt.AlignmentFlag = Qt.AlignmentFlag.AlignCenter,
         cancellable: bool = True,
     ) -> None:
-        super().__init__(parent, Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint)
+        super().__init__(
+            parent, Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint
+        )
 
         self.setWindowModality(Qt.WindowModality.WindowModal)
 
@@ -108,11 +112,17 @@ class WaitingScreen(QWidget, Generic[_T]):
 
     def exec(self) -> _T | None:
         self._is_cancelled = False
-        self._thread = _Thread(target=self._target, args=self._args, kwargs=self._kwargs)
+        self._thread = _Thread(
+            target=self._target,
+            args=self._args,
+            kwargs=self._kwargs,
+        )
         self.show()
         self._thread.start()
         while self.active:
-            QCoreApplication.processEvents(QEventLoop.ProcessEventsFlag.WaitForMoreEvents)
+            QCoreApplication.processEvents(
+                QEventLoop.ProcessEventsFlag.WaitForMoreEvents
+            )
             QCoreApplication.sendPostedEvents()
         if self._thread is not None:
             self._thread.join()
@@ -141,6 +151,11 @@ if __name__ == "__main__":
     app: QApplication = QApplication(sys.argv)
     w: QWidget = QWidget()
     w.show()
-    ws: WaitingScreen[None] = WaitingScreen(parent=w, label="label", target=sleep, args=(5,))
+    ws: WaitingScreen[None] = WaitingScreen(
+        parent=w,
+        label="label",
+        target=sleep,
+        args=(5,),
+    )
     QTimer().singleShot(100, lambda: print(f"{ws.exec() = }"))
     app.exec()
