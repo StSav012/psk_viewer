@@ -1,11 +1,10 @@
 import importlib.util
 import mimetypes
 from collections.abc import Callable, Collection, Iterable, Sequence
-from contextlib import suppress
 from numbers import Number
 from pathlib import Path
 from threading import Lock
-from typing import TYPE_CHECKING, Any, Final, cast
+from typing import Any, Final, cast
 
 import numpy as np
 import pandas as pd
@@ -27,10 +26,8 @@ from qtpy.QtGui import (
     QAction,
     QBrush,
     QCloseEvent,
-    QColor,
     QFont,
     QGuiApplication,
-    QPalette,
     QPen,
     QScreen,
     QShowEvent,
@@ -114,16 +111,11 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         )
 
         self.setup_ui()
-        self.setup_colors()
+        self._setup_colors()
 
         self.load_config()
 
         self.setup_ui_actions()
-        with suppress(AttributeError):
-            # `colorSchemeChanged` exists starting from Qt6
-            QGuiApplication.styleHints().colorSchemeChanged.connect(
-                self.on_color_scheme_changed
-            )
 
         if file_path is not None and file_path.exists():
             loaded: bool = self.load_data(file_path)
@@ -161,33 +153,6 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         self.figure.sceneObj.contextMenu = None
 
         self._install_translation()
-
-    @Slot(Qt.ColorScheme)
-    def on_color_scheme_changed(self, _: Qt.ColorScheme) -> None:
-        self.setup_colors()
-
-    def setup_colors(self) -> None:
-        if TYPE_CHECKING:
-            from typing import TypedDict
-
-            class AxisDict(TypedDict):
-                item: pg.AxisItem
-                pos: tuple[int, int]
-
-        palette: QPalette = self.palette()
-        base_color: QColor = palette.base().color()
-        text_color: QColor = palette.text().color()
-        self.figure.setBackground(pg.mkBrush(base_color))
-        ax_d: AxisDict
-        for ax_d in self._canvas.axes.values():
-            ax: pg.AxisItem = ax_d["item"]
-            pen: QPen = QPen()
-            pen.setColor(text_color)
-            pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-            pen.setWidthF(self.settings.axis_thickness)
-            ax.setPen(pen)
-            ax.setTextPen(text_color)
-        self._cursor_balloon.setColor(text_color)
 
     def closeEvent(self, event: QCloseEvent) -> None:
         close_code: int

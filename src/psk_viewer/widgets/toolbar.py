@@ -1,6 +1,6 @@
 from collections.abc import Callable
 
-from qtpy.QtCore import Qt
+from qtpy.QtCore import QEvent, Qt
 from qtpy.QtGui import QColor, QKeySequence, QPalette
 from qtpy.QtWidgets import QAction, QApplication, QMenu, QToolBar, QWidget
 
@@ -10,6 +10,17 @@ __all__ = ["TimeDomainToolbar", "FrequencyDomainToolbar"]
 
 
 class ToolBar(QToolBar):
+    def event(self, event: QEvent) -> bool:
+        if event.type() == QEvent.Type.PaletteChange:
+            from qtawesome import reset_cache
+
+            reset_cache()
+            for a in self.actions():
+                icon_name: str = getattr(a, "icon_name", "")
+                if icon_name and not (i := load_icon(self, icon_name)).isNull():
+                    a.setIcon(i)
+        return super().event(event)
+
     def _add_action(
         self,
         icon_name: str,
@@ -26,6 +37,7 @@ class ToolBar(QToolBar):
             a = self.addAction(load_icon(self, icon_name), title)
         else:
             a = self.addAction(load_icon(self, icon_name), title, receiver)
+        a.icon_name = icon_name
         if shortcut is not None:
             a.setShortcut(shortcut)
         if tooltip:
@@ -66,6 +78,7 @@ class ToolBar(QToolBar):
             a = self.addAction(load_icon(self, icon_name), title)
         else:
             a = self.addAction(load_icon(self, icon_name), title, receiver)
+        a.icon_name = icon_name
         if shortcut is not None:
             a.setShortcut(shortcut)
         if tooltip:

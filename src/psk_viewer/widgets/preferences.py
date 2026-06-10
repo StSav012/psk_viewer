@@ -5,7 +5,7 @@ from typing import Any, Protocol, TypeGuard, cast
 
 import pyqtgraph as pg  # type: ignore
 from qtawesome import icon
-from qtpy.QtCore import Qt
+from qtpy.QtCore import QEvent, Qt
 from qtpy.QtGui import QColor, QFont
 from qtpy.QtWidgets import (
     QCheckBox,
@@ -23,6 +23,7 @@ from qtpy.QtWidgets import (
 )
 
 from ..settings import Settings
+from ..utils import the
 from .colorselector import ColorSelector
 from .font_selector import FontSelector
 from .open_file_path_entry import OpenFilePathEntry, OpenFilePathsEntry
@@ -224,7 +225,9 @@ class PreferencesBody(QSplitter):
 
         self.setOrientation(Qt.Orientation.Horizontal)
         self.setChildrenCollapsible(False)
-        content: QListWidget = QListWidget(self)
+        self._content: QListWidget
+        content: QListWidget
+        content = self._content = QListWidget(self)
         self._stack: QStackedWidget = QStackedWidget(self)
         key: (
             str
@@ -253,8 +256,10 @@ class PreferencesBody(QSplitter):
                     new_item = QListWidgetItem(key[0])
                 elif len(key) == 2:
                     new_item = QListWidgetItem(icon(*key[1]), key[0])
+                    new_item.setData(Qt.ItemDataRole.UserRole, (key[1], ()))
                 elif len(key) == 3:
                     new_item = QListWidgetItem(icon(*key[1], **dict(key[2])), key[0])
+                    new_item.setData(Qt.ItemDataRole.UserRole, (key[1], key[2]))
                 else:
                     PreferencesBody.logger.error(f"Invalid key: {key!r}")
                     continue
@@ -272,6 +277,18 @@ class PreferencesBody(QSplitter):
             content.setCurrentRow(0)  # select the first page
 
         content.currentRowChanged.connect(self._stack.setCurrentIndex)
+
+    def event(self, event: QEvent) -> bool:
+        if event.type() == QEvent.Type.PaletteChange:
+            from qtawesome import reset_cache
+
+            reset_cache()
+            for row in range(self._content.count()):
+                with the(self._content.item(row)) as item:
+                    if (data := item.data(Qt.ItemDataRole.UserRole)) is not None:
+                        args, kwargs = data
+                        item.setIcon(icon(*args, **dict(kwargs)))
+        return super().event(event)
 
     @property
     def changed_settings(self) -> dict[str, Any]:

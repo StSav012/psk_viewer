@@ -1,10 +1,10 @@
 import re
 import sys
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from pathlib import Path
 from threading import Lock
-from typing import Any, Literal, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast
 
 import numpy as np
 import pyqtgraph as pg  # type: ignore
@@ -12,13 +12,15 @@ from pyqtgraph import functions as fn
 from pyqtgraph.exporters import ImageExporter
 from qtpy.QtCore import (
     QCoreApplication,
+    QEvent,
     QLibraryInfo,
     QLocale,
     QObject,
     QTranslator,
     Qt,
+    Slot,
 )
-from qtpy.QtGui import QAction, QCursor
+from qtpy.QtGui import QAction, QColor, QCursor, QGuiApplication, QPalette, QPen
 from qtpy.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -138,6 +140,39 @@ class GUI(QMainWindow):
             ],
             parent=self,
         )
+        with suppress(AttributeError):
+            # `colorSchemeChanged` exists starting from Qt6
+            QGuiApplication.styleHints().colorSchemeChanged.connect(
+                self.on_color_scheme_changed
+            )
+
+    def event(self, event: QEvent) -> bool:
+        if event.type() == QEvent.Type.PaletteChange:
+            self._setup_colors()
+        return super().event(event)
+
+    def _setup_colors(self) -> None:
+        if TYPE_CHECKING:
+            from typing import TypedDict
+
+            class AxisDict(TypedDict):
+                item: pg.AxisItem
+                pos: tuple[int, int]
+
+        palette: QPalette = self.palette()
+        base_color: QColor = palette.base().color()
+        text_color: QColor = palette.text().color()
+        self.figure.setBackground(pg.mkBrush(base_color))
+        ax_d: AxisDict
+        for ax_d in self._canvas.axes.values():
+            ax: pg.AxisItem = ax_d["item"]
+            pen: QPen = QPen()
+            pen.setColor(text_color)
+            pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+            pen.setWidthF(self.settings.axis_thickness)
+            ax.setPen(pen)
+            ax.setTextPen(text_color)
+        self._cursor_balloon.setColor(text_color)
 
     def _setup_appearance(self) -> None:
         self.setWindowIcon(load_icon(self, "main"))
@@ -280,3 +315,7 @@ class GUI(QMainWindow):
                 value = str(value)
             # print(section, key, value, type(value))
             self.settings.setValue(key, value)
+
+    @Slot(Qt.ColorScheme)
+    def on_color_scheme_changed(self, _: Qt.ColorScheme) -> None:
+        self._setup_colors()
