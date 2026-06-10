@@ -31,7 +31,7 @@ class TimeDomainGUI(GUI):
         super().__init__(parent, flags)
 
         # Frequency box
-        self.box_time: QDockWidget = QDockWidget(self.central_widget)
+        self.box_time: QDockWidget = QDockWidget(self)
         self.box_time.setObjectName("box_time")
         self.group_time: QWidget = QWidget(self.box_time)
         self.v_layout_time: QVBoxLayout = QVBoxLayout(self.group_time)
@@ -53,7 +53,7 @@ class TimeDomainGUI(GUI):
         self.button_zoom_x_in_coarse: QPushButton = QPushButton(self.group_time)
 
         # Voltage box
-        self.box_voltage: QDockWidget = QDockWidget(self.central_widget)
+        self.box_voltage: QDockWidget = QDockWidget(self)
         self.box_voltage.setObjectName("box_voltage")
         self.group_voltage: QWidget = QWidget(self.box_voltage)
         self.v_layout_voltage: QVBoxLayout = QVBoxLayout(self.group_voltage)

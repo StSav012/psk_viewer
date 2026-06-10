@@ -34,7 +34,7 @@ class FrequencyDomainGUI(GUI):
         super().__init__(parent, flags)
 
         # Frequency box
-        self.box_frequency: QDockWidget = QDockWidget(self.central_widget)
+        self.box_frequency: QDockWidget = QDockWidget(self)
         self.box_frequency.setObjectName("box_frequency")
         self.group_frequency: QWidget = QWidget(self.box_frequency)
         self.v_layout_frequency: QVBoxLayout = QVBoxLayout(self.group_frequency)
@@ -62,7 +62,7 @@ class FrequencyDomainGUI(GUI):
         self.button_move_x_right_coarse: QPushButton = QPushButton(self.group_frequency)
 
         # Voltage box
-        self.box_voltage: QDockWidget = QDockWidget(self.central_widget)
+        self.box_voltage: QDockWidget = QDockWidget(self)
         self.box_voltage.setObjectName("box_voltage")
         self.group_voltage: QWidget = QWidget(self.box_voltage)
         self.v_layout_voltage: QVBoxLayout = QVBoxLayout(self.group_voltage)
@@ -83,7 +83,7 @@ class FrequencyDomainGUI(GUI):
         self.button_zoom_y_in_coarse: QPushButton = QPushButton(self.group_voltage)
 
         # Find Lines box
-        self.box_find_lines: QDockWidget = QDockWidget(self.central_widget)
+        self.box_find_lines: QDockWidget = QDockWidget(self)
         self.box_find_lines.setObjectName("box_find_lines")
         self.group_find_lines: QWidget = QWidget(self.box_find_lines)
         self.v_layout_find_lines: QVBoxLayout = QVBoxLayout(self.group_find_lines)
@@ -100,7 +100,7 @@ class FrequencyDomainGUI(GUI):
         self.button_next_found_line: QPushButton = QPushButton(self.group_find_lines)
 
         # Found Lines table
-        self.box_found_lines: QDockWidget = QDockWidget(self.central_widget)
+        self.box_found_lines: QDockWidget = QDockWidget(self)
         self.box_found_lines.setObjectName("box_found_lines")
         self.group_found_lines: QWidget = QWidget(self.box_found_lines)
         self.v_layout_found_lines: QVBoxLayout = QVBoxLayout(self.group_found_lines)

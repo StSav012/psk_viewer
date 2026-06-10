@@ -21,7 +21,6 @@ from qtpy.QtCore import (
 from qtpy.QtGui import QAction, QCursor
 from qtpy.QtWidgets import (
     QApplication,
-    QGridLayout,
     QMainWindow,
     QStatusBar,
     QWidget,
@@ -53,13 +52,10 @@ class GUI(QMainWindow):
         # prevent config from being re-written while loading
         self._loading: Lock = Lock()
 
-        self.central_widget: QWidget = QWidget(self)
-        self.grid_layout: QGridLayout = QGridLayout(self.central_widget)
-
         self.status_bar: QStatusBar = QStatusBar()
 
         # plot
-        self.figure: pg.PlotWidget = pg.PlotWidget(self.central_widget)
+        self.figure: pg.PlotWidget = pg.PlotWidget(self)
         self._canvas: pg.PlotItem = self.figure.getPlotItem()
         self._cursor_x: ValueLabel = ValueLabel(
             self.status_bar, siPrefix=True, decimals=6
@@ -145,14 +141,13 @@ class GUI(QMainWindow):
 
     def _setup_appearance(self) -> None:
         self.setWindowIcon(load_icon(self, "main"))
-        self.setCentralWidget(self.central_widget)
+        self.setCentralWidget(self.figure)
 
         self.setStatusBar(self.status_bar)
 
         self.status_bar.addWidget(self._cursor_x)
         self.status_bar.addWidget(self._cursor_y)
 
-        self.grid_layout.addWidget(self.figure)
         self.figure.addItem(self._cursor_balloon)
         self.figure.plotItem.addItem(self._crosshair_v_line, ignoreBounds=True)
         self.figure.plotItem.addItem(self._crosshair_h_line, ignoreBounds=True)
