@@ -88,7 +88,8 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         except (OSError, BlockingIOError):
             self.model_signal = np.empty(0)
             self.box_find_lines.hide()
-        self.box_find_lines.setDisabled(True)
+            self.box_find_lines.toggleViewAction().setDisabled(True)
+        self.button_find_lines.setDisabled(True)
         self.user_found_lines: pg.PlotDataItem = self._canvas.scatterPlot(
             np.empty(0), symbol="o", pxMode=True
         )
@@ -1351,7 +1352,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         self.toolbar.copy_trace_action.setEnabled(False)
         self.toolbar.save_trace_action.setEnabled(False)
         self.toolbar.clear_trace_action.setEnabled(False)
-        self.box_find_lines.setEnabled(False)
+        self.button_find_lines.setEnabled(False)
         self._cursor_balloon.setVisible(False)
         self._crosshair_h_line.setVisible(False)
         self._crosshair_v_line.setVisible(False)
@@ -1410,8 +1411,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         self.toolbar.save_figure_action.setEnabled(True)
         self.toolbar.trace_action.setEnabled(True)
         self.toolbar.load_trace_action.setEnabled(True)
-        self.box_find_lines.setEnabled(bool(self.model_signal.size))
-        self.box_found_lines.setEnabled(True)
+        self.button_find_lines.setEnabled(bool(self.model_signal.size))
 
     def load_data(self, filename: Path | None = None) -> bool:
         self.clear_ghost()
