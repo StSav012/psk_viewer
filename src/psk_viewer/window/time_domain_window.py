@@ -475,6 +475,7 @@ class TimeDomainWindow(TimeDomainGUI):
         if preferences_dialog.exec() == Preferences.DialogCode.Rejected:
             return
         self._install_translation()
+        self._setup_colors()
         self.set_plot_line_appearance()
         self.set_axis_line_appearance()
         self.set_crosshair_lines_appearance()

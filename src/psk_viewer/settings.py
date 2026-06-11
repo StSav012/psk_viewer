@@ -168,6 +168,17 @@ class Settings(QSettings):
                 self.tr("Number font:"): Settings.CallbackOnly(
                     Settings.axis_tick_font.fget.__name__
                 ),
+                self.tr("Use custom colors"): Settings.CallbackOnly(
+                    Settings.axis_custom_colors.fget.__name__,
+                    {
+                        self.tr("Custom background color:"): Settings.CallbackOnly(
+                            Settings.axis_base_color.fget.__name__
+                        ),
+                        self.tr("Custom text color:"): Settings.CallbackOnly(
+                            Settings.axis_text_color.fget.__name__
+                        ),
+                    },
+                ),
             },
             # NB: there should be the same icon as in the toolbar
             (self.tr("Marks"), ("mdi6.format-color-highlight",)): {
@@ -380,6 +391,36 @@ class Settings(QSettings):
     def axis_tick_font(self, new_value: QFont) -> None:
         with self.section("axis"):
             self.setValue("tickFont", new_value)
+
+    @property
+    def axis_custom_colors(self) -> bool:
+        with self.section("axis"):
+            return cast(bool, self.value("customColors", False, bool))
+
+    @axis_custom_colors.setter
+    def axis_custom_colors(self, new_value: bool) -> None:
+        with self.section("axis"):
+            self.setValue("customColors", new_value)
+
+    @property
+    def axis_base_color(self) -> QColor:
+        with self.section("axis"):
+            return cast(QColor, self.value("baseColor", QColor("white")))
+
+    @axis_base_color.setter
+    def axis_base_color(self, new_value: QColor) -> None:
+        with self.section("axis"):
+            self.setValue("baseColor", new_value)
+
+    @property
+    def axis_text_color(self) -> QColor:
+        with self.section("axis"):
+            return cast(QColor, self.value("textColor", QColor("black")))
+
+    @axis_text_color.setter
+    def axis_text_color(self, new_value: QColor) -> None:
+        with self.section("axis"):
+            self.setValue("textColor", new_value)
 
     @property
     def copy_frequency(self) -> bool:

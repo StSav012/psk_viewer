@@ -160,8 +160,16 @@ class GUI(QMainWindow):
                 pos: tuple[int, int]
 
         palette: QPalette = self.palette()
-        base_color: QColor = palette.base().color()
-        text_color: QColor = palette.text().color()
+        base_color: QColor = (
+            self.settings.axis_base_color
+            if self.settings.axis_custom_colors
+            else palette.base().color()
+        )
+        text_color: QColor = (
+            self.settings.axis_text_color
+            if self.settings.axis_custom_colors
+            else palette.text().color()
+        )
         self.figure.setBackground(pg.mkBrush(base_color))
         ax_d: AxisDict
         for ax_d in self._canvas.axes.values():
