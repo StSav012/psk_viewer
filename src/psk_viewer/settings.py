@@ -21,6 +21,7 @@ class Settings(QSettings):
 
     class CallbackOnly(NamedTuple):
         callback: str
+        children: dict[str, NamedTuple] = {}
 
     class PathCallbackOnly(NamedTuple):
         callback: str

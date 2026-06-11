@@ -13,6 +13,7 @@ from qtpy.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QFormLayout,
+    QGroupBox,
     QListWidget,
     QListWidgetItem,
     QScrollArea,
@@ -53,17 +54,17 @@ class PreferencePage(QScrollArea):
 
     def __init__(
         self,
-        value: dict[
-            str,
+        *,
+        settings: Settings,
+        parent: QWidget | None = None,
+        **value: (
             Settings.CallbackOnly
             | Settings.PathCallbackOnly
             | Settings.PathsCallbackOnly
             | Settings.SpinboxAndCallback
             | Settings.ComboboxAndCallback
-            | Settings.EditableComboboxAndCallback,
-        ],
-        settings: Settings,
-        parent: QWidget | None = None,
+            | Settings.EditableComboboxAndCallback
+        ),
     ) -> None:
         super().__init__(parent)
 
@@ -85,130 +86,167 @@ class PreferencePage(QScrollArea):
         ) -> None:
             self._changed_settings[callback] = sender.currentData()
 
-        if not (isinstance(value, dict) and value):
-            raise TypeError(f"Invalid type: {type(value)}")
-        layout: QFormLayout = QFormLayout(widget)
-        key2: str
-        value2: (
-            Settings.CallbackOnly
-            | Settings.PathCallbackOnly
-            | Settings.SpinboxAndCallback
-            | Settings.ComboboxAndCallback
-            | Settings.EditableComboboxAndCallback
-        )
+        def fill_widget(
+            w: QWidget,
+            **items: (
+                Settings.CallbackOnly
+                | Settings.PathCallbackOnly
+                | Settings.SpinboxAndCallback
+                | Settings.ComboboxAndCallback
+                | Settings.EditableComboboxAndCallback
+            ),
+        ) -> None:
+            layout: QFormLayout = QFormLayout()
+            w.setLayout(layout)
+            label: str
+            item: (
+                Settings.CallbackOnly
+                | Settings.PathCallbackOnly
+                | Settings.SpinboxAndCallback
+                | Settings.ComboboxAndCallback
+                | Settings.EditableComboboxAndCallback
+            )
 
-        check_box: QCheckBox
-        path_entry: OpenFilePathEntry
-        paths_entry: OpenFilePathsEntry
-        spin_box: pg.SpinBox
-        combo_box: QComboBox
-        color_selector: ColorSelector
-        font_selector: FontSelector
+            check_box: QCheckBox
+            path_entry: OpenFilePathEntry
+            paths_entry: OpenFilePathsEntry
+            spin_box: pg.SpinBox
+            combo_box: QComboBox
+            color_selector: ColorSelector
+            font_selector: FontSelector
+            group_box: QGroupBox
 
-        for key2, value2 in value.items():
-            current_value: Any = getattr(settings, value2.callback)
-            if isinstance(value2, Settings.CallbackOnly):
-                if isinstance(current_value, bool):
-                    check_box = QCheckBox(key2, widget)
-                    check_box.setChecked(current_value)
-                    check_box.toggled.connect(
-                        partial(_on_event, callback=value2.callback)
+            for label, item in items.items():
+                current_value: Any = getattr(settings, item.callback)
+                if isinstance(item, Settings.CallbackOnly):
+                    if isinstance(current_value, bool):
+                        if not item.children:
+                            check_box = QCheckBox(label, w)
+                            check_box.setChecked(current_value)
+                            check_box.toggled.connect(
+                                partial(_on_event, callback=item.callback)
+                            )
+                            layout.addWidget(check_box)
+                        else:
+                            group_box = QGroupBox(w)
+                            group_box.setTitle(label)
+                            group_box.setCheckable(True)
+                            group_box.setChecked(current_value)
+                            fill_widget(group_box, **item.children)
+                            group_box.toggled.connect(
+                                partial(_on_event, callback=item.callback)
+                            )
+                            layout.addRow(group_box)
+                    elif isinstance(current_value, Path):
+                        if item.children:
+                            PreferencePage.logger.error(
+                                f"Label {label} with type {item.callback!r} cannot have children"
+                            )
+                        path_entry = OpenFilePathEntry(current_value, w)
+                        path_entry.changed.connect(
+                            partial(_on_event, callback=item.callback)
+                        )
+                        layout.addRow(label, path_entry)
+                    elif isinstance(current_value, QColor):
+                        if item.children:
+                            PreferencePage.logger.error(
+                                f"Label {label} with type {item.callback!r} cannot have children"
+                            )
+                        color_selector = ColorSelector(
+                            w, getattr(settings, item.callback)
+                        )
+                        color_selector.colorSelected.connect(
+                            partial(_on_event, callback=item.callback)
+                        )
+                        layout.addRow(label, color_selector)
+                    elif isinstance(current_value, QFont):
+                        if item.children:
+                            PreferencePage.logger.error(
+                                f"Label {label} with type {item.callback!r} cannot have children"
+                            )
+                        font_selector = FontSelector(w, current_value)
+                        font_selector.fontSelected.connect(
+                            partial(_on_event, callback=item.callback)
+                        )
+                        layout.addRow(label, font_selector)
+                    else:
+                        PreferencePage.logger.error(
+                            f"The type of {item.callback!r} is not supported"
+                        )
+                elif isinstance(item, Settings.PathCallbackOnly):
+                    if isinstance(current_value, (Path, type(None))):
+                        path_entry = OpenFilePathEntry(current_value, w)
+                        if item.name_filters:
+                            path_entry.set_name_filters(item.name_filters)
+                        path_entry.changed.connect(
+                            partial(_on_event, callback=item.callback)
+                        )
+                        layout.addRow(label, path_entry)
+                    else:
+                        PreferencePage.logger.error(
+                            f"The type of {item.callback!r} is not supported"
+                        )
+                elif isinstance(item, Settings.PathsCallbackOnly):
+                    if isinstance(current_value, list):
+                        paths_entry = OpenFilePathsEntry(current_value, w)
+                        if item.name_filters:
+                            paths_entry.set_name_filters(item.name_filters)
+                        paths_entry.changed.connect(
+                            partial(_on_event, callback=item.callback)
+                        )
+                        layout.addRow(label, paths_entry)
+                    else:
+                        PreferencePage.logger.error(
+                            f"The type of {item.callback!r} is not supported"
+                        )
+                elif isinstance(item, Settings.SpinboxAndCallback):
+                    spin_box = pg.SpinBox(w, getattr(settings, item.callback))
+                    spin_box.setOpts(**item.spinbox_opts)
+                    spin_box.valueChanged.connect(
+                        partial(_on_event, callback=item.callback)
                     )
-                    layout.addWidget(check_box)
-                elif isinstance(current_value, Path):
-                    path_entry = OpenFilePathEntry(current_value, widget)
-                    path_entry.changed.connect(
-                        partial(_on_event, callback=value2.callback)
+                    layout.addRow(label, spin_box)
+                elif isinstance(item, Settings.ComboboxAndCallback):
+                    combo_box = QComboBox(w)
+                    for cb_data, cb_item in item.combobox_data.items():
+                        combo_box.addItem(cb_item, cb_data)
+                    combo_box.setCurrentText(
+                        item.combobox_data[getattr(settings, item.callback)]
                     )
-                    layout.addRow(key2, path_entry)
-                elif isinstance(current_value, QColor):
-                    color_selector = ColorSelector(
-                        widget, getattr(settings, value2.callback)
+                    combo_box.currentIndexChanged.connect(
+                        partial(
+                            _on_combo_box_current_index_changed,
+                            sender=combo_box,
+                            callback=item.callback,
+                        )
                     )
-                    color_selector.colorSelected.connect(
-                        partial(_on_event, callback=value2.callback)
+                    layout.addRow(label, combo_box)
+                elif isinstance(item, Settings.EditableComboboxAndCallback):
+                    if isinstance(current_value, str):
+                        current_text: str = current_value
+                    else:
+                        PreferencePage.logger.error(
+                            f"The type of {item.callback!r} is not supported"
+                        )
+                        continue
+                    combo_box = QComboBox(w)
+                    combo_box.addItems(item.combobox_items)
+                    if current_text in item.combobox_items:
+                        combo_box.setCurrentIndex(
+                            item.combobox_items.index(current_text)
+                        )
+                    else:
+                        combo_box.insertItem(0, current_text)
+                        combo_box.setCurrentIndex(0)
+                    combo_box.setEditable(True)
+                    combo_box.currentTextChanged.connect(
+                        partial(_on_event, callback=item.callback)
                     )
-                    layout.addRow(key2, color_selector)
-                elif isinstance(current_value, QFont):
-                    font_selector = FontSelector(widget, current_value)
-                    font_selector.fontSelected.connect(
-                        partial(_on_event, callback=value2.callback)
-                    )
-                    layout.addRow(key2, font_selector)
+                    layout.addRow(label, combo_box)
                 else:
-                    PreferencePage.logger.error(
-                        f"The type of {value2.callback!r} is not supported"
-                    )
-            elif isinstance(value2, Settings.PathCallbackOnly):
-                if isinstance(current_value, (Path, type(None))):
-                    path_entry = OpenFilePathEntry(current_value, widget)
-                    if value2.name_filters:
-                        path_entry.set_name_filters(value2.name_filters)
-                    path_entry.changed.connect(
-                        partial(_on_event, callback=value2.callback)
-                    )
-                    layout.addRow(key2, path_entry)
-                else:
-                    PreferencePage.logger.error(
-                        f"The type of {value2.callback!r} is not supported"
-                    )
-            elif isinstance(value2, Settings.PathsCallbackOnly):
-                if isinstance(current_value, list):
-                    paths_entry = OpenFilePathsEntry(current_value, widget)
-                    if value2.name_filters:
-                        paths_entry.set_name_filters(value2.name_filters)
-                    paths_entry.changed.connect(
-                        partial(_on_event, callback=value2.callback)
-                    )
-                    layout.addRow(key2, paths_entry)
-                else:
-                    PreferencePage.logger.error(
-                        f"The type of {value2.callback!r} is not supported"
-                    )
-            elif isinstance(value2, Settings.SpinboxAndCallback):
-                spin_box = pg.SpinBox(widget, getattr(settings, value2.callback))
-                spin_box.setOpts(**value2.spinbox_opts)
-                spin_box.valueChanged.connect(
-                    partial(_on_event, callback=value2.callback)
-                )
-                layout.addRow(key2, spin_box)
-            elif isinstance(value2, Settings.ComboboxAndCallback):
-                combo_box = QComboBox(widget)
-                for data, item in value2.combobox_data.items():
-                    combo_box.addItem(item, data)
-                combo_box.setCurrentText(
-                    value2.combobox_data[getattr(settings, value2.callback)]
-                )
-                combo_box.currentIndexChanged.connect(
-                    partial(
-                        _on_combo_box_current_index_changed,
-                        sender=combo_box,
-                        callback=value2.callback,
-                    )
-                )
-                layout.addRow(key2, combo_box)
-            elif isinstance(value2, Settings.EditableComboboxAndCallback):
-                if isinstance(current_value, str):
-                    current_text: str = current_value
-                else:
-                    PreferencePage.logger.error(
-                        f"The type of {value2.callback!r} is not supported"
-                    )
-                    continue
-                combo_box = QComboBox(widget)
-                combo_box.addItems(value2.combobox_items)
-                if current_text in value2.combobox_items:
-                    combo_box.setCurrentIndex(value2.combobox_items.index(current_text))
-                else:
-                    combo_box.insertItem(0, current_text)
-                    combo_box.setCurrentIndex(0)
-                combo_box.setEditable(True)
-                combo_box.currentTextChanged.connect(
-                    partial(_on_event, callback=value2.callback)
-                )
-                layout.addRow(key2, combo_box)
-            else:
-                PreferencePage.logger.error(f"{value2!r} is not supported")
+                    PreferencePage.logger.error(f"{item!r} is not supported")
+
+        fill_widget(widget, **value)
 
     @property
     def changed_settings(self) -> dict[str, Any]:
@@ -267,7 +305,9 @@ class PreferencesBody(QSplitter):
                 PreferencesBody.logger.error(f"Invalid key type: {key!r}")
                 continue
             content.addItem(new_item)
-            box: PreferencePage = PreferencePage(value, settings, self._stack)
+            box: PreferencePage = PreferencePage(
+                **value, settings=settings, parent=self._stack
+            )
             self._stack.addWidget(box)
         content.setMinimumWidth(content.sizeHintForColumn(0) + 2 * content.frameWidth())
         self.addWidget(content)
