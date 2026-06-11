@@ -87,7 +87,7 @@ class PreferencePage(QScrollArea):
 
         if not (isinstance(value, dict) and value):
             raise TypeError(f"Invalid type: {type(value)}")
-        layout: QFormLayout = QFormLayout(self)
+        layout: QFormLayout = QFormLayout(widget)
         key2: str
         value2: (
             Settings.CallbackOnly
@@ -109,7 +109,7 @@ class PreferencePage(QScrollArea):
             current_value: Any = getattr(settings, value2.callback)
             if isinstance(value2, Settings.CallbackOnly):
                 if isinstance(current_value, bool):
-                    check_box = QCheckBox(key2, self)
+                    check_box = QCheckBox(key2, widget)
                     check_box.setChecked(current_value)
                     check_box.toggled.connect(
                         partial(_on_event, callback=value2.callback)
@@ -123,7 +123,7 @@ class PreferencePage(QScrollArea):
                     layout.addRow(key2, path_entry)
                 elif isinstance(current_value, QColor):
                     color_selector = ColorSelector(
-                        self, getattr(settings, value2.callback)
+                        widget, getattr(settings, value2.callback)
                     )
                     color_selector.colorSelected.connect(
                         partial(_on_event, callback=value2.callback)
@@ -166,14 +166,14 @@ class PreferencePage(QScrollArea):
                         f"The type of {value2.callback!r} is not supported"
                     )
             elif isinstance(value2, Settings.SpinboxAndCallback):
-                spin_box = pg.SpinBox(self, getattr(settings, value2.callback))
+                spin_box = pg.SpinBox(widget, getattr(settings, value2.callback))
                 spin_box.setOpts(**value2.spinbox_opts)
                 spin_box.valueChanged.connect(
                     partial(_on_event, callback=value2.callback)
                 )
                 layout.addRow(key2, spin_box)
             elif isinstance(value2, Settings.ComboboxAndCallback):
-                combo_box = QComboBox(self)
+                combo_box = QComboBox(widget)
                 for data, item in value2.combobox_data.items():
                     combo_box.addItem(item, data)
                 combo_box.setCurrentText(
