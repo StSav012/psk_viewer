@@ -146,7 +146,7 @@ class Settings(QSettings):
                 self.tr("Color:"): Settings.CallbackOnly(
                     Settings.line_color.fget.__name__
                 ),
-                self.tr("Ghost Color:"): Settings.CallbackOnly(
+                self.tr("Ghost color:"): Settings.CallbackOnly(
                     Settings.ghost_line_color.fget.__name__
                 ),
                 self.tr("Thickness:"): Settings.SpinboxAndCallback(
@@ -154,17 +154,17 @@ class Settings(QSettings):
                 ),
             },
             (
-                self.tr("Axis"),
+                self.tr("Plot"),
                 ("mdi6.arrow-right-thin", "mdi6.arrow-up-thin"),
                 (("options", ((("offset", (0, 0.2)),), (("offset", (-0.2, 0)),))),),
             ): {
-                self.tr("Thickness:"): Settings.SpinboxAndCallback(
+                self.tr("Axis line thickness:"): Settings.SpinboxAndCallback(
                     line_opts, Settings.axis_thickness.fget.__name__
                 ),
-                self.tr("Label Font:"): Settings.CallbackOnly(
+                self.tr("Label font:"): Settings.CallbackOnly(
                     Settings.axis_label_font.fget.__name__
                 ),
-                self.tr("Number Font:"): Settings.CallbackOnly(
+                self.tr("Number font:"): Settings.CallbackOnly(
                     Settings.axis_tick_font.fget.__name__
                 ),
             },
