@@ -200,7 +200,7 @@ class Settings(QSettings):
                     self._csv_separators, Settings.csv_separator.fget.__name__
                 ),
             },
-            (self.tr("View"), ("mdi6.binoculars",)): {
+            (self.tr("Locale"), ("mdi6.translate",)): {
                 self.tr("Translation file:"): Settings.PathCallbackOnly(
                     Settings.translation_path.fget.__name__,
                     name_filters=[
