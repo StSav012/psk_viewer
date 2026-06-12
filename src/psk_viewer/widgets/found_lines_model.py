@@ -3,7 +3,10 @@ from contextlib import suppress
 from math import inf
 from pathlib import Path
 
+# noinspection PyPackageRequirements
 import numpy as np
+
+# noinspection PyPackageRequirements
 from numpy.typing import NDArray
 from qtpy.QtCore import (
     QCoreApplication,
@@ -165,8 +168,11 @@ class _FoundLinesModel(DataModel):
         if not self.catalog_file_names:
             return None
         try:
+            # noinspection PyPackageRequirements
             from pycatsearch.catalog import Catalog
-            from pycatsearch.utils import LINES, CatalogEntryType, CatalogType, LineType
+
+            # noinspection PyPackageRequirements
+            from pycatsearch.utils import LINES, CatalogEntryType, CatalogType
         except ImportError:
             return None
 
@@ -186,14 +192,14 @@ class _FoundLinesModel(DataModel):
             for slot in entry.__slots__:
                 if slot != LINES:
                     setattr(key, slot, getattr(entry, slot))
-            weight: float = 0.0
-            line: LineType
-            for line in entry.lines:
-                weight += (
+            weight: float = sum(
+                (
                     (10.0**line.intensity / (line.frequency - frequency) ** 2)
                     if line.frequency != frequency
                     else inf
                 )
+                for line in entry.lines
+            )
             substances.append((weight, key))
         if not substances:
             return None
@@ -309,6 +315,7 @@ class _FoundLinesModel(DataModel):
     @property
     def catalog_file_names(self) -> list[Path]:
         try:
+            # noinspection PyPackageRequirements
             from pycatsearch.catalog import Catalog
         except ImportError:
             return []
@@ -318,6 +325,7 @@ class _FoundLinesModel(DataModel):
         return []
 
     try:
+        # noinspection PyPackageRequirements,PyUnusedImports
         from pycatsearch.catalog import Catalog
     except ImportError:
 
@@ -335,6 +343,7 @@ class _FoundLinesModel(DataModel):
     @catalog.setter
     def catalog(self, catalog: object) -> None:
         try:
+            # noinspection PyPackageRequirements
             from pycatsearch.catalog import Catalog
         except ImportError:
             return

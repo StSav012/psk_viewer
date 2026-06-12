@@ -2,9 +2,12 @@ from collections.abc import Callable, Collection, Iterable
 from pathlib import Path
 from typing import cast
 
+# noinspection PyPackageRequirements
 import numpy as np
 import pandas as pd  # type: ignore
 import pyqtgraph as pg  # type: ignore
+
+# noinspection PyPackageRequirements
 from numpy.typing import NDArray
 from pyqtgraph import GraphicsScene, PlotWidget
 from pyqtgraph.exporters.ImageExporter import ImageExporter
@@ -99,7 +102,7 @@ class TimeDomainWindow(TimeDomainGUI):
                     canvas.ctrlMenu.removeAction(action)
             canvas.vb.menu = canvas.ctrlMenu
             canvas.ctrlMenu = None
-            canvas.vb.menu.addAction(self._view_all_action)
+            canvas.getViewBox().getMenu(canvas).addAction(self._view_all_action)
             canvas.ctrl.autoAlphaCheck.setChecked(False)
             canvas.ctrl.autoAlphaCheck.hide()
         self.figure.sceneObj.contextMenu = None
@@ -271,7 +274,7 @@ class TimeDomainWindow(TimeDomainGUI):
             return
         pos: QPointF = event[0]
         if self.figure.sceneBoundingRect().contains(pos):
-            point: QPointF = self._canvas.vb.mapSceneToView(pos)
+            point: QPointF = self._canvas.getViewBox().mapSceneToView(pos)
             if self.figure.visibleRange().contains(point):
                 self.status_bar.clearMessage()
                 self._crosshair_v_line.setPos(point.x())
@@ -291,7 +294,7 @@ class TimeDomainWindow(TimeDomainGUI):
                     balloon_border: QRectF = self._cursor_balloon.boundingRect()
                     sx: float
                     sy: float
-                    sx, sy = self._canvas.vb.viewPixelSize()
+                    sx, sy = self._canvas.getViewBox().viewPixelSize()
                     balloon_width: float = balloon_border.width() * sx
                     balloon_height: float = balloon_border.height() * sy
                     anchor_x: float = (
@@ -688,6 +691,7 @@ class TimeDomainWindow(TimeDomainGUI):
             return self.set_data(data)
 
         if data.mode in TimeDomainWindow.supported_modes:
+            # noinspection PyTypeChecker
             w = TimeDomainWindow(parent=self.parent(), flags=self.windowFlags())
             r: bool = w.set_data(data)
             if r:
@@ -701,6 +705,7 @@ class TimeDomainWindow(TimeDomainGUI):
         from . import FrequencyDomainWindow
 
         if data.mode in FrequencyDomainWindow.supported_modes:
+            # noinspection PyTypeChecker
             w = FrequencyDomainWindow(parent=self.parent(), flags=self.windowFlags())
             r: bool = w.set_data(data)
             if r:

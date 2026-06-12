@@ -6,9 +6,12 @@ from pathlib import Path
 from threading import Lock
 from typing import Any, Final, cast
 
+# noinspection PyPackageRequirements
 import numpy as np
 import pandas as pd
 import pyqtgraph as pg  # type: ignore
+
+# noinspection PyPackageRequirements
 from numpy.typing import NDArray
 from pyqtgraph import GraphicsScene, PlotWidget
 from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent  # type: ignore
@@ -435,7 +438,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             return
         pos: QPointF = event[0]
         if self.figure.sceneBoundingRect().contains(pos):
-            point: QPointF = self._canvas.vb.mapSceneToView(pos)
+            point: QPointF = self._canvas.getViewBox().mapSceneToView(pos)
             if self.figure.visibleRange().contains(point):
                 self.status_bar.clearMessage()
                 self._crosshair_v_line.setPos(point.x())
@@ -455,7 +458,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
                     balloon_border: QRectF = self._cursor_balloon.boundingRect()
                     sx: float
                     sy: float
-                    sx, sy = self._canvas.vb.viewPixelSize()
+                    sx, sy = self._canvas.getViewBox().viewPixelSize()
                     balloon_width: float = balloon_border.width() * sx
                     balloon_height: float = balloon_border.height() * sy
                     anchor_x: float = (
@@ -480,7 +483,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
 
     @Slot()
     def on_view_all_triggered(self) -> None:
-        self._canvas.vb.autoRange(padding=0.0)
+        self._canvas.getViewBox().autoRange(padding=0.0)
 
     @Slot(MouseClickEvent)
     def on_plot_clicked(self, event: MouseClickEvent) -> None:
@@ -1120,6 +1123,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
                     & (data <= self._plot_data.max_frequency)
                 ]
 
+        # noinspection PyPackageRequirements
         def load_xlsx(fn: Path) -> Sequence[float]:
             from openpyxl.reader.excel import load_workbook  # type: ignore
             from openpyxl.workbook.workbook import Workbook  # type: ignore
@@ -1137,6 +1141,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             data: list[float] = []
             reading_title: bool = True
             row: tuple[Any, ...]
+            # noinspection PyUnresolvedReferences
             for row in sheet.values:
                 if reading_title and isinstance(row[0], Number):
                     reading_title = False
@@ -1147,6 +1152,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             if not data:
                 return []
 
+            # noinspection PyTypeChecker
             data_: NDArray[np.float64] = np.asarray(data, dtype=np.float64) * 1e6
             return data_[
                 (data_ >= self._plot_data.min_frequency)
@@ -1429,6 +1435,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             return self.set_data(data)
 
         if data.mode in FrequencyDomainWindow.supported_modes:
+            # noinspection PyTypeChecker
             w = FrequencyDomainWindow(parent=self.parent(), flags=self.windowFlags())
             r: bool = w.set_data(data)
             if r:
@@ -1445,6 +1452,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         from . import TimeDomainWindow
 
         if data.mode in TimeDomainWindow.supported_modes:
+            # noinspection PyTypeChecker
             w = TimeDomainWindow(parent=self.parent(), flags=self.windowFlags())
             r: bool = w.set_data(data)
             if r:
