@@ -13,8 +13,9 @@ from qtpy.QtCore import (
     QModelIndex,
     QObject,
     QPersistentModelIndex,
-    QSortFilterProxyModel,
     Qt,
+    Signal,
+    Slot,
 )
 
 from ..plot_data_item import PlotDataItem
@@ -26,7 +27,9 @@ __all__ = ["FoundLinesModel"]
 _translate = QCoreApplication.translate
 
 
-class _FoundLinesModel(DataModel):
+class FoundLinesModel(DataModel):
+    frequencies_removed: Signal = Signal(frozenset, name="frequencies_removed")
+
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._catalog: object = None
@@ -67,6 +70,15 @@ class _FoundLinesModel(DataModel):
                 ),
             ]
         )
+
+        @Slot(QModelIndex, int, int)
+        def on_model_rows_removed(_parent: QModelIndex, start: int, end: int) -> None:
+            frequencies: set[float] = set()
+            for row in range(start, end + 1):
+                frequencies.add(self._numeric_data[row, 0])
+            self.frequencies_removed.emit(frozenset(frequencies))
+
+        self.rowsAboutToBeRemoved.connect(on_model_rows_removed)
 
     @property
     def log10_gamma(self) -> bool:
@@ -263,6 +275,11 @@ class _FoundLinesModel(DataModel):
         self._rows_loaded += frequency_indices.size
         self.extend_data(new_data)
 
+    def remove_line(self, frequency: float) -> None:
+        for row in np.argwhere(self._numeric_data[:, 0] == frequency).ravel():
+            self.remove_row(row.item())
+        self._frequencies = self._frequencies[self._frequencies != frequency]
+
     def set_lines(
         self,
         plot_data: PlotDataItem,
@@ -335,7 +352,7 @@ class _FoundLinesModel(DataModel):
 
         @property
         def catalog(self) -> Catalog | None:
-            if isinstance(self._catalog, _FoundLinesModel.Catalog):
+            if isinstance(self._catalog, FoundLinesModel.Catalog):
                 return self._catalog
             return None
 
@@ -348,33 +365,3 @@ class _FoundLinesModel(DataModel):
             return
         if isinstance(catalog, Catalog):
             self._catalog = catalog
-
-
-class FoundLinesModel(QSortFilterProxyModel):
-    Format = _FoundLinesModel.Format
-    catalog = _FoundLinesModel.catalog
-    header = _FoundLinesModel.header
-    is_empty = _FoundLinesModel.is_empty
-    add_line = _FoundLinesModel.add_line
-    add_lines = _FoundLinesModel.add_lines
-    all_data = _FoundLinesModel.all_data
-    catalog_file_names = _FoundLinesModel.catalog_file_names
-    clear = _FoundLinesModel.clear
-    df = _FoundLinesModel.df
-    frequency_indices = _FoundLinesModel.frequency_indices
-    formatted_item = _FoundLinesModel.formatted_item
-    item = _FoundLinesModel.item
-    set_format = _FoundLinesModel.set_format
-    set_lines = _FoundLinesModel.set_lines
-    refresh = _FoundLinesModel.refresh
-    rowCount = _FoundLinesModel.rowCount
-
-    def __init__(self, parent: QObject | None = None) -> None:
-        super().__init__(parent)
-        self.setSourceModel(_FoundLinesModel(parent))
-
-    def __getattr__(self, item: str) -> object:
-        return getattr(self.sourceModel(), item)
-
-    def __setattr__(self, item: str, value: object) -> None:
-        setattr(self.sourceModel(), item, value)

@@ -4,7 +4,7 @@ from collections.abc import Callable, Collection, Iterable, Sequence
 from numbers import Number
 from pathlib import Path
 from threading import Lock
-from typing import Any, Final, cast
+from typing import Any, cast
 
 # noinspection PyPackageRequirements
 import numpy as np
@@ -18,8 +18,6 @@ from pyqtgraph.GraphicsScene.mouseEvents import MouseClickEvent  # type: ignore
 from pyqtgraph.exporters import ImageExporter
 from qtpy.QtCore import (
     QCoreApplication,
-    QItemSelectionModel,
-    QModelIndex,
     QPointF,
     QRectF,
     Qt,
@@ -37,7 +35,6 @@ from qtpy.QtGui import (
 )
 from qtpy.QtWidgets import QMainWindow, QMessageBox, QWidget
 
-from ..detection import correlation, peaks_positions
 from ..plot_data_item import PlotDataItem
 from ..utils import (
     DataMode,
@@ -46,7 +43,6 @@ from ..utils import (
     copy_to_clipboard,
     load_data,
     p_tag,
-    resource_path,
     tag,
     the,
 )
@@ -83,16 +79,6 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
 
         self._ignore_scale_change: Lock = Lock()
 
-        self.model_signal: NDArray[np.float64]
-        try:
-            self.model_signal = pd.read_csv(
-                resource_path("averaged fs signal filtered.csv")
-            ).values.ravel()
-        except (OSError, BlockingIOError):
-            self.model_signal = np.empty(0)
-            self.box_find_lines.hide()
-            self.box_find_lines.toggleViewAction().setDisabled(True)
-        self.button_find_lines.setDisabled(True)
         self.user_found_lines: pg.PlotDataItem = self._canvas.scatterPlot(
             np.empty(0), symbol="o", pxMode=True
         )
@@ -100,7 +86,6 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             np.empty(0), symbol="o", pxMode=True
         )
         self.user_found_lines_data: NDArray[np.float64] = np.empty(0)
-        self.automatically_found_lines_data: NDArray[np.float64] = np.empty(0)
 
         self._cursor_balloon: pg.TextItem = pg.TextItem()
         self.figure.addItem(self._cursor_balloon)
@@ -136,9 +121,6 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         self.set_marks_appearance()
         self.set_crosshair_lines_appearance()
 
-        self.model_found_lines.fancy_table_numbers = self.settings.fancy_table_numbers
-        self.model_found_lines.log10_gamma = self.settings.log10_gamma
-
         with the(self._canvas) as canvas:
             # customize menu
             titles_to_leave: list[str] = [
@@ -151,7 +133,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
                     canvas.ctrlMenu.removeAction(action)
             canvas.vb.menu = canvas.ctrlMenu
             canvas.ctrlMenu = None
-            canvas.vb.menu.addAction(self._view_all_action)
+            canvas.getViewBox().getMenu(canvas).addAction(self._view_all_action)
             canvas.ctrl.autoAlphaCheck.setChecked(False)
             canvas.ctrl.autoAlphaCheck.hide()
         self.figure.sceneObj.contextMenu = None
@@ -218,28 +200,20 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
 
             self.settings.restore(self)
 
-            self.check_x_range_persists.setChecked(
-                self.get_config_value("frequency", "persists", False, bool)
-            )
-            self.check_y_range_persists.setChecked(
-                self.get_config_value("voltage", "persists", False, bool)
-            )
-
-            self.spin_threshold.setValue(
-                self.get_config_value("lineSearch", "threshold", 12.0, float)
-            )
-            self.spin_df.setValue(self.get_config_value("catalog", "df", 0.6e6, float))
+            self.box_frequency.load_config()
+            self.box_voltage.load_config()
+            self.box_find_lines.load_config()
+            self.box_found_lines.load_config()
 
             if (
                 self.get_config_value("display", "unit", PlotDataItem.VOLTAGE_DATA, str)
                 == PlotDataItem.GAMMA_DATA
             ):
                 self._plot_data.y_data_type = PlotDataItem.GAMMA_DATA
+                self.box_find_lines.set_data_type(PlotDataItem.GAMMA_DATA)
             else:
                 self._plot_data.y_data_type = PlotDataItem.VOLTAGE_DATA
-            self.switch_data_action.setChecked(
-                self._plot_data.y_data_type == PlotDataItem.GAMMA_DATA
-            )
+                self.box_find_lines.set_data_type(PlotDataItem.VOLTAGE_DATA)
             self.display_gamma_or_voltage()
 
     def setup_ui_actions(self) -> None:
@@ -273,67 +247,29 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             self.on_configure_action_triggered
         )
 
-        self.spin_x_min.valueChanged.connect(self.on_spin_x_min_changed)
-        self.spin_x_max.valueChanged.connect(self.on_spin_x_max_changed)
-        self.spin_x_center.valueChanged.connect(self.on_spin_x_center_changed)
-        self.spin_x_span.valueChanged.connect(self.on_spin_x_span_changed)
-        self.button_zoom_x_out_coarse.clicked.connect(
-            self.on_button_zoom_x_out_coarse_clicked
+        self.box_frequency.setup_ui_actions()
+        self.box_frequency.changed.connect(self.on_frequency_box_changed)
+
+        self.box_voltage.setup_ui_actions()
+        self.box_voltage.changed.connect(self.on_voltage_box_changed)
+        self.box_voltage.dataModeChanged.connect(self.on_voltage_box_data_mode_changed)
+
+        self.box_find_lines.setup_ui_actions()
+        self.box_find_lines.found_lines_changed.connect(
+            self.on_automatically_found_lines_changed
         )
-        self.button_zoom_x_out_fine.clicked.connect(
-            self.on_button_zoom_x_out_fine_clicked
-        )
-        self.button_zoom_x_in_fine.clicked.connect(
-            self.on_button_zoom_x_in_fine_clicked
-        )
-        self.button_zoom_x_in_coarse.clicked.connect(
-            self.on_button_zoom_x_in_coarse_clicked
-        )
-        self.button_move_x_left_coarse.clicked.connect(
-            self.on_button_move_x_left_coarse_clicked
-        )
-        self.button_move_x_left_fine.clicked.connect(
-            self.on_button_move_x_left_fine_clicked
-        )
-        self.button_move_x_right_fine.clicked.connect(
-            self.on_button_move_x_right_fine_clicked
-        )
-        self.button_move_x_right_coarse.clicked.connect(
-            self.on_button_move_x_right_coarse_clicked
-        )
-        self.check_x_range_persists.toggled.connect(
-            self.on_check_frequency_persists_toggled
+        self.box_find_lines.lines_found.connect(self.on_automatically_found_lines_found)
+        self.box_find_lines.show_frequency_requested.connect(
+            self.on_show_frequency_requested
         )
 
-        self.switch_data_action.toggled.connect(self.on_switch_data_action_toggled)
-        self.spin_y_min.valueChanged.connect(self.on_spin_voltage_min_changed)
-        self.spin_y_max.valueChanged.connect(self.on_spin_voltage_max_changed)
-        self.button_zoom_y_out_coarse.clicked.connect(
-            self.on_button_zoom_y_out_coarse_clicked
+        self.box_found_lines.setup_ui_actions()
+        self.box_found_lines.show_frequency_requested.connect(
+            self.on_show_frequency_requested
         )
-        self.button_zoom_y_out_fine.clicked.connect(
-            self.on_button_zoom_y_out_fine_clicked
+        self.box_found_lines.model.frequencies_removed.connect(
+            self.on_table_rows_removed
         )
-        self.button_zoom_y_in_fine.clicked.connect(
-            self.on_button_zoom_y_in_fine_clicked
-        )
-        self.button_zoom_y_in_coarse.clicked.connect(
-            self.on_button_zoom_y_in_coarse_clicked
-        )
-        self.check_y_range_persists.toggled.connect(
-            self.on_check_voltage_persists_toggled
-        )
-
-        self.spin_threshold.valueChanged.connect(self.on_spin_threshold_changed)
-        self.button_find_lines.clicked.connect(self.on_button_find_lines_clicked)
-        self.button_clear_automatically_found_lines.clicked.connect(
-            self.on_clear_automatically_found_lines_clicked
-        )
-        self.button_prev_found_line.clicked.connect(self.on_prev_found_line_clicked)
-        self.button_next_found_line.clicked.connect(self.on_next_found_line_clicked)
-
-        self.table_found_lines.doubleClicked.connect(self.on_table_cell_double_clicked)
-        self.spin_df.valueChanged.connect(self.on_spin_df_changed)
 
         line: pg.PlotDataItem
         for line in (self.automatically_found_lines, self.user_found_lines):
@@ -343,28 +279,60 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
 
         self.figure.sceneObj.sigMouseClicked.connect(self.on_plot_clicked)
 
-    def on_xlim_changed(self, xlim: Iterable[float]) -> None:
-        min_freq, max_freq = min(xlim), max(xlim)
-        with self._loading:
-            self.spin_x_min.setValue(min_freq)
-            self.spin_x_max.setValue(max_freq)
-            self.spin_x_span.setValue(max_freq - min_freq)
-            self.spin_x_center.setValue(0.5 * (max_freq + min_freq))
-            self.spin_x_min.setMaximum(max_freq)
-            self.spin_x_max.setMinimum(min_freq)
-        self.set_x_range(
-            lower_value=self.spin_x_min.value(),
-            upper_value=self.spin_x_max.value(),
-        )
+    def on_lim_changed(self, arg: tuple[PlotWidget, list[list[float]]]) -> None:
+        if self._ignore_scale_change.locked():
+            return
+        rect: list[list[float]] = arg[1]
+        xlim: list[float]
+        ylim: list[float]
+        xlim, ylim = rect
+        with self._ignore_scale_change:
+            self.on_xlim_changed(xlim)
+            self.on_ylim_changed(ylim)
 
-    def on_ylim_changed(self, ylim: Iterable[float | np.float64]) -> None:
+    def on_xlim_changed(self, xlim: list[float]) -> None:
+        min_freq, max_freq = min(xlim), max(xlim)
+        self.box_frequency.set_range(min_freq, max_freq)
+        self.set_x_range(*self.box_frequency.range)
+
+    def on_ylim_changed(self, ylim: list[float | np.float64]) -> None:
         min_voltage, max_voltage = min(ylim), max(ylim)
-        with self._loading:
-            self.spin_y_min.setValue(min_voltage)
-            self.spin_y_max.setValue(max_voltage)
-            self.spin_y_min.setMaximum(max_voltage)
-            self.spin_y_max.setMinimum(min_voltage)
+        self.box_voltage.set_range(min_voltage, max_voltage)
         self.set_y_range(lower_value=min_voltage, upper_value=max_voltage)
+
+    def set_x_range(
+        self, lower_value: float | np.float64, upper_value: float | np.float64
+    ) -> None:
+        self.figure.getPlotItem().setXRange(lower_value, upper_value, padding=0.0)
+        self.box_find_lines.current_freq = (upper_value + lower_value) / 2.0
+
+    def set_y_range(
+        self, lower_value: float | np.float64, upper_value: float | np.float64
+    ) -> None:
+        self.figure.getPlotItem().setYRange(lower_value, upper_value, padding=0.0)
+
+    def ensure_y_fits(self) -> None:
+        if (x := self._plot_line.xData) is None or x.size < 2:
+            return
+        if (y := self._plot_line.yData) is None or y.size < 2:
+            return
+        x_axis: pg.AxisItem = self._canvas.getAxis("bottom")
+        y_axis: pg.AxisItem = self._canvas.getAxis("left")
+        visible_points: NDArray[np.float64] = y[
+            (x >= min(x_axis.range)) & (x <= max(x_axis.range))
+        ]
+        if np.any(visible_points < min(y_axis.range)):
+            minimum: np.float64 = np.min(visible_points)
+            # noinspection PyTypeChecker
+            self.set_y_range(
+                minimum - 0.05 * (max(y_axis.range) - minimum), max(y_axis.range)
+            )
+        if np.any(visible_points > max(y_axis.range)):
+            maximum: np.float64 = np.max(visible_points)
+            # noinspection PyTypeChecker
+            self.set_y_range(
+                min(y_axis.range), maximum + 0.05 * (maximum - min(y_axis.range))
+            )
 
     @Slot(pg.PlotDataItem, np.ndarray, MouseClickEvent)
     def on_points_clicked(
@@ -380,35 +348,20 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         point: pg.SpotItem
         if ev.modifiers() == Qt.KeyboardModifier.ShiftModifier:
             items: NDArray[np.float64] = item.scatter.data["item"]
-            index: NDArray[np.bool_] = np.full(items.shape, True, np.bool_)
+            mask: NDArray[np.bool_] = np.full(items.shape, True, np.bool_)
             for point in points:
-                index &= items != point
-                self.automatically_found_lines_data = (
-                    self.automatically_found_lines_data[
-                        self.automatically_found_lines_data != point.pos().x()
-                    ]
-                )
+                mask &= items != point
+                self.box_find_lines.remove_found_line(point.pos().x())
                 self.user_found_lines_data = self.user_found_lines_data[
                     self.user_found_lines_data != point.pos().x()
                 ]
+                self.box_found_lines.model.remove_line(point.pos().x())
+            item.setData(item.xData[mask], item.yData[mask])
 
-            item.setData(item.xData[index], item.yData[index])
-
-            # update the table
-            self.model_found_lines.set_lines(
-                self._plot_data,
-                (self.automatically_found_lines_data, self.user_found_lines_data),
-            )
-
-            self.toolbar.copy_trace_action.setEnabled(
-                not self.model_found_lines.is_empty
-            )
-            self.toolbar.save_trace_action.setEnabled(
-                not self.model_found_lines.is_empty
-            )
-            self.toolbar.clear_trace_action.setEnabled(
-                not self.model_found_lines.is_empty
-            )
+            with the(not self.box_found_lines.model.is_empty) as enabled:
+                self.toolbar.copy_trace_action.setEnabled(enabled)
+                self.toolbar.save_trace_action.setEnabled(enabled)
+                self.toolbar.clear_trace_action.setEnabled(enabled)
 
         elif ev.modifiers() == Qt.KeyboardModifier.NoModifier:
             found_lines_frequencies: NDArray[np.float64] = (
@@ -418,19 +371,46 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
                 cast(int, np.argmin(np.abs(point.pos().x() - found_lines_frequencies)))
                 for point in points
             ]
-            self.on_points_selected(selected_points)
+            self.box_found_lines.select(selected_points)
 
-    @Slot(float)
-    def on_spin_threshold_changed(self, new_value: float) -> None:
-        self.set_config_value("lineSearch", "threshold", new_value)
-
-    @Slot()
-    def on_button_find_lines_clicked(self) -> None:
-        with self.show_loading():
-            count: int = self.find_lines(self.spin_threshold.value())
+    @Slot(int)
+    def on_automatically_found_lines_found(self, count: int) -> None:
         self.status_bar.showMessage(
             self.box_find_lines.tr("Found {} lines").format(count)
         )
+
+    @Slot(frozenset)
+    def on_table_rows_removed(self, frequencies: frozenset[float]) -> None:
+        mask: NDArray[np.bool_] = np.full(
+            self.user_found_lines_data.shape, True, np.bool_
+        )
+        for f in frequencies:
+            mask[self.user_found_lines_data == f] = False
+        self.user_found_lines_data = self.user_found_lines_data[mask]
+        self.user_found_lines.setData(
+            self.user_found_lines_data,
+            self._plot_line.yData[
+                self.box_found_lines.model.frequency_indices(
+                    self._plot_data, self.user_found_lines_data
+                )
+            ],
+        )
+
+        for f in frequencies:
+            self.box_find_lines.remove_found_line(f)
+        self.automatically_found_lines.setData(
+            self.box_find_lines.found_lines_freq,
+            self._plot_line.yData[
+                self.box_found_lines.model.frequency_indices(
+                    self._plot_data, self.box_find_lines.found_lines_freq
+                )
+            ],
+        )
+
+        with the(not self.box_found_lines.model.is_empty) as enabled:
+            self.toolbar.copy_trace_action.setEnabled(enabled)
+            self.toolbar.save_trace_action.setEnabled(enabled)
+            self.toolbar.clear_trace_action.setEnabled(enabled)
 
     @Slot(tuple)
     def on_mouse_moved(self, event: tuple[QPointF]) -> None:
@@ -499,271 +479,85 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             return
         x_span: np.float64 = np.ptp(self._canvas.axes["bottom"]["item"].range)
         y_span: np.float64 = np.ptp(self._canvas.axes["left"]["item"].range)
-        point: QPointF = self._canvas.vb.mapSceneToView(pos)
-        if self._plot_line.xData is None or not self._plot_line.xData.size:
-            return
-        distance: NDArray[np.float64] = np.min(
-            np.hypot(
-                (self._plot_line.xData - point.x()) / x_span,
-                (self._plot_line.yData - point.y()) / y_span,
-            )
-        )
-        if distance > 0.01:
-            return
-        closest_point_index: np.int64 = np.argmin(
-            np.hypot(
-                (self._plot_line.xData - point.x()) / x_span,
-                (self._plot_line.yData - point.y()) / y_span,
-            )
-        )
-
-        # avoid the same point to be marked several times
-        if (
-            self.user_found_lines.xData is not None
-            and self.user_found_lines.yData.size
-            and np.any(
-                (
-                    self.user_found_lines.xData
-                    == self._plot_line.xData[closest_point_index]
-                )
-                & (
-                    self.user_found_lines.yData
-                    == self._plot_line.yData[closest_point_index]
+        point: QPointF = self._canvas.getViewBox().mapSceneToView(pos)
+        with the(self._plot_line.xData) as x, the(self._plot_line.yData) as y:
+            if x is None or not x.size:
+                return
+            distance: NDArray[np.float64] = np.min(
+                np.hypot(
+                    (x - point.x()) / x_span,
+                    (y - point.y()) / y_span,
                 )
             )
-        ):
-            return
-        if (
-            self.automatically_found_lines.xData is not None
-            and self.automatically_found_lines.yData.size
-            and np.any(
-                (
-                    self.automatically_found_lines.xData
-                    == self._plot_line.xData[closest_point_index]
-                )
-                & (
-                    self.automatically_found_lines.yData
-                    == self._plot_line.yData[closest_point_index]
+            if distance > 0.01:
+                return
+            closest_point_index: np.int64 = np.argmin(
+                np.hypot(
+                    (x - point.x()) / x_span,
+                    (y - point.y()) / y_span,
                 )
             )
-        ):
-            return
 
-        self.user_found_lines_data = np.append(
-            self.user_found_lines_data, self._plot_line.xData[closest_point_index]
-        )
+            x_point: float = x[closest_point_index]
+            y_point: float = y[closest_point_index]
 
-        self.user_found_lines.setData(
-            self.user_found_lines_data,
-            self._plot_line.yData[
-                self.model_found_lines.frequency_indices(
-                    self._plot_data, self.user_found_lines_data
+            # avoid the same point to be marked several times
+            if (
+                self.user_found_lines.xData is not None
+                and self.user_found_lines.yData.size
+                and np.any(
+                    (self.user_found_lines.xData == x_point)
+                    & (self.user_found_lines.yData == y_point)
                 )
-            ],
-        )
+            ):
+                return
+            if (
+                self.automatically_found_lines.xData is not None
+                and self.automatically_found_lines.yData.size
+                and np.any(
+                    (self.automatically_found_lines.xData == x_point)
+                    & (self.automatically_found_lines.yData == y_point)
+                )
+            ):
+                return
 
-        self.model_found_lines.add_line(
-            self._plot_data, self._plot_line.xData[closest_point_index]
-        )
+            self.user_found_lines_data = np.append(self.user_found_lines_data, x_point)
+
+            self.user_found_lines.setData(
+                self.user_found_lines_data,
+                y[
+                    self.box_found_lines.model.frequency_indices(
+                        self._plot_data, self.user_found_lines_data
+                    )
+                ],
+            )
+
+        self.box_found_lines.model.add_line(self._plot_data, x_point)
         if self.settings.copy_frequency:
-            copy_to_clipboard(str(1e-6 * self._plot_line.xData[closest_point_index]))
+            copy_to_clipboard(str(1e-6 * x_point))
         self.toolbar.copy_trace_action.setEnabled(True)
         self.toolbar.save_trace_action.setEnabled(True)
         self.toolbar.clear_trace_action.setEnabled(True)
 
-    def on_lim_changed(self, arg: tuple[PlotWidget, list[list[float]]]) -> None:
-        if self._ignore_scale_change.locked():
+    @Slot(float, float)
+    def on_frequency_box_changed(self, min_freq: float, max_freq: float) -> None:
+        if self._loading.locked():
             return
-        rect: list[list[float]] = arg[1]
-        xlim: list[float]
-        ylim: list[float]
-        xlim, ylim = rect
-        with self._ignore_scale_change:
-            self.on_xlim_changed(xlim)
-            self.on_ylim_changed(ylim)
-
-    def on_points_selected(self, rows: list[int]) -> None:
-        self.table_found_lines.clearSelection()
-        sm: QItemSelectionModel = self.table_found_lines.selectionModel()
-        row: int
-        for row in rows:
-            index: QModelIndex = self.model_found_lines.index(row, 0)
-            sm.select(
-                index,
-                QItemSelectionModel.SelectionFlag.Select
-                | QItemSelectionModel.SelectionFlag.Rows,
+        with self._loading:
+            self.set_x_range(
+                lower_value=min_freq,
+                upper_value=max_freq,
             )
-            self.table_found_lines.scrollTo(index)
 
-    @Slot(float)
-    def on_spin_x_min_changed(self, new_value: float) -> None:
+    @Slot(float, float)
+    def on_voltage_box_changed(self, min_y: float, max_y: float) -> None:
         if self._loading.locked():
             return
         with self._loading:
-            self.spin_x_max.setMinimum(new_value)
-            self.spin_x_center.setValue(0.5 * (new_value + self.spin_x_max.value()))
-            self.spin_x_span.setValue(self.spin_x_max.value() - new_value)
-            self.set_x_range(lower_value=new_value, upper_value=self.spin_x_max.value())
-
-    @Slot(float)
-    def on_spin_x_max_changed(self, new_value: float) -> None:
-        if self._loading.locked():
-            return
-        with self._loading:
-            self.spin_x_min.setMaximum(new_value)
-            self.spin_x_center.setValue(0.5 * (self.spin_x_min.value() + new_value))
-            self.spin_x_span.setValue(new_value - self.spin_x_min.value())
-            self.set_x_range(lower_value=self.spin_x_min.value(), upper_value=new_value)
-
-    @Slot(float)
-    def on_spin_x_center_changed(self, new_value: float) -> None:
-        if self._loading.locked():
-            return
-        freq_span = self.spin_x_span.value()
-        min_freq = new_value - 0.5 * freq_span
-        max_freq = new_value + 0.5 * freq_span
-        with self._loading:
-            self.spin_x_min.setMaximum(max_freq)
-            self.spin_x_max.setMinimum(min_freq)
-            self.spin_x_min.setValue(min_freq)
-            self.spin_x_max.setValue(max_freq)
-            self.set_x_range(upper_value=max_freq, lower_value=min_freq)
-
-    @Slot(float)
-    def on_spin_x_span_changed(self, new_value: float) -> None:
-        if self._loading.locked():
-            return
-        freq_center = self.spin_x_center.value()
-        min_freq = freq_center - 0.5 * new_value
-        max_freq = freq_center + 0.5 * new_value
-        with self._loading:
-            self.spin_x_min.setMaximum(max_freq)
-            self.spin_x_max.setMinimum(min_freq)
-            self.spin_x_min.setValue(min_freq)
-            self.spin_x_max.setValue(max_freq)
-            self.set_x_range(upper_value=max_freq, lower_value=min_freq)
-
-    @Slot()
-    def on_button_zoom_x_out_coarse_clicked(self) -> None:
-        self.zoom_x(1.0 / 0.5)
-
-    @Slot()
-    def on_button_zoom_x_out_fine_clicked(self) -> None:
-        self.zoom_x(1.0 / 0.9)
-
-    @Slot()
-    def on_button_zoom_x_in_fine_clicked(self) -> None:
-        self.zoom_x(0.9)
-
-    @Slot()
-    def on_button_zoom_x_in_coarse_clicked(self) -> None:
-        self.zoom_x(0.5)
-
-    def zoom_x(self, factor: float) -> None:
-        if self._loading.locked():
-            return
-        freq_span = self.spin_x_span.value() * factor
-        freq_center = self.spin_x_center.value()
-        min_freq = freq_center - 0.5 * freq_span
-        max_freq = freq_center + 0.5 * freq_span
-        with self._loading:
-            self.spin_x_min.setMaximum(max_freq)
-            self.spin_x_max.setMinimum(min_freq)
-            self.spin_x_min.setValue(min_freq)
-            self.spin_x_max.setValue(max_freq)
-            self.spin_x_span.setValue(freq_span)
-            self.set_x_range(upper_value=max_freq, lower_value=min_freq)
-
-    @Slot()
-    def on_button_move_x_left_coarse_clicked(self) -> None:
-        self.move_x(-500.0)
-
-    @Slot()
-    def on_button_move_x_left_fine_clicked(self) -> None:
-        self.move_x(-50.0)
-
-    @Slot()
-    def on_button_move_x_right_fine_clicked(self) -> None:
-        self.move_x(50.0)
-
-    @Slot()
-    def on_button_move_x_right_coarse_clicked(self) -> None:
-        self.move_x(500.0)
-
-    def move_x(self, shift: float) -> None:
-        if self._loading.locked():
-            return
-        freq_span = self.spin_x_span.value()
-        freq_center = self.spin_x_center.value() + shift
-        min_freq = freq_center - 0.5 * freq_span
-        max_freq = freq_center + 0.5 * freq_span
-        with self._loading:
-            self.spin_x_min.setMaximum(max_freq)
-            self.spin_x_max.setMinimum(min_freq)
-            self.spin_x_min.setValue(min_freq)
-            self.spin_x_max.setValue(max_freq)
-            self.spin_x_center.setValue(freq_center)
-            self.set_x_range(upper_value=max_freq, lower_value=min_freq)
-
-    @Slot(bool)
-    def on_check_frequency_persists_toggled(self, new_value: bool) -> None:
-        if self._loading.locked():
-            return
-        self.set_config_value("frequency", "persists", new_value)
-
-    @Slot(float)
-    def on_spin_voltage_min_changed(self, new_value: float) -> None:
-        if self._loading.locked():
-            return
-        with self._loading:
-            self.spin_y_max.setMinimum(new_value)
-            self.set_y_range(lower_value=new_value, upper_value=self.spin_y_max.value())
-
-    @Slot(float)
-    def on_spin_voltage_max_changed(self, new_value: float) -> None:
-        if self._loading.locked():
-            return
-        with self._loading:
-            self.spin_y_min.setMaximum(new_value)
-            self.set_y_range(lower_value=self.spin_y_min.value(), upper_value=new_value)
-
-    @Slot()
-    def on_button_zoom_y_out_coarse_clicked(self) -> None:
-        self.zoom_y(1.0 / 0.5)
-
-    @Slot()
-    def on_button_zoom_y_out_fine_clicked(self) -> None:
-        self.zoom_y(1.0 / 0.9)
-
-    @Slot()
-    def on_button_zoom_y_in_fine_clicked(self) -> None:
-        self.zoom_y(0.9)
-
-    @Slot()
-    def on_button_zoom_y_in_coarse_clicked(self) -> None:
-        self.zoom_y(0.5)
-
-    def zoom_y(self, factor: float) -> None:
-        if self._loading.locked():
-            return
-        min_voltage = self.spin_y_min.value()
-        max_voltage = self.spin_y_max.value()
-        voltage_span = abs(max_voltage - min_voltage) * factor
-        voltage_center = (max_voltage + min_voltage) * 0.5
-        min_voltage = voltage_center - 0.5 * voltage_span
-        max_voltage = voltage_center + 0.5 * voltage_span
-        with self._loading:
-            self.spin_y_min.setMaximum(max_voltage)
-            self.spin_y_max.setMinimum(min_voltage)
-            self.spin_y_min.setValue(min_voltage)
-            self.spin_y_max.setValue(max_voltage)
-            self.set_y_range(upper_value=max_voltage, lower_value=min_voltage)
-
-    @Slot(bool)
-    def on_check_voltage_persists_toggled(self, new_value: bool) -> None:
-        if self._loading.locked():
-            return
-        self.set_config_value("voltage", "persists", new_value)
+            self.set_y_range(
+                lower_value=min_y,
+                upper_value=max_y,
+            )
 
     @Slot()
     def on_configure_action_triggered(self) -> None:
@@ -776,8 +570,10 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         self.set_axis_line_appearance()
         self.set_marks_appearance()
         self.set_crosshair_lines_appearance()
-        self.model_found_lines.fancy_table_numbers = self.settings.fancy_table_numbers
-        self.model_found_lines.log10_gamma = self.settings.log10_gamma
+        self.box_found_lines.model.fancy_table_numbers = (
+            self.settings.fancy_table_numbers
+        )
+        self.box_found_lines.model.log10_gamma = self.settings.log10_gamma
         self.load_catalog()
         if self._data_mode == DataMode.PSK and self._plot_data.frequency_span > 0.0:
             jump: float = (
@@ -810,7 +606,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             self.load_catalog()
 
     def load_catalog(self) -> None:
-        if frozenset(self.model_found_lines.catalog_file_names) == frozenset(
+        if frozenset(self.box_found_lines.model.catalog_file_names) == frozenset(
             catalog_file_names := self.settings.catalog_paths
         ):
             return
@@ -871,7 +667,9 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
                         )
                 else:
                     self.status_bar.showMessage(self.tr("Catalogs loaded."))
-                self.model_found_lines.catalog = cat or self.model_found_lines.catalog
+                self.box_found_lines.model.catalog = (
+                    cat or self.box_found_lines.model.catalog
+                )
 
     @property
     def line(self) -> PlotDataItem:
@@ -880,16 +678,6 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
     @property
     def label(self) -> str | None:
         return self._plot_line.name()
-
-    def set_x_range(
-        self, lower_value: float | np.float64, upper_value: float | np.float64
-    ) -> None:
-        self.figure.plotItem.setXRange(lower_value, upper_value, padding=0.0)
-
-    def set_y_range(
-        self, lower_value: float | np.float64, upper_value: float | np.float64
-    ) -> None:
-        self.figure.plotItem.setYRange(lower_value, upper_value, padding=0.0)
 
     def set_plot_line_appearance(self) -> None:
         self._plot_line.setPen(
@@ -979,126 +767,10 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         self._crosshair_h_line.setPen(pen)
         self._canvas.replot()
 
-    def find_lines(self, threshold: float) -> int:
-        if self._data_mode == DataMode.unknown or self.model_signal.size < 2:
-            return 0
-
-        x: Final[NDArray[np.float64]] = self._plot_line.xData
-        y: Final[NDArray[np.float64]] = self._plot_line.yData
-        if x.size < 2 or y.size < 2:
-            return 0
-
-        found_lines: NDArray[np.int64]
-        if self._data_mode == DataMode.FS:
-            # re-scale the signal to the actual frequency mesh
-            x_model: NDArray[np.float64] = (
-                np.arange(self.model_signal.size, dtype=np.float64) * 0.1
-            )
-            x_model_new: NDArray[np.float64] = np.arange(
-                x_model[0], x_model[-1], x[1] - x[0]
-            )
-            y_model_new: NDArray[np.float64] = np.interp(
-                x_model_new, x_model, self.model_signal
-            )
-            found_lines = peaks_positions(
-                x, correlation(y_model_new, x, y), threshold=1.0 / threshold
-            )
-        elif self._data_mode in (DataMode.PSK, DataMode.PSK_WITH_JUMP):
-            found_lines = peaks_positions(x, y, threshold=1.0 / threshold)
-        else:
-            return 0
-
-        with self._ignore_scale_change:
-            if found_lines.size:
-                self.automatically_found_lines_data = x[found_lines]
-                self.automatically_found_lines.setData(x[found_lines], y[found_lines])
-            else:
-                self.automatically_found_lines.setData(np.empty(0), np.empty(0))
-                self.automatically_found_lines_data = np.empty(0)
-
-            # update the table
-            self.model_found_lines.set_lines(
-                self._plot_data,
-                (self.automatically_found_lines_data, self.user_found_lines_data),
-            )
-
-            self.toolbar.copy_trace_action.setEnabled(
-                not self.model_found_lines.is_empty
-            )
-            self.toolbar.save_trace_action.setEnabled(
-                not self.model_found_lines.is_empty
-            )
-            self.toolbar.clear_trace_action.setEnabled(
-                not self.model_found_lines.is_empty
-            )
-
-            self.button_clear_automatically_found_lines.setEnabled(
-                bool(found_lines.size)
-            )
-            self.button_next_found_line.setEnabled(bool(found_lines.size))
-            self.button_prev_found_line.setEnabled(bool(found_lines.size))
-
-        return found_lines.size
-
-    @Slot()
-    def on_prev_found_line_clicked(self) -> None:
-        if self.model_signal.size < 2:
-            return
-
-        init_frequency: float = self.spin_x_center.value()
-
-        line_data: NDArray[np.float64] = self.automatically_found_lines.xData
-        if line_data is None or not line_data.size:
-            return
-        i: int = np.searchsorted(line_data, init_frequency, side="right").item() - 2
-        if 0 <= i < line_data.size and line_data[i] != init_frequency:
-            self.spin_x_center.setValue(line_data[i])
-            self.ensure_y_fits()
-
-    @Slot()
-    def on_next_found_line_clicked(self) -> None:
-        if self.model_signal.size < 2:
-            return
-
-        init_frequency: float = self.spin_x_center.value()
-
-        line_data: NDArray[np.float64] = self.automatically_found_lines.xData
-        if line_data is None or not line_data.size:
-            return
-        i: int = np.searchsorted(line_data, init_frequency, side="left").item() + 1
-        if i < line_data.size and line_data[i] != init_frequency:
-            self.spin_x_center.setValue(line_data[i])
-            self.ensure_y_fits()
-
-    @Slot(QModelIndex)
-    def on_table_cell_double_clicked(self, index: QModelIndex) -> None:
-        self.spin_x_center.setValue(self.model_found_lines.item(index.row(), 0))
-        self.ensure_y_fits()
-
     @Slot(float)
-    def on_spin_df_changed(self, new_value: float) -> None:
-        if self._loading.locked():
-            return
-        self.model_found_lines.df = new_value
-        self.set_config_value("catalog", "df", new_value)
-
-    def ensure_y_fits(self) -> None:
-        if self._plot_line.xData is None or self._plot_line.xData.size < 2:
-            return
-        if self._plot_line.yData is None or self._plot_line.yData.size < 2:
-            return
-        x: pg.AxisItem = self._canvas.getAxis("bottom")
-        y: pg.AxisItem = self._canvas.getAxis("left")
-        visible_points: NDArray[np.float64] = self._plot_line.yData[
-            (self._plot_line.xData >= min(x.range))
-            & (self._plot_line.xData <= max(x.range))
-        ]
-        if np.any(visible_points < min(y.range)):
-            minimum: np.float64 = np.min(visible_points)
-            self.set_y_range(minimum - 0.05 * (max(y.range) - minimum), max(y.range))
-        if np.any(visible_points > max(y.range)):
-            maximum: np.float64 = np.max(visible_points)
-            self.set_y_range(min(y.range), maximum + 0.05 * (maximum - min(y.range)))
+    def on_show_frequency_requested(self, f: float) -> None:
+        self.box_frequency.center = f
+        self.ensure_y_fits()
 
     @Slot()
     def on_load_found_lines_triggered(self) -> None:
@@ -1178,7 +850,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         if not len(new_lines):
             return
 
-        self.model_found_lines.add_lines(self._plot_data, new_lines)
+        self.box_found_lines.model.add_lines(self._plot_data, new_lines)
         # add the new lines to the marked ones
         self.user_found_lines_data = np.concatenate(
             (self.user_found_lines_data, new_lines)
@@ -1191,7 +863,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         self.user_found_lines.setData(
             self.user_found_lines_data,
             self._plot_line.yData[
-                self.model_found_lines.frequency_indices(
+                self.box_found_lines.model.frequency_indices(
                     self._plot_data, self.user_found_lines_data
                 )
             ],
@@ -1204,8 +876,8 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
     def on_copy_found_lines_triggered(self) -> None:
         with self.show_loading():
             copy_to_clipboard(
-                self.table_found_lines.stringify_table_plain_text(),
-                self.table_found_lines.stringify_table_html(),
+                self.box_found_lines.table.stringify_table_plain_text(),
+                self.box_found_lines.table.stringify_table_html(),
                 Qt.TextFormat.RichText,
             )
 
@@ -1217,7 +889,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             sep: str = self.settings.csv_separator
             with (
                 open(fn, "w", encoding="utf-8") as f_out,
-                the(self.model_found_lines.header) as header,
+                the(self.box_found_lines.model.header) as header,
             ):
                 f_out.writelines(
                     map(
@@ -1247,7 +919,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
                     html_to_rtf(
                         tag(
                             "html",
-                            self.table_found_lines.stringify_table_html(
+                            self.box_found_lines.table.stringify_table_html(
                                 whole_table=True, with_headers=True
                             ),
                         )
@@ -1260,7 +932,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
                 df.to_excel(
                     writer,
                     index=False,
-                    header=list(map(str, self.model_found_lines.header)),
+                    header=list(map(str, self.box_found_lines.model.header)),
                     sheet_name=_translate("workbook", "Sheet1"),
                 )
 
@@ -1279,15 +951,15 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
                 (
                     item * 1e-6
                     if isinstance(
-                        item := self.model_found_lines.item(row, column),
+                        item := self.box_found_lines.model.item(row, column),
                         float,
                     )
                     and column == 0
                     else item
                 )
-                for column in range(self.model_found_lines.columnCount())
+                for column in range(self.box_found_lines.model.columnCount())
             ]
-            for row in range(self.model_found_lines.rowCount(available_count=True))
+            for row in range(self.box_found_lines.model.rowCount(available_count=True))
         ]
 
         filename_ext: str = filename.suffix.casefold()
@@ -1295,19 +967,25 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             with self.show_loading():
                 supported_formats_callbacks[filename_ext](filename)
 
-    @Slot()
-    def on_clear_automatically_found_lines_clicked(self) -> None:
-        self.automatically_found_lines.clear()
-        self.automatically_found_lines_data = np.empty(0)
+    @Slot(np.ndarray)
+    def on_automatically_found_lines_changed(self, freq: NDArray[np.double]) -> None:
+        self.automatically_found_lines.setData(
+            freq,
+            self._plot_data.y_data[
+                self.box_found_lines.model.frequency_indices(
+                    self._plot_data, self.box_find_lines.found_lines_freq
+                )
+            ],
+        )
         self._canvas.replot()
 
-        self.model_found_lines.set_lines(self._plot_data, self.user_found_lines_data)
-        self.toolbar.copy_trace_action.setEnabled(self.model_found_lines.is_empty)
-        self.toolbar.save_trace_action.setEnabled(self.model_found_lines.is_empty)
-        self.toolbar.clear_trace_action.setEnabled(self.model_found_lines.is_empty)
-        self.button_clear_automatically_found_lines.setEnabled(False)
-        self.button_next_found_line.setEnabled(False)
-        self.button_prev_found_line.setEnabled(False)
+        self.box_found_lines.model.set_lines(
+            self._plot_data, self.user_found_lines_data, freq
+        )
+        with the(not self.box_found_lines.model.is_empty) as enabled:
+            self.toolbar.copy_trace_action.setEnabled(enabled)
+            self.toolbar.save_trace_action.setEnabled(enabled)
+            self.toolbar.clear_trace_action.setEnabled(enabled)
 
     @Slot()
     def on_clear_found_lines_triggered(self) -> None:
@@ -1315,16 +993,15 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
 
     def clear_found_lines(self) -> None:
         self.automatically_found_lines.clear()
-        self.automatically_found_lines_data = np.empty(0)
+        self.box_find_lines.blockSignals(True)
+        self.box_find_lines.clear_found_lines()
+        self.box_find_lines.blockSignals(False)
         self.user_found_lines.clear()
         self.user_found_lines_data = np.empty(0)
-        self.model_found_lines.clear()
+        self.box_found_lines.model.clear()
         self.toolbar.copy_trace_action.setEnabled(False)
         self.toolbar.save_trace_action.setEnabled(False)
         self.toolbar.clear_trace_action.setEnabled(False)
-        self.button_clear_automatically_found_lines.setEnabled(False)
-        self.button_next_found_line.setEnabled(False)
-        self.button_prev_found_line.setEnabled(False)
         self._canvas.replot()
 
     @Slot()
@@ -1358,7 +1035,6 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         self.toolbar.copy_trace_action.setEnabled(False)
         self.toolbar.save_trace_action.setEnabled(False)
         self.toolbar.clear_trace_action.setEnabled(False)
-        self.button_find_lines.setEnabled(False)
         self._cursor_balloon.setVisible(False)
         self._crosshair_h_line.setVisible(False)
         self._crosshair_v_line.setVisible(False)
@@ -1385,21 +1061,14 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
 
     def configure_interface_after_loading_data(self, f: NDArray[np.float64]) -> None:
         if self._data_mode in (DataMode.FS,):
-            self.switch_data_action.setChecked(False)
+            self.box_voltage.show_gamma = False
 
         self.toolbar.clear_action.setEnabled(True)
 
         min_frequency: np.float64 = cast(np.float64, f[0])
         max_frequency: np.float64 = cast(np.float64, f[-1])
 
-        with self._loading:
-            self.spin_x_min.setMaximum(max(max_frequency, self.spin_x_min.value()))
-            self.spin_x_max.setMinimum(min(min_frequency, self.spin_x_max.value()))
-            if not self.check_x_range_persists.isChecked():
-                self.spin_x_min.setValue(min_frequency)
-                self.spin_x_max.setValue(max_frequency)
-                self.spin_x_span.setValue(max_frequency - min_frequency)
-                self.spin_x_center.setValue(0.5 * (max_frequency + min_frequency))
+        self.box_frequency.switch_range(min_frequency, max_frequency)
 
         step: int = int(
             round(self.settings.jump / ((max_frequency - min_frequency) / (f.size - 1)))
@@ -1408,16 +1077,16 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             self._data_mode == DataMode.PSK and 0 < step < 0.25 * f.size
         )
 
-        self.switch_data_action.setEnabled(
-            self._data_mode
-            in (DataMode.PSK, DataMode.PSK_WITH_JUMP, DataMode.TIME_DOMAIN)
+        self.box_voltage.can_show_gamma = self._data_mode in (
+            DataMode.PSK,
+            DataMode.PSK_WITH_JUMP,
+            DataMode.TIME_DOMAIN,
         )
         self.toolbar.save_data_action.setEnabled(True)
         self.toolbar.copy_figure_action.setEnabled(True)
         self.toolbar.save_figure_action.setEnabled(True)
         self.toolbar.trace_action.setEnabled(True)
         self.toolbar.load_trace_action.setEnabled(True)
-        self.button_find_lines.setEnabled(bool(self.model_signal.size))
 
     def load_data(self, filename: Path | None = None) -> bool:
         self.clear_ghost()
@@ -1439,9 +1108,9 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             w = FrequencyDomainWindow(parent=self.parent(), flags=self.windowFlags())
             r: bool = w.set_data(data)
             if r:
-                if self.model_found_lines.catalog is None:
+                if self.box_found_lines.model.catalog is None:
                     self.load_catalog()
-                w.model_found_lines.catalog = self.model_found_lines.catalog
+                w.box_found_lines.model.catalog = self.box_found_lines.model.catalog
                 w.show()
                 if self._data_mode == DataMode.unknown:
                     self.close()
@@ -1492,6 +1161,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         self._plot_data.set_data(
             frequency_data=f, gamma_data=g, voltage_data=v, time_data=t
         )
+        self.box_find_lines.set_spectrum(f, v, g, self._data_mode)
         self.configure_interface_after_loading_data(f)
 
         self._plot_data.x_data_type = PlotDataItem.FREQUENCY_DATA
@@ -1503,14 +1173,8 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
 
         self.display_gamma_or_voltage()
 
-        self.set_x_range(
-            lower_value=self.spin_x_min.value(),
-            upper_value=self.spin_x_max.value(),
-        )
-        self.set_y_range(
-            lower_value=self.spin_y_min.value(),
-            upper_value=self.spin_y_max.value(),
-        )
+        self.set_x_range(*self.box_frequency.range)
+        self.set_y_range(*self.box_voltage.range)
 
         self.setWindowTitle(self.tr("%s — Spectrometer Data Viewer") % filename)
 
@@ -1568,29 +1232,24 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
     def on_differentiate_action_toggled(self, on: bool) -> None:
         self._data_mode = DataMode.PSK_WITH_JUMP if on else DataMode.PSK
         self.display_gamma_or_voltage()
-        self.model_found_lines.refresh(self._plot_data)
-
-    @Slot(bool)
-    def on_switch_data_action_toggled(self, new_state: bool) -> None:
-        self._plot_data.y_data_type = (
-            PlotDataItem.GAMMA_DATA if new_state else PlotDataItem.VOLTAGE_DATA
+        self.box_find_lines.set_spectrum(
+            self._plot_data.frequency_data,
+            self._plot_data.voltage_data,
+            self._plot_data.gamma_data,
+            self._data_mode,
         )
-        self._ghost_data.y_data_type = (
-            PlotDataItem.GAMMA_DATA if new_state else PlotDataItem.VOLTAGE_DATA
-        )
-        self.set_config_value("display", "unit", self._plot_data.y_data_type)
-        self.display_gamma_or_voltage(new_state)
+        self.box_found_lines.model.refresh(self._plot_data)
 
-    def setup_left_axis(self, display_gamma: bool) -> None:
-        if display_gamma:
-            self.box_voltage.setWindowTitle(self.tr("Absorption"))
-        else:
-            self.box_voltage.setWindowTitle(self.tr("Voltage"))
+    @Slot(str)
+    def on_voltage_box_data_mode_changed(self, mode: str) -> None:
+        self._plot_data.y_data_type = mode
+        self._ghost_data.y_data_type = mode
+        self.box_find_lines.set_data_type(mode)
+        self.display_gamma_or_voltage()
 
+    def setup_left_axis(self) -> None:
         a: pg.AxisItem = self._canvas.getAxis("left")
-        if display_gamma:
-            self.check_y_range_persists.setText(self.tr("Keep absorption range"))
-
+        if self._plot_data.y_data_type == PlotDataItem.GAMMA_DATA:
             a.enableAutoSIPrefix(False)
             a.setLabel(
                 text=_translate("plot axes labels", "Absorption"),
@@ -1604,15 +1263,8 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             self._cursor_y.setFormatStr(
                 "{mantissa:.{decimals}f}×10<sup>{exp}</sup>{suffixGap}{suffix}"
             )
-            opts = {
-                "suffix": _translate("unit", "cm⁻¹"),
-                "siPrefix": False,
-                "format": "{value:.{decimals}e}{suffixGap}{suffix}",
-            }
 
-        else:
-            self.check_y_range_persists.setText(self.tr("Keep voltage range"))
-
+        elif self._plot_data.y_data_type == PlotDataItem.VOLTAGE_DATA:
             a.enableAutoSIPrefix(True)
             a.setLabel(
                 text=_translate("plot axes labels", "Voltage"),
@@ -1624,18 +1276,11 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             self._cursor_y.setFormatStr(
                 "{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}"
             )
-            opts = {
-                "suffix": _translate("unit", "V"),
-                "siPrefix": True,
-                "format": "{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}",
-            }
-        self.spin_y_min.setOpts(**opts)
-        self.spin_y_max.setOpts(**opts)
 
-    def display_gamma_or_voltage(self, display_gamma: bool | None = None) -> None:
-        if display_gamma is None:
-            display_gamma = self.switch_data_action.isChecked()
+        else:
+            raise ValueError(f"Invalid data type: {self._plot_data.y_data_type!r}")
 
+    def display_gamma_or_voltage(self) -> None:
         if self._data_mode == DataMode.PSK_WITH_JUMP:
             self._plot_data.jump = self.settings.jump
             self._ghost_data.jump = self.settings.jump
@@ -1646,24 +1291,22 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         if self._plot_data:  # something is loaded
             self._plot_line.setData(self._plot_data.x_data, self._plot_data.y_data)
 
+            y_data: NDArray[np.float64] = self._plot_data.y_data
+            min_y: np.float64 = np.min(y_data)
+            max_y: np.float64 = np.max(y_data)
             with self._loading:
-                y_data: NDArray[np.float64] = self._plot_data.y_data
-                min_y: np.float64 = np.min(y_data)
-                max_y: np.float64 = np.max(y_data)
-                self.spin_y_min.setMaximum(max(max_y, self.spin_y_min.value()))
-                self.spin_y_max.setMinimum(min(min_y, self.spin_y_max.value()))
-            if not self.check_y_range_persists.isChecked():
-                self.on_ylim_changed((min_y, max_y))
+                self.box_voltage.switch_range(min_y, max_y)
+            self.on_ylim_changed([min_y, max_y])
 
         if self._ghost_data:  # something is loaded
             self._ghost_line.setData(self._ghost_data.x_data, self._ghost_data.y_data)
 
-        if self.automatically_found_lines_data.size:  # something is marked
+        if self.box_find_lines.found_lines_freq.size:  # something is marked
             self.automatically_found_lines.setData(
-                self.automatically_found_lines_data,
+                self.box_find_lines.found_lines_freq,
                 self._plot_data.y_data[
-                    self.model_found_lines.frequency_indices(
-                        self._plot_data, self.automatically_found_lines_data
+                    self.box_found_lines.model.frequency_indices(
+                        self._plot_data, self.box_find_lines.found_lines_freq
                     )
                 ],
             )
@@ -1671,13 +1314,13 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             self.user_found_lines.setData(
                 self.user_found_lines_data,
                 self._plot_data.y_data[
-                    self.model_found_lines.frequency_indices(
+                    self.box_found_lines.model.frequency_indices(
                         self._plot_data, self.user_found_lines_data
                     )
                 ],
             )
 
-        self.setup_left_axis(display_gamma)
+        self.setup_left_axis()
         self.hide_cursors()
 
     @Slot()
@@ -1688,7 +1331,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         def save_csv(fn: Path) -> None:
             data: NDArray[np.float64]
             sep: str = self.settings.csv_separator
-            if self.switch_data_action.isChecked():
+            if self.box_voltage.show_gamma:
                 data = np.column_stack((x * 1e-6, y))
                 # noinspection PyTypeChecker
                 np.savetxt(
@@ -1743,14 +1386,14 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             from ..utils import html_to_rtf, tag
 
             table: list[list[str]] = []
-            if self.switch_data_action.isChecked():
+            if self.box_voltage.show_gamma:
                 table.append(
                     list(
                         map(
                             str,
                             [
-                                self.model_found_lines.header[0],
-                                self.model_found_lines.header[2],
+                                self.box_found_lines.model.header[0],
+                                self.box_found_lines.model.header[2],
                             ],
                         )
                     )
@@ -1763,8 +1406,8 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
                         map(
                             str,
                             [
-                                self.model_found_lines.header[0],
-                                self.model_found_lines.header[1],
+                                self.box_found_lines.model.header[0],
+                                self.box_found_lines.model.header[1],
                             ],
                         )
                     )
@@ -1794,7 +1437,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             data: NDArray[np.float64]
             with pd.ExcelWriter(fn) as writer:
                 df: pd.DataFrame
-                if self.switch_data_action.isChecked():
+                if self.box_voltage.show_gamma:
                     data = np.column_stack((x * 1e-6, y))
                     df = pd.DataFrame(data)
                     df.to_excel(
@@ -1804,8 +1447,8 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
                             map(
                                 str,
                                 [
-                                    self.model_found_lines.header[0],
-                                    self.model_found_lines.header[2],
+                                    self.box_found_lines.model.header[0],
+                                    self.box_found_lines.model.header[2],
                                 ],
                             )
                         ),
@@ -1822,8 +1465,8 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
                             map(
                                 str,
                                 [
-                                    self.model_found_lines.header[0],
-                                    self.model_found_lines.header[1],
+                                    self.box_found_lines.model.header[0],
+                                    self.box_found_lines.model.header[1],
                                 ],
                             )
                         ),

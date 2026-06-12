@@ -1,5 +1,6 @@
-from collections.abc import Callable, Collection, Iterable
+from collections.abc import Callable, Collection
 from pathlib import Path
+from threading import Lock
 from typing import cast
 
 # noinspection PyPackageRequirements
@@ -57,7 +58,7 @@ class TimeDomainWindow(TimeDomainGUI):
         self._ghost_data: PlotDataItem = PlotDataItem()
         self._plot_data: PlotDataItem = PlotDataItem()
 
-        self._ignore_scale_change: bool = False
+        self._ignore_scale_change: Lock = Lock()
 
         self._cursor_balloon: pg.TextItem = pg.TextItem()
         self.figure.addItem(self._cursor_balloon)
@@ -169,12 +170,8 @@ class TimeDomainWindow(TimeDomainGUI):
 
             self.settings.restore(self)
 
-            self.check_x_range_persists.setChecked(
-                self.get_config_value("time", "persists", False, bool)
-            )
-            self.check_y_range_persists.setChecked(
-                self.get_config_value("voltage", "persists", False, bool)
-            )
+            self.box_time.load_config()
+            self.box_voltage.load_config()
 
             if (
                 self.get_config_value("display", "unit", PlotDataItem.VOLTAGE_DATA, str)
@@ -183,9 +180,6 @@ class TimeDomainWindow(TimeDomainGUI):
                 self._plot_data.y_data_type = PlotDataItem.GAMMA_DATA
             else:
                 self._plot_data.y_data_type = PlotDataItem.VOLTAGE_DATA
-            self.switch_data_action.setChecked(
-                self._plot_data.y_data_type == PlotDataItem.GAMMA_DATA
-            )
             self.display_gamma_or_voltage()
 
     def setup_ui_actions(self) -> None:
@@ -204,69 +198,65 @@ class TimeDomainWindow(TimeDomainGUI):
             self.on_configure_action_triggered
         )
 
-        self.spin_x_min.valueChanged.connect(self.on_spin_x_min_changed)
-        self.spin_x_max.valueChanged.connect(self.on_spin_x_max_changed)
-        self.spin_x_center.valueChanged.connect(self.on_spin_x_center_changed)
-        self.spin_x_span.valueChanged.connect(self.on_spin_x_span_changed)
-        self.button_zoom_x_out_coarse.clicked.connect(
-            self.on_button_zoom_x_out_coarse_clicked
-        )
-        self.button_zoom_x_out_fine.clicked.connect(
-            self.on_button_zoom_x_out_fine_clicked
-        )
-        self.button_zoom_x_in_fine.clicked.connect(
-            self.on_button_zoom_x_in_fine_clicked
-        )
-        self.button_zoom_x_in_coarse.clicked.connect(
-            self.on_button_zoom_x_in_coarse_clicked
-        )
-        self.check_x_range_persists.toggled.connect(
-            self.on_check_frequency_persists_toggled
-        )
+        self.box_time.setup_ui_actions()
+        self.box_time.changed.connect(self.on_time_box_changed)
 
-        self.switch_data_action.toggled.connect(self.on_switch_data_action_toggled)
-        self.spin_y_min.valueChanged.connect(self.on_spin_voltage_min_changed)
-        self.spin_y_max.valueChanged.connect(self.on_spin_voltage_max_changed)
-        self.button_zoom_y_out_coarse.clicked.connect(
-            self.on_button_zoom_y_out_coarse_clicked
-        )
-        self.button_zoom_y_out_fine.clicked.connect(
-            self.on_button_zoom_y_out_fine_clicked
-        )
-        self.button_zoom_y_in_fine.clicked.connect(
-            self.on_button_zoom_y_in_fine_clicked
-        )
-        self.button_zoom_y_in_coarse.clicked.connect(
-            self.on_button_zoom_y_in_coarse_clicked
-        )
-        self.check_y_range_persists.toggled.connect(
-            self.on_check_voltage_persists_toggled
-        )
+        self.box_voltage.setup_ui_actions()
+        self.box_voltage.changed.connect(self.on_voltage_box_changed)
+        self.box_voltage.dataModeChanged.connect(self.on_voltage_box_data_mode_changed)
 
         self._view_all_action.triggered.connect(self.on_view_all_triggered)
 
-    def on_xlim_changed(self, xlim: Iterable[float]) -> None:
-        min_freq, max_freq = min(xlim), max(xlim)
-        with self._loading:
-            self.spin_x_min.setValue(min_freq)
-            self.spin_x_max.setValue(max_freq)
-            self.spin_x_span.setValue(max_freq - min_freq)
-            self.spin_x_center.setValue(0.5 * (max_freq + min_freq))
-            self.spin_x_min.setMaximum(max_freq)
-            self.spin_x_max.setMinimum(min_freq)
-        self.set_x_range(
-            lower_value=self.spin_x_min.value(),
-            upper_value=self.spin_x_max.value(),
-        )
+    def on_lim_changed(self, arg: tuple[PlotWidget, list[list[float]]]) -> None:
+        if self._ignore_scale_change.locked():
+            return
+        rect: list[list[float]] = arg[1]
+        xlim: list[float]
+        ylim: list[float]
+        xlim, ylim = rect
+        with self._ignore_scale_change:
+            self.on_xlim_changed(xlim)
+            self.on_ylim_changed(ylim)
 
-    def on_ylim_changed(self, ylim: Iterable[float | np.float64]) -> None:
+    def on_xlim_changed(self, xlim: list[float]) -> None:
+        min_time, max_time = min(xlim), max(xlim)
+        self.box_time.set_range(min_time, max_time)
+        self.set_x_range(*self.box_time.range)
+
+    def on_ylim_changed(self, ylim: list[float | np.float64]) -> None:
         min_voltage, max_voltage = min(ylim), max(ylim)
-        with self._loading:
-            self.spin_y_min.setValue(min_voltage)
-            self.spin_y_max.setValue(max_voltage)
-            self.spin_y_min.setMaximum(max_voltage)
-            self.spin_y_max.setMinimum(min_voltage)
+        self.box_voltage.set_range(min_voltage, max_voltage)
         self.set_y_range(lower_value=min_voltage, upper_value=max_voltage)
+
+    def set_x_range(
+        self, lower_value: float | np.float64, upper_value: float | np.float64
+    ) -> None:
+        self.figure.getPlotItem().setXRange(lower_value, upper_value, padding=0.0)
+
+    def set_y_range(
+        self, lower_value: float | np.float64, upper_value: float | np.float64
+    ) -> None:
+        self.figure.getPlotItem().setYRange(lower_value, upper_value, padding=0.0)
+
+    def ensure_y_fits(self) -> None:
+        if self._plot_line.xData is None or self._plot_line.xData.size < 2:
+            return
+        if self._plot_line.yData is None or self._plot_line.yData.size < 2:
+            return
+        x: pg.AxisItem = self._canvas.getAxis("bottom")
+        y: pg.AxisItem = self._canvas.getAxis("left")
+        visible_points: NDArray[np.float64] = self._plot_line.yData[
+            (self._plot_line.xData >= min(x.range))
+            & (self._plot_line.xData <= max(x.range))
+        ]
+        if np.any(visible_points < min(y.range)):
+            minimum: np.float64 = np.min(visible_points)
+            # noinspection PyTypeChecker
+            self.set_y_range(minimum - 0.05 * (max(y.range) - minimum), max(y.range))
+        if np.any(visible_points > max(y.range)):
+            maximum: np.float64 = np.max(visible_points)
+            # noinspection PyTypeChecker
+            self.set_y_range(min(y.range), maximum + 0.05 * (maximum - min(y.range)))
 
     @Slot(tuple)
     def on_mouse_moved(self, event: tuple[QPointF]) -> None:
@@ -319,158 +309,27 @@ class TimeDomainWindow(TimeDomainGUI):
 
     @Slot()
     def on_view_all_triggered(self) -> None:
-        self._canvas.vb.autoRange(padding=0.0)
+        self._canvas.getViewBox().autoRange(padding=0.0)
 
-    def on_lim_changed(self, arg: tuple[PlotWidget, list[list[float]]]) -> None:
-        if self._ignore_scale_change:
-            return
-        rect: list[list[float]] = arg[1]
-        xlim: list[float]
-        ylim: list[float]
-        xlim, ylim = rect
-        self._ignore_scale_change = True
-        self.on_xlim_changed(xlim)
-        self.on_ylim_changed(ylim)
-        self._ignore_scale_change = False
-
-    @Slot(float)
-    def on_spin_x_min_changed(self, new_value: float) -> None:
+    @Slot(float, float)
+    def on_time_box_changed(self, min_time: float, max_time: float) -> None:
         if self._loading.locked():
             return
         with self._loading:
-            self.spin_x_max.setMinimum(new_value)
-            self.spin_x_center.setValue(0.5 * (new_value + self.spin_x_max.value()))
-            self.spin_x_span.setValue(self.spin_x_max.value() - new_value)
-            self.set_x_range(lower_value=new_value, upper_value=self.spin_x_max.value())
+            self.set_x_range(
+                lower_value=min_time,
+                upper_value=max_time,
+            )
 
-    @Slot(float)
-    def on_spin_x_max_changed(self, new_value: float) -> None:
+    @Slot(float, float)
+    def on_voltage_box_changed(self, min_y: float, max_y: float) -> None:
         if self._loading.locked():
             return
         with self._loading:
-            self.spin_x_min.setMaximum(new_value)
-            self.spin_x_center.setValue(0.5 * (self.spin_x_min.value() + new_value))
-            self.spin_x_span.setValue(new_value - self.spin_x_min.value())
-            self.set_x_range(lower_value=self.spin_x_min.value(), upper_value=new_value)
-
-    @Slot(float)
-    def on_spin_x_center_changed(self, new_value: float) -> None:
-        if self._loading.locked():
-            return
-        freq_span = self.spin_x_span.value()
-        min_freq = new_value - 0.5 * freq_span
-        max_freq = new_value + 0.5 * freq_span
-        with self._loading:
-            self.spin_x_min.setMaximum(max_freq)
-            self.spin_x_max.setMinimum(min_freq)
-            self.spin_x_min.setValue(min_freq)
-            self.spin_x_max.setValue(max_freq)
-            self.set_x_range(upper_value=max_freq, lower_value=min_freq)
-
-    @Slot(float)
-    def on_spin_x_span_changed(self, new_value: float) -> None:
-        if self._loading.locked():
-            return
-        freq_center = self.spin_x_center.value()
-        min_freq = freq_center - 0.5 * new_value
-        max_freq = freq_center + 0.5 * new_value
-        with self._loading:
-            self.spin_x_min.setMaximum(max_freq)
-            self.spin_x_max.setMinimum(min_freq)
-            self.spin_x_min.setValue(min_freq)
-            self.spin_x_max.setValue(max_freq)
-            self.set_x_range(upper_value=max_freq, lower_value=min_freq)
-
-    @Slot()
-    def on_button_zoom_x_out_coarse_clicked(self) -> None:
-        self.zoom_x(1.0 / 0.5)
-
-    @Slot()
-    def on_button_zoom_x_out_fine_clicked(self) -> None:
-        self.zoom_x(1.0 / 0.9)
-
-    @Slot()
-    def on_button_zoom_x_in_fine_clicked(self) -> None:
-        self.zoom_x(0.9)
-
-    @Slot()
-    def on_button_zoom_x_in_coarse_clicked(self) -> None:
-        self.zoom_x(0.5)
-
-    def zoom_x(self, factor: float) -> None:
-        if self._loading.locked():
-            return
-        freq_span = self.spin_x_span.value() * factor
-        freq_center = self.spin_x_center.value()
-        min_freq = freq_center - 0.5 * freq_span
-        max_freq = freq_center + 0.5 * freq_span
-        with self._loading:
-            self.spin_x_min.setMaximum(max_freq)
-            self.spin_x_max.setMinimum(min_freq)
-            self.spin_x_min.setValue(min_freq)
-            self.spin_x_max.setValue(max_freq)
-            self.spin_x_span.setValue(freq_span)
-            self.set_x_range(upper_value=max_freq, lower_value=min_freq)
-
-    @Slot(bool)
-    def on_check_frequency_persists_toggled(self, new_value: bool) -> None:
-        if self._loading.locked():
-            return
-        self.set_config_value("frequency", "persists", new_value)
-
-    @Slot(float)
-    def on_spin_voltage_min_changed(self, new_value: float) -> None:
-        if self._loading.locked():
-            return
-        with self._loading:
-            self.spin_y_max.setMinimum(new_value)
-            self.set_y_range(lower_value=new_value, upper_value=self.spin_y_max.value())
-
-    @Slot(float)
-    def on_spin_voltage_max_changed(self, new_value: float) -> None:
-        if self._loading.locked():
-            return
-        with self._loading:
-            self.spin_y_min.setMaximum(new_value)
-            self.set_y_range(lower_value=self.spin_y_min.value(), upper_value=new_value)
-
-    @Slot()
-    def on_button_zoom_y_out_coarse_clicked(self) -> None:
-        self.zoom_y(1.0 / 0.5)
-
-    @Slot()
-    def on_button_zoom_y_out_fine_clicked(self) -> None:
-        self.zoom_y(1.0 / 0.9)
-
-    @Slot()
-    def on_button_zoom_y_in_fine_clicked(self) -> None:
-        self.zoom_y(0.9)
-
-    @Slot()
-    def on_button_zoom_y_in_coarse_clicked(self) -> None:
-        self.zoom_y(0.5)
-
-    def zoom_y(self, factor: float) -> None:
-        if self._loading.locked():
-            return
-        min_voltage = self.spin_y_min.value()
-        max_voltage = self.spin_y_max.value()
-        voltage_span = abs(max_voltage - min_voltage) * factor
-        voltage_center = (max_voltage + min_voltage) * 0.5
-        min_voltage = voltage_center - 0.5 * voltage_span
-        max_voltage = voltage_center + 0.5 * voltage_span
-        with self._loading:
-            self.spin_y_min.setMaximum(max_voltage)
-            self.spin_y_max.setMinimum(min_voltage)
-            self.spin_y_min.setValue(min_voltage)
-            self.spin_y_max.setValue(max_voltage)
-            self.set_y_range(upper_value=max_voltage, lower_value=min_voltage)
-
-    @Slot(bool)
-    def on_check_voltage_persists_toggled(self, new_value: bool) -> None:
-        if self._loading.locked():
-            return
-        self.set_config_value("voltage", "persists", new_value)
+            self.set_y_range(
+                lower_value=min_y,
+                upper_value=max_y,
+            )
 
     @Slot()
     def on_configure_action_triggered(self) -> None:
@@ -502,16 +361,6 @@ class TimeDomainWindow(TimeDomainGUI):
     @property
     def label(self) -> str | None:
         return self._plot_line.name()
-
-    def set_x_range(
-        self, lower_value: float | np.float64, upper_value: float | np.float64
-    ) -> None:
-        self.figure.plotItem.setXRange(lower_value, upper_value, padding=0.0)
-
-    def set_y_range(
-        self, lower_value: float | np.float64, upper_value: float | np.float64
-    ) -> None:
-        self.figure.plotItem.setYRange(lower_value, upper_value, padding=0.0)
 
     def set_plot_line_appearance(self) -> None:
         self._plot_line.setPen(
@@ -588,24 +437,6 @@ class TimeDomainWindow(TimeDomainGUI):
         self._crosshair_h_line.setPen(pen)
         self._canvas.replot()
 
-    def ensure_y_fits(self) -> None:
-        if self._plot_line.xData is None or self._plot_line.xData.size < 2:
-            return
-        if self._plot_line.yData is None or self._plot_line.yData.size < 2:
-            return
-        x: pg.AxisItem = self._canvas.getAxis("bottom")
-        y: pg.AxisItem = self._canvas.getAxis("left")
-        visible_points: NDArray[np.float64] = self._plot_line.yData[
-            (self._plot_line.xData >= min(x.range))
-            & (self._plot_line.xData <= max(x.range))
-        ]
-        if np.any(visible_points < min(y.range)):
-            minimum: np.float64 = np.min(visible_points)
-            self.set_y_range(minimum - 0.05 * (max(y.range) - minimum), max(y.range))
-        if np.any(visible_points > max(y.range)):
-            maximum: np.float64 = np.max(visible_points)
-            self.set_y_range(min(y.range), maximum + 0.05 * (maximum - min(y.range)))
-
     @Slot()
     def on_clear_action_triggered(self) -> None:
         close: QMessageBox = QMessageBox()
@@ -659,18 +490,12 @@ class TimeDomainWindow(TimeDomainGUI):
         min_time: np.float64 = cast(np.float64, t[0])
         max_time: np.float64 = cast(np.float64, t[-1])
 
-        with self._loading:
-            self.spin_x_min.setMaximum(max(max_time, self.spin_x_min.value()))
-            self.spin_x_max.setMinimum(min(min_time, self.spin_x_max.value()))
-            if not self.check_x_range_persists.isChecked():
-                self.spin_x_min.setValue(min_time)
-                self.spin_x_max.setValue(max_time)
-                self.spin_x_span.setValue(max_time - min_time)
-                self.spin_x_center.setValue(0.5 * (max_time + min_time))
+        self.box_time.switch_range(min_time, max_time)
 
-        self.switch_data_action.setEnabled(
-            self._data_mode
-            in (DataMode.PSK, DataMode.PSK_WITH_JUMP, DataMode.TIME_DOMAIN)
+        self.box_voltage.can_show_gamma = self._data_mode in (
+            DataMode.PSK,
+            DataMode.PSK_WITH_JUMP,
+            DataMode.TIME_DOMAIN,
         )
         self.toolbar.save_data_action.setEnabled(True)
         self.toolbar.copy_figure_action.setEnabled(True)
@@ -757,14 +582,8 @@ class TimeDomainWindow(TimeDomainGUI):
 
         self.display_gamma_or_voltage()
 
-        self.set_x_range(
-            lower_value=self.spin_x_min.value(),
-            upper_value=self.spin_x_max.value(),
-        )
-        self.set_y_range(
-            lower_value=self.spin_y_min.value(),
-            upper_value=self.spin_y_max.value(),
-        )
+        self.set_x_range(*self.box_time.range)
+        self.set_y_range(*self.box_voltage.range)
 
         self.setWindowTitle(self.tr("%s — Spectrometer Data Viewer") % filename)
 
@@ -811,27 +630,15 @@ class TimeDomainWindow(TimeDomainGUI):
 
         return True
 
-    @Slot(bool)
-    def on_switch_data_action_toggled(self, new_state: bool) -> None:
-        self._plot_data.y_data_type = (
-            PlotDataItem.GAMMA_DATA if new_state else PlotDataItem.VOLTAGE_DATA
-        )
-        self._ghost_data.y_data_type = (
-            PlotDataItem.GAMMA_DATA if new_state else PlotDataItem.VOLTAGE_DATA
-        )
-        self.set_config_value("display", "unit", self._plot_data.y_data_type)
-        self.display_gamma_or_voltage(new_state)
+    @Slot(str)
+    def on_voltage_box_data_mode_changed(self, mode: str) -> None:
+        self._plot_data.y_data_type = mode
+        self._ghost_data.y_data_type = mode
+        self.display_gamma_or_voltage()
 
-    def setup_left_axis(self, display_gamma: bool) -> None:
-        if display_gamma:
-            self.box_voltage.setWindowTitle(self.tr("Absorption"))
-        else:
-            self.box_voltage.setWindowTitle(self.tr("Voltage"))
-
+    def setup_left_axis(self) -> None:
         a: pg.AxisItem = self._canvas.getAxis("left")
-        if display_gamma:
-            self.check_y_range_persists.setText(self.tr("Keep absorption range"))
-
+        if self._plot_data.y_data_type == PlotDataItem.GAMMA_DATA:
             a.enableAutoSIPrefix(False)
             a.setLabel(
                 text=_translate("plot axes labels", "Absorption"),
@@ -845,15 +652,8 @@ class TimeDomainWindow(TimeDomainGUI):
             self._cursor_y.setFormatStr(
                 "{mantissa:.{decimals}f}×10<sup>{exp}</sup>{suffixGap}{suffix}"
             )
-            opts = {
-                "suffix": _translate("unit", "cm⁻¹"),
-                "siPrefix": False,
-                "format": "{value:.{decimals}e}{suffixGap}{suffix}",
-            }
 
-        else:
-            self.check_y_range_persists.setText(self.tr("Keep voltage range"))
-
+        elif self._plot_data.y_data_type == PlotDataItem.VOLTAGE_DATA:
             a.enableAutoSIPrefix(True)
             a.setLabel(
                 text=_translate("plot axes labels", "Voltage"),
@@ -865,37 +665,28 @@ class TimeDomainWindow(TimeDomainGUI):
             self._cursor_y.setFormatStr(
                 "{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}"
             )
-            opts = {
-                "suffix": _translate("unit", "V"),
-                "siPrefix": True,
-                "format": "{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}",
-            }
-        self.spin_y_min.setOpts(**opts)
-        self.spin_y_max.setOpts(**opts)
 
-    def display_gamma_or_voltage(self, display_gamma: bool | None = None) -> None:
-        if display_gamma is None:
-            display_gamma = self.switch_data_action.isChecked()
+        else:
+            raise ValueError(f"Invalid data type: {self._plot_data.y_data_type!r}")
 
+    def display_gamma_or_voltage(self) -> None:
         self._plot_data.jump = np.nan
         self._ghost_data.jump = np.nan
 
         if self._plot_data:  # something is loaded
             self._plot_line.setData(self._plot_data.x_data, self._plot_data.y_data)
 
+            y_data: NDArray[np.float64] = self._plot_data.y_data
+            min_y: np.float64 = np.min(y_data)
+            max_y: np.float64 = np.max(y_data)
             with self._loading:
-                y_data: NDArray[np.float64] = self._plot_data.y_data
-                min_y: np.float64 = np.min(y_data)
-                max_y: np.float64 = np.max(y_data)
-                self.spin_y_min.setMaximum(max(max_y, self.spin_y_min.value()))
-                self.spin_y_max.setMinimum(min(min_y, self.spin_y_max.value()))
-            if not self.check_y_range_persists.isChecked():
-                self.on_ylim_changed((min_y, max_y))
+                self.box_voltage.switch_range(min_y, max_y)
+            self.on_ylim_changed([min_y, max_y])
 
         if self._ghost_data:  # something is loaded
             self._ghost_line.setData(self._ghost_data.x_data, self._ghost_data.y_data)
 
-        self.setup_left_axis(display_gamma)
+        self.setup_left_axis()
         self.hide_cursors()
 
     @Slot()
@@ -906,7 +697,7 @@ class TimeDomainWindow(TimeDomainGUI):
         def save_csv(fn: Path) -> None:
             data: NDArray[np.float64]
             sep: str = self.settings.csv_separator
-            if self.switch_data_action.isChecked():
+            if self.box_voltage.show_gamma:
                 data = np.column_stack((x, y))
                 # noinspection PyTypeChecker
                 np.savetxt(
@@ -961,7 +752,7 @@ class TimeDomainWindow(TimeDomainGUI):
             from ..utils import html_to_rtf, tag
 
             table: list[list[str]] = []
-            if self.switch_data_action.isChecked():
+            if self.box_voltage.show_gamma:
                 table.append(
                     [
                         _translate("plot axes labels", "Time (s)"),
@@ -1002,7 +793,7 @@ class TimeDomainWindow(TimeDomainGUI):
             data: NDArray[np.float64]
             with pd.ExcelWriter(fn) as writer:
                 df: pd.DataFrame
-                if self.switch_data_action.isChecked():
+                if self.box_voltage.show_gamma:
                     data = np.column_stack((x, y))
                     df = pd.DataFrame(data)
                     df.to_excel(

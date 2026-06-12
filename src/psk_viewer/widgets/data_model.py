@@ -324,6 +324,25 @@ class DataModel(QAbstractTableModel):
             self._numeric_data = new_data_lines
         self.endInsertRows()
 
+    def remove_row(self, row: int) -> bool:
+        if not (0 <= row < self._numeric_data.shape[0]):
+            return False
+
+        self.beginRemoveRows(
+            QModelIndex(),
+            row,
+            row,
+        )
+        mask: NDArray[np.bool_] = np.full(self._numeric_data.shape[0], True)
+        mask[row] = False
+        self._numeric_data = self._numeric_data[mask]
+        for r, c in list(self._data.keys()):
+            if r > row:
+                self._data[r - 1, c] = self._data[r, c]
+                del self._data[r, c]
+        self.endRemoveRows()
+        return True
+
     def clear(self) -> None:
         self.beginResetModel()
         self._numeric_data = np.empty((0, 0))

@@ -1,6 +1,13 @@
 from typing import cast
 
-from qtpy.QtCore import QAbstractItemModel, QModelIndex, QPoint, Qt, Slot
+from qtpy.QtCore import (
+    QAbstractItemModel,
+    QModelIndex,
+    QPoint,
+    QSortFilterProxyModel,
+    Qt,
+    Slot,
+)
 from qtpy.QtGui import QKeyEvent, QKeySequence
 from qtpy.QtWidgets import (
     QAction,
@@ -187,7 +194,8 @@ class TableView(QTableView):
                                 column,
                                 Qt.Orientation.Horizontal,
                                 Qt.ItemDataRole.DisplayRole,
-                            ),
+                            )
+                            or "",
                         )
                         for column in range(model.columnCount())
                         if not self.isColumnHidden(column)
@@ -212,7 +220,8 @@ class TableView(QTableView):
                                 column,
                                 Qt.Orientation.Horizontal,
                                 Qt.ItemDataRole.DisplayRole,
-                            ),
+                            )
+                            or "",
                         )
                         for column in cols
                     ],
@@ -232,6 +241,22 @@ class TableView(QTableView):
                 self.stringify_table_html(False),
                 Qt.TextFormat.RichText,
             )
+            e.accept()
+        elif e.matches(QKeySequence.StandardKey.Delete):
+            model: QAbstractItemModel = self.model()
+            selected_indices: list[QModelIndex] = (
+                list(model.mapToSource(index) for index in self.selectedIndexes())
+                if isinstance(model, QSortFilterProxyModel)
+                else self.selectedIndexes()
+            )
+            if isinstance(model, QSortFilterProxyModel):
+                model = model.sourceModel()
+            if isinstance(model, FoundLinesModel):
+                for row in sorted(
+                    (index.row() for index in selected_indices),
+                    reverse=True,
+                ):
+                    model.remove_row(row)
             e.accept()
         elif e.matches(QKeySequence.StandardKey.SelectAll):
             self.selectAll()
