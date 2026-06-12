@@ -1064,4 +1064,4 @@ class TimeDomainWindow(TimeDomainGUI):
         if not (filename := self._save_image_dialog.get_save_filename()):
             return
         self.hide_cursors()
-        exporter.export(filename)
+        exporter.export(str(filename))
