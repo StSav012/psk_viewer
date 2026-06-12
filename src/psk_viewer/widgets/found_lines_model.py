@@ -256,6 +256,7 @@ class _FoundLinesModel(DataModel):
                 (
                     plot_data.frequency_data[frequency_indices],
                     plot_data.voltage_data[frequency_indices],
+                    np.ones_like(frequency_indices) * np.nan,
                 )
             )
         self._frequencies = np.concatenate((self._frequencies, frequency_values))
