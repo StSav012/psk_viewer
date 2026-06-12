@@ -409,7 +409,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
 
         elif ev.modifiers() == Qt.KeyboardModifier.NoModifier:
             found_lines_frequencies: NDArray[np.float64] = (
-                self.model_found_lines.all_data(0).real
+                self.box_found_lines.model.all_data(0)
             )
             selected_points: list[int] = [
                 cast(int, np.argmin(np.abs(point.pos().x() - found_lines_frequencies)))

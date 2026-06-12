@@ -3,7 +3,6 @@ from contextlib import suppress
 from typing import Final, NamedTuple, cast
 
 import numpy as np
-from numpy import complex128, float64
 from numpy.typing import NDArray
 from qtpy.QtCore import (
     QAbstractTableModel,
@@ -30,7 +29,7 @@ class DataModel(QAbstractTableModel):
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._data: dict[tuple[int, int], dict[Qt.ItemDataRole | int, object]] = {}
-        self._numeric_data: NDArray[np.double] | NDArray[np.cdouble] = np.empty((0, 0))
+        self._numeric_data: NDArray[np.double] = np.empty((0, 0))
         self._rows_loaded: int = DataModel.ROW_BATCH_COUNT
 
         self._header: list[str | HeaderWithUnit] = []
@@ -44,10 +43,7 @@ class DataModel(QAbstractTableModel):
     def header(self, new_header: Iterable[str | HeaderWithUnit]) -> None:
         self._header = list(new_header)
 
-    def all_data(
-        self,
-        column: int | None = None,
-    ) -> NDArray[float64] | NDArray[complex128]:
+    def all_data(self, column: int | None = None) -> NDArray[np.double]:
         if column is None:
             return self._numeric_data
         return self._numeric_data[:, column]
@@ -293,19 +289,17 @@ class DataModel(QAbstractTableModel):
 
     def set_data(
         self,
-        new_data: list[list[float]] | NDArray[np.double] | NDArray[np.cdouble],
+        new_data: list[list[float]] | NDArray[np.double],
     ) -> None:
         self.beginResetModel()
         self._data.clear()
         self._numeric_data = np.asarray(new_data)
-        if np.all(self._numeric_data.imag == 0.0):
-            self._numeric_data = self._numeric_data.real
         self._rows_loaded = DataModel.ROW_BATCH_COUNT
         self.endResetModel()
 
     def extend_data(
         self,
-        new_data_lines: list[list[float]] | NDArray[np.double] | NDArray[np.cdouble],
+        new_data_lines: list[list[float]] | NDArray[np.double],
     ) -> None:
         data_column_count: int = self.data_column_count
         new_data_lines = np.asarray(
@@ -319,8 +313,6 @@ class DataModel(QAbstractTableModel):
                 for new_data_line in new_data_lines
             ]
         )
-        if np.all(new_data_lines.imag == 0.0):
-            new_data_lines = new_data_lines.real
         self.beginInsertRows(
             QModelIndex(),
             self.rowCount(),

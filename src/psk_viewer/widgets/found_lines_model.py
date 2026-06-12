@@ -236,7 +236,7 @@ class _FoundLinesModel(DataModel):
         )
         if not frequency_indices.size:
             return
-        new_data: NDArray[np.double] | NDArray[np.cdouble]
+        new_data: NDArray[np.double]
         if plot_data.voltage_data.size == plot_data.gamma_data.size:
             new_data = np.column_stack(
                 (
