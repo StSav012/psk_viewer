@@ -260,6 +260,7 @@ class _FoundLinesModel(DataModel):
                 )
             )
         self._frequencies = np.concatenate((self._frequencies, frequency_values))
+        self._rows_loaded += frequency_indices.size
         self.extend_data(new_data)
 
     def set_lines(
