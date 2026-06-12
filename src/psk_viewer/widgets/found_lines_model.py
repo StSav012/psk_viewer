@@ -266,12 +266,9 @@ class _FoundLinesModel(DataModel):
     def set_lines(
         self,
         plot_data: PlotDataItem,
-        frequencies: NDArray[np.float64] | Sequence[NDArray[np.float64]],
+        *frequencies: NDArray[np.double],
     ) -> None:
-        if isinstance(frequencies, np.ndarray):
-            self._frequencies = frequencies.ravel()
-        else:
-            self._frequencies = np.concatenate(frequencies)
+        self._frequencies = np.concatenate(frequencies)
         # avoid duplicates
         self._frequencies = self._frequencies[
             np.unique(self._frequencies, return_index=True)[1]
