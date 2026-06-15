@@ -33,6 +33,8 @@ class TableView(QTableView):
         def popup(pos: QPoint) -> None:
             menu: QMenu = QMenu()
             model: QAbstractItemModel = self.model()
+            if isinstance(model, QSortFilterProxyModel):
+                model = model.sourceModel()
             if not isinstance(model, FoundLinesModel):
                 return
             # store the actions not to lose all of them but the last
@@ -129,6 +131,8 @@ class TableView(QTableView):
         :return: the plain text representation of the selected table lines
         """
         model: QAbstractItemModel = self.model()
+        if isinstance(model, QSortFilterProxyModel):
+            model = model.sourceModel()
         if not isinstance(model, FoundLinesModel):
             return ""
 
@@ -168,6 +172,8 @@ class TableView(QTableView):
         :return: the rich text representation of the selected table lines
         """
         model: QAbstractItemModel = self.model()
+        if isinstance(model, QSortFilterProxyModel):
+            model = model.sourceModel()
         if not isinstance(model, FoundLinesModel):
             return ""
 
