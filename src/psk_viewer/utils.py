@@ -719,6 +719,9 @@ class HeaderWithUnit:
             self._str = new_value.format(name=self._name, unit=self._unit)
             self._fmt = new_value
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self._str!r})"
+
     def __str__(self) -> str:
         return self._str
 
