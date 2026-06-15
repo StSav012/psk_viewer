@@ -44,6 +44,7 @@ class TimeDomainGUI(GUI):
         self.figure.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
         self._install_translation()
+        self._setup_translation()
 
         self.adjustSize()
 
@@ -70,19 +71,3 @@ class TimeDomainGUI(GUI):
                 text=_translate("plot axes labels", "Voltage"),
                 units=unit_y,
             )
-
-        self._view_all_action.setText(
-            _translate("plot context menu action", "View All")
-        )
-        with the(self._canvas.ctrl) as c:
-            c.alphaGroup.parent().setTitle(
-                _translate("plot context menu action", "Alpha")
-            )
-            c.gridGroup.parent().setTitle(
-                _translate("plot context menu action", "Grid")
-            )
-            c.xGridCheck.setText(_translate("plot context menu action", "Show X Grid"))
-            c.yGridCheck.setText(_translate("plot context menu action", "Show Y Grid"))
-            c.label.setText(_translate("plot context menu action", "Opacity"))
-            c.alphaGroup.setTitle(_translate("plot context menu action", "Alpha"))
-            c.autoAlphaCheck.setText(_translate("plot context menu action", "Auto"))

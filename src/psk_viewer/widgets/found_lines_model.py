@@ -38,25 +38,7 @@ class FoundLinesModel(DataModel):
         self._log10_gamma: bool = False
         self._fancy_table_numbers: bool = False
 
-        self._header = [
-            HeaderWithUnit(
-                name=_translate("plot axes labels", "Frequency"),
-                unit=_translate("unit", "MHz"),
-            ),
-            HeaderWithUnit(
-                name=_translate("plot axes labels", "Voltage"),
-                unit=_translate("unit", "mV"),
-            ),
-            HeaderWithUnit(
-                name=_translate("plot axes labels", "Absorption"),
-                unit=(
-                    _translate("unit", "cm⁻¹")
-                    if not self._log10_gamma
-                    else _translate("unit", "log₁₀(cm⁻¹)")
-                ),
-            ),
-            self.tr("Substance"),
-        ]
+        self._header = [""] * 4
 
         self.set_format(
             [

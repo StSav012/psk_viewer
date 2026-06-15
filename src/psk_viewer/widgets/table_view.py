@@ -120,6 +120,7 @@ class TableView(QTableView):
             model.columnCount() - 1,
             RichComboBoxDelegate(self),
         )
+        model.headerDataChanged.connect(self.resizeColumnsToContents)
         model.modelReset.connect(self.resizeColumnsToContents)
 
     def stringify_table_plain_text(self, whole_table: bool = True) -> str:

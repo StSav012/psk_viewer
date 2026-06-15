@@ -138,8 +138,6 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
             canvas.ctrl.autoAlphaCheck.hide()
         self.figure.sceneObj.contextMenu = None
 
-        self._install_translation()
-
     def closeEvent(self, event: QCloseEvent) -> None:
         close_code: int
         if self._data_mode == DataMode.unknown:  # nothing is loaded
@@ -378,9 +376,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
 
     @Slot(int)
     def on_automatically_found_lines_found(self, count: int) -> None:
-        self.status_bar.showMessage(
-            self.box_find_lines.tr("Found {} lines").format(count)
-        )
+        self.status_bar.showMessage(self.tr("Found {} lines").format(count))
 
     @Slot(frozenset)
     def on_table_rows_removed(self, frequencies: frozenset[float]) -> None:

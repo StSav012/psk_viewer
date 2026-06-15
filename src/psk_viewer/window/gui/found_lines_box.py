@@ -22,7 +22,7 @@ from qtpy.QtWidgets import (
 )
 
 from ...settings import Settings
-from ...utils import the
+from ...utils import HeaderWithUnit, the
 from ...widgets.found_lines_model import FoundLinesModel
 from ...widgets.table_view import TableView
 
@@ -108,6 +108,26 @@ class FoundLinesBox(QDockWidget):
 
         with the(_translate("unit", "Hz")) as unit_x:
             self.spin_df.setSuffix(unit_x)
+
+        self.model.header = [
+            HeaderWithUnit(
+                name=_translate("plot axes labels", "Frequency"),
+                unit=_translate("unit", "MHz"),
+            ),
+            HeaderWithUnit(
+                name=_translate("plot axes labels", "Voltage"),
+                unit=_translate("unit", "mV"),
+            ),
+            HeaderWithUnit(
+                name=_translate("plot axes labels", "Absorption"),
+                unit=(
+                    _translate("unit", "cm⁻¹")
+                    if not self.model.log10_gamma
+                    else _translate("unit", "log₁₀(cm⁻¹)")
+                ),
+            ),
+            self.tr("Substance"),
+        ]
 
     def setup_ui_actions(self) -> None:
         self.table.doubleClicked.connect(self.on_table_cell_double_clicked)

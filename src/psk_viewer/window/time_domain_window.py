@@ -108,8 +108,6 @@ class TimeDomainWindow(TimeDomainGUI):
             canvas.ctrl.autoAlphaCheck.hide()
         self.figure.sceneObj.contextMenu = None
 
-        self._install_translation()
-
     def closeEvent(self, event: QCloseEvent) -> None:
         close_code: int
         if self._data_mode == DataMode.unknown:  # nothing is loaded

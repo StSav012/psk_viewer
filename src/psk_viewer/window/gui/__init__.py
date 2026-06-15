@@ -30,7 +30,7 @@ from qtpy.QtWidgets import (
 
 from ... import __version__
 from ...settings import Settings
-from ...utils import find_qm_files, load_icon
+from ...utils import find_qm_files, load_icon, the
 from ...widgets.file_dialog import OpenFileDialog, SaveFileDialog
 from ...widgets.valuelabel import ValueLabel
 
@@ -225,6 +225,22 @@ class GUI(QMainWindow):
         if (menu := self._canvas.getViewBox().getMenu(self._canvas)) is not None:
             menu.setTitle(_translate("menu", "Plot Options"))
 
+        self._view_all_action.setText(
+            _translate("plot context menu action", "View All")
+        )
+        with the(self._canvas.ctrl) as c:
+            c.alphaGroup.parent().setTitle(
+                _translate("plot context menu action", "Alpha")
+            )
+            c.gridGroup.parent().setTitle(
+                _translate("plot context menu action", "Grid")
+            )
+            c.xGridCheck.setText(_translate("plot context menu action", "Show X Grid"))
+            c.yGridCheck.setText(_translate("plot context menu action", "Show Y Grid"))
+            c.label.setText(_translate("plot context menu action", "Opacity"))
+            c.alphaGroup.setTitle(_translate("plot context menu action", "Alpha"))
+            c.autoAlphaCheck.setText(_translate("plot context menu action", "Auto"))
+
     def _install_translation(self) -> None:
         qt_translations_path: str = QLibraryInfo.path(
             QLibraryInfo.LibraryPath.TranslationsPath
@@ -274,7 +290,6 @@ class GUI(QMainWindow):
                     and translator.language() in ui_languages
                 ):
                     QApplication.installTranslator(translator)
-        self._setup_translation()
 
     @contextmanager
     def show_loading(self) -> Iterator[None]:

@@ -686,7 +686,7 @@ class HeaderWithUnit:
     def __init__(self, name: str, unit: str, fmt: str = "") -> None:
         self._name: str = name
         self._unit: str = unit
-        self._fmt: str = fmt or _translate("header with unit", "{name} [{unit}]")
+        self._fmt: str = fmt or _translate("header with unit", "{name} ({unit})")
         self._str: str = self._fmt.format(name=self._name, unit=self._unit)
 
     @property

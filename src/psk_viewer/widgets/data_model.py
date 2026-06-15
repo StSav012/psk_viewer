@@ -42,6 +42,7 @@ class DataModel(QAbstractTableModel):
     @header.setter
     def header(self, new_header: Iterable[str | HeaderWithUnit]) -> None:
         self._header = list(new_header)
+        self.headerDataChanged.emit(Qt.Orientation.Horizontal, 0, len(self._header) - 1)
 
     def all_data(self, column: int | None = None) -> NDArray[np.double]:
         if column is None:
