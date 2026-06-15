@@ -28,7 +28,7 @@ from qtpy.QtGui import (
     QScreen,
     QShowEvent,
 )
-from qtpy.QtWidgets import QMainWindow, QMessageBox, QWidget
+from qtpy.QtWidgets import QDockWidget, QMainWindow, QMessageBox, QWidget
 
 from ..plot_data_item import PlotDataItem
 from ..utils import DataMode, SpectrometerData, load_data, the
@@ -194,6 +194,9 @@ class TimeDomainWindow(TimeDomainGUI):
         self.toolbar.save_data_action.triggered.connect(self.on_save_data_triggered)
         self.toolbar.copy_figure_action.triggered.connect(self.on_copy_figure_triggered)
         self.toolbar.save_figure_action.triggered.connect(self.on_save_figure_triggered)
+        self.toolbar.toolboxes_menu.menuAction().triggered.connect(
+            self.on_toolboxes_menu_triggered
+        )
         self.toolbar.configure_action.triggered.connect(
             self.on_configure_action_triggered
         )
@@ -239,24 +242,27 @@ class TimeDomainWindow(TimeDomainGUI):
         self.figure.getPlotItem().setYRange(lower_value, upper_value, padding=0.0)
 
     def ensure_y_fits(self) -> None:
-        if self._plot_line.xData is None or self._plot_line.xData.size < 2:
+        if (x := self._plot_line.xData) is None or x.size < 2:
             return
-        if self._plot_line.yData is None or self._plot_line.yData.size < 2:
+        if (y := self._plot_line.yData) is None or y.size < 2:
             return
-        x: pg.AxisItem = self._canvas.getAxis("bottom")
-        y: pg.AxisItem = self._canvas.getAxis("left")
-        visible_points: NDArray[np.float64] = self._plot_line.yData[
-            (self._plot_line.xData >= min(x.range))
-            & (self._plot_line.xData <= max(x.range))
+        x_axis: pg.AxisItem = self._canvas.getAxis("bottom")
+        y_axis: pg.AxisItem = self._canvas.getAxis("left")
+        visible_points: NDArray[np.float64] = y[
+            (x >= min(x_axis.range)) & (x <= max(x_axis.range))
         ]
-        if np.any(visible_points < min(y.range)):
+        if np.any(visible_points < min(y_axis.range)):
             minimum: np.float64 = np.min(visible_points)
             # noinspection PyTypeChecker
-            self.set_y_range(minimum - 0.05 * (max(y.range) - minimum), max(y.range))
-        if np.any(visible_points > max(y.range)):
+            self.set_y_range(
+                minimum - 0.05 * (max(y_axis.range) - minimum), max(y_axis.range)
+            )
+        if np.any(visible_points > max(y_axis.range)):
             maximum: np.float64 = np.max(visible_points)
             # noinspection PyTypeChecker
-            self.set_y_range(min(y.range), maximum + 0.05 * (maximum - min(y.range)))
+            self.set_y_range(
+                min(y_axis.range), maximum + 0.05 * (maximum - min(y_axis.range))
+            )
 
     @Slot(tuple)
     def on_mouse_moved(self, event: tuple[QPointF]) -> None:
@@ -330,6 +336,35 @@ class TimeDomainWindow(TimeDomainGUI):
                 lower_value=min_y,
                 upper_value=max_y,
             )
+
+    @Slot()
+    def on_toolboxes_menu_triggered(self) -> None:
+        def dock_for_action(action: QAction) -> QDockWidget | None:
+            for child in self.findChildren(QDockWidget):
+                if child.toggleViewAction() == action:
+                    return child
+            return None
+
+        def set_dock_by_action_visible(action: QAction, visible: bool) -> None:
+            if (w := dock_for_action(action)) is not None:
+                w.setVisible(visible)
+
+        with the(self.toolbar.toolboxes_menu) as menu:
+            last_state: dict[int, bool] = getattr(menu, "last_state", {})
+            current_state: dict[int, bool] = {}
+            for a in menu.actions():
+                current_state[id(a)] = a.isChecked()
+            if any(current_state.values()):
+                for a in menu.actions():
+                    set_dock_by_action_visible(a, False)
+            else:
+                if any(last_state.values()):
+                    for a in menu.actions():
+                        set_dock_by_action_visible(a, last_state.get(id(a), True))
+                else:
+                    for a in menu.actions():
+                        set_dock_by_action_visible(a, True)
+            menu.last_state = current_state
 
     @Slot()
     def on_configure_action_triggered(self) -> None:

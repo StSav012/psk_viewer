@@ -33,7 +33,7 @@ from qtpy.QtGui import (
     QScreen,
     QShowEvent,
 )
-from qtpy.QtWidgets import QMainWindow, QMessageBox, QWidget
+from qtpy.QtWidgets import QDockWidget, QMainWindow, QMessageBox, QWidget
 
 from ..plot_data_item import PlotDataItem
 from ..utils import (
@@ -242,6 +242,9 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         )
         self.toolbar.clear_trace_action.triggered.connect(
             self.on_clear_found_lines_triggered
+        )
+        self.toolbar.toolboxes_menu.menuAction().triggered.connect(
+            self.on_toolboxes_menu_triggered
         )
         self.toolbar.configure_action.triggered.connect(
             self.on_configure_action_triggered
@@ -558,6 +561,35 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
                 lower_value=min_y,
                 upper_value=max_y,
             )
+
+    @Slot()
+    def on_toolboxes_menu_triggered(self) -> None:
+        def dock_for_action(action: QAction) -> QDockWidget | None:
+            for child in self.findChildren(QDockWidget):
+                if child.toggleViewAction() == action:
+                    return child
+            return None
+
+        def set_dock_by_action_visible(action: QAction, visible: bool) -> None:
+            if (w := dock_for_action(action)) is not None:
+                w.setVisible(visible)
+
+        with the(self.toolbar.toolboxes_menu) as menu:
+            last_state: dict[int, bool] = getattr(menu, "last_state", {})
+            current_state: dict[int, bool] = {}
+            for a in menu.actions():
+                current_state[id(a)] = a.isChecked()
+            if any(current_state.values()):
+                for a in menu.actions():
+                    set_dock_by_action_visible(a, False)
+            else:
+                if any(last_state.values()):
+                    for a in menu.actions():
+                        set_dock_by_action_visible(a, last_state.get(id(a), True))
+                else:
+                    for a in menu.actions():
+                        set_dock_by_action_visible(a, True)
+            menu.last_state = current_state
 
     @Slot()
     def on_configure_action_triggered(self) -> None:
