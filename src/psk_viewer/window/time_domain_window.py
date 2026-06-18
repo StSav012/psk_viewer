@@ -60,9 +60,6 @@ class TimeDomainWindow(TimeDomainGUI):
 
         self._ignore_scale_change: Lock = Lock()
 
-        self._cursor_balloon: pg.TextItem = pg.TextItem()
-        self.figure.addItem(self._cursor_balloon)
-
         self._mouse_moved_signal_proxy: pg.SignalProxy = pg.SignalProxy(
             cast(GraphicsScene, self.figure.scene()).sigMouseMoved,
             rateLimit=10,

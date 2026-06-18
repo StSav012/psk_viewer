@@ -87,9 +87,6 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         )
         self.user_found_lines_data: NDArray[np.float64] = np.empty(0)
 
-        self._cursor_balloon: pg.TextItem = pg.TextItem()
-        self.figure.addItem(self._cursor_balloon)
-
         self._mouse_moved_signal_proxy: pg.SignalProxy = pg.SignalProxy(
             cast(GraphicsScene, self.figure.scene()).sigMouseMoved,
             rateLimit=10,
