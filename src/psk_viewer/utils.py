@@ -784,8 +784,13 @@ def the(obj: _T) -> Iterator[_T]:
 
 
 def is_good_html(text: str) -> bool:
-    _1, _2, _3 = text.count("<"), text.count(">"), 2 * text.count("</")
-    return _1 == _2 and _1 == _3
+    _1, _2, _3, _4 = (
+        text.count("<"),
+        text.count(">"),
+        text.count("</"),
+        text.count("/>"),
+    )
+    return _1 == _2 and _1 - _4 == 2 * _3
 
 
 def wrap_in_html(text: str, line_end: str = linesep) -> str:
