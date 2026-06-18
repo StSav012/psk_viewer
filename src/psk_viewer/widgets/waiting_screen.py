@@ -3,7 +3,7 @@ from threading import Thread
 from typing import Any, Generic, TypeVar
 
 from qtpy.QtCore import QCoreApplication, QEventLoop, QMargins, QSize, Qt
-from qtpy.QtGui import QKeySequence
+from qtpy.QtGui import QKeySequence, QTextDocument
 from qtpy.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget
 
 __all__ = ["WaitingScreen"]
@@ -79,9 +79,22 @@ class WaitingScreen(QWidget, Generic[_T]):
 
         self.setWindowModality(Qt.WindowModality.WindowModal)
 
+        def remove_html(s: str) -> str:
+            if s.count(">") != s.count("<"):
+                return s
+            td: QTextDocument = QTextDocument(self)
+            td.setHtml(s)
+            return td.toPlainText()
+
         if isinstance(label, str):
             label = QLabel(label, self)
             label.setAlignment(label_alignment)
+        if isinstance(label, QLabel):
+            self.setWindowTitle(remove_html(label.text()))
+        elif isinstance(label, QWidget):
+            self.setWindowTitle(label.windowTitle())
+        if not self.windowTitle():
+            self.setWindowTitle(self.tr("Please wait…"))
         layout: QVBoxLayout = QVBoxLayout(self)
         spinner: QWidget | None = _spinner(self)
         if spinner is not None:
