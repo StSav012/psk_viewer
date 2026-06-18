@@ -545,6 +545,10 @@ class TimeDomainWindow(TimeDomainGUI):
         if self._data_mode == data.mode:
             return self.set_data(data)
 
+        # save settings for a new window to pick up
+        self.settings.save(self)
+        self.settings.sync()
+
         if data.mode in TimeDomainWindow.supported_modes:
             # noinspection PyTypeChecker
             w = TimeDomainWindow(parent=self.parent(), flags=self.windowFlags())
