@@ -304,13 +304,13 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
     def set_x_range(
         self, lower_value: float | np.float64, upper_value: float | np.float64
     ) -> None:
-        self.figure.getPlotItem().setXRange(lower_value, upper_value, padding=0.0)
+        self.figure.getPlotItem().setXRange(lower_value, upper_value)
         self.box_find_lines.current_freq = (upper_value + lower_value) / 2.0
 
     def set_y_range(
         self, lower_value: float | np.float64, upper_value: float | np.float64
     ) -> None:
-        self.figure.getPlotItem().setYRange(lower_value, upper_value, padding=0.0)
+        self.figure.getPlotItem().setYRange(lower_value, upper_value)
 
     def ensure_y_fits(self) -> None:
         if (x := self._plot_line.xData) is None or x.size < 2:
@@ -462,7 +462,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
 
     @Slot()
     def on_view_all_triggered(self) -> None:
-        self._canvas.getViewBox().autoRange(padding=0.0)
+        self._canvas.getViewBox().autoRange()
 
     @Slot(MouseClickEvent)
     def on_plot_clicked(self, event: MouseClickEvent) -> None:

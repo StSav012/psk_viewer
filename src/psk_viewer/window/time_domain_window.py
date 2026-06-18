@@ -232,12 +232,12 @@ class TimeDomainWindow(TimeDomainGUI):
     def set_x_range(
         self, lower_value: float | np.float64, upper_value: float | np.float64
     ) -> None:
-        self.figure.getPlotItem().setXRange(lower_value, upper_value, padding=0.0)
+        self.figure.getPlotItem().setXRange(lower_value, upper_value)
 
     def set_y_range(
         self, lower_value: float | np.float64, upper_value: float | np.float64
     ) -> None:
-        self.figure.getPlotItem().setYRange(lower_value, upper_value, padding=0.0)
+        self.figure.getPlotItem().setYRange(lower_value, upper_value)
 
     def ensure_y_fits(self) -> None:
         if (x := self._plot_line.xData) is None or x.size < 2:
@@ -313,7 +313,7 @@ class TimeDomainWindow(TimeDomainGUI):
 
     @Slot()
     def on_view_all_triggered(self) -> None:
-        self._canvas.getViewBox().autoRange(padding=0.0)
+        self._canvas.getViewBox().autoRange()
 
     @Slot(float, float)
     def on_time_box_changed(self, min_time: float, max_time: float) -> None:

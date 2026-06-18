@@ -194,6 +194,7 @@ class GUI(QMainWindow):
         self.figure.addItem(self._cursor_balloon)
         self._canvas.addItem(self._crosshair_v_line, ignoreBounds=True)
         self._canvas.addItem(self._crosshair_h_line, ignoreBounds=True)
+        self._canvas.getViewBox().setDefaultPadding(0.0)
 
     def _setup_translation(self) -> None:
         fn.SI_PREFIXES = _translate(
