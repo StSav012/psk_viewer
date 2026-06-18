@@ -271,7 +271,7 @@ def rtf_escape(s: str) -> str:
             c
             if ord(c) < 128
             else "\\u"
-            + str(int.from_bytes(c.encode("utf-16be")))
+            + str(int.from_bytes(c.encode("utf-16be"), byteorder="big"))
             + char_repl.get(
                 c,
                 html.entities.codepoint2name.get(
