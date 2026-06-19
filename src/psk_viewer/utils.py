@@ -58,12 +58,13 @@ IMAGE_EXT: str = ".svg"
 
 
 def load_icon(widget: QWidget, icon_name: str) -> QIcon:
+    palette: QPalette = widget.palette()
+
     class QTAData(NamedTuple):
         args: Iterable[str]
         options: list[dict[str, Any]] = []
 
     def icon_from_data(data: bytes) -> QIcon:
-        palette: QPalette = widget.palette()
         pixmap: QPixmap = QPixmap()
         pixmap.loadFromData(
             data.strip()
@@ -75,6 +76,36 @@ def load_icon(widget: QWidget, icon_name: str) -> QIcon:
             )
         )
         return QIcon(pixmap)
+
+    def relative_luminance(color: QColor) -> float:
+        return 0.299 * color.redF() + 0.587 * color.greenF() + 0.114 * color.blueF()
+
+    def tune_option_color(options: dict[str, Any]) -> dict[str, Any]:
+        if "color" in options:
+            color: QColor = QColor(options["color"])
+            base_luminance: float = relative_luminance(palette.base().color())
+            text_luminance: float = relative_luminance(palette.text().color())
+            if base_luminance < text_luminance:
+                while (
+                    (rl := relative_luminance(color)) < 0.999
+                    and abs(rl - text_luminance) > abs(rl - base_luminance)
+                    and abs(rl - text_luminance) > 0.5
+                    and (abs(rl - base_luminance) < 0.5)
+                ):
+                    color = color.lighter(101)
+            else:
+                while (
+                    (rl := relative_luminance(color)) > 0.001
+                    and abs(rl - text_luminance) > abs(rl - base_luminance)
+                    and abs(rl - text_luminance) > 0.5
+                    and (abs(rl - base_luminance) < 0.5)
+                ):
+                    color = color.darker(101)
+            options["color"] = color
+        return options
+
+    def tune_options_color(options: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        return [tune_option_color(o) for o in options]
 
     filename: Path = resource_path("img") / (icon_name + IMAGE_EXT)
     if not filename.exists():
@@ -198,7 +229,8 @@ def load_icon(widget: QWidget, icon_name: str) -> QIcon:
             if isinstance(icon_description, QTAData):
                 if icon_description.options:
                     return icon(
-                        *icon_description.args, options=icon_description.options
+                        *icon_description.args,
+                        options=tune_options_color(icon_description.options),
                     )
                 return icon(*icon_description.args)
             raise TypeError("Invalid icon description")
