@@ -2,22 +2,25 @@
 
 ###### Required packages:
 
-* `pandas`,
-* `packaging`,
-* `pyqtgraph>=0.13.3`,
-* `qtpy>=2.3.1`,
-* any of `PyQt6`, `PySide6`, `PyQt5`, `PySide2`.
+* `pandas` [![PyPI - `pandas` Version](https://img.shields.io/pypi/v/pandas)](https://pypi.org/project/pandas),
+* `packaging` [![PyPI - `packaging` Version](https://img.shields.io/pypi/v/packaging)](https://pypi.org/project/packaging),
+* `pyqtgraph>=0.13.3` [![PyPI - `pyqtgraph` Version](https://img.shields.io/pypi/v/pyqtgraph)](https://pypi.org/project/pyqtgraph),
+* `qtpy>=2.3.1` [![PyPI - `qtpy` Version](https://img.shields.io/pypi/v/qtpy)](https://pypi.org/project/qtpy),
+* any of `PyQt6` [![PyPI - `PyQt6` Version](https://img.shields.io/pypi/v/PyQt6)](https://pypi.org/project/PyQt6),
+  `PySide6` [![PyPI - `PySide6` Version](https://img.shields.io/pypi/v/PySide6)](https://pypi.org/project/PySide6),
+  `PyQt5` [![PyPI - `PyQt5` Version](https://img.shields.io/pypi/v/PyQt5)](https://pypi.org/project/PyQt5),
+  `PySide2` [![PyPI - `PySide2` Version](https://img.shields.io/pypi/v/PySide2)](https://pypi.org/project/PySide2).
 
 ###### Optional packages:
 
-* `pycatsearch`: for in-place matching spectral lines;
-* `numexpr`: for accelerating certain numerical operations;
-* `bottleneck`: for accelerating certain types of nan evaluations;
-* `openpyxl`: for saving MS Excel files.
+* `pycatsearch` [![PyPI - `pycatsearch` Version](https://img.shields.io/pypi/v/pycatsearch)](https://pypi.org/project/pycatsearch): for in-place matching spectral lines;
+* `numexpr` [![PyPI - `numexpr` Version](https://img.shields.io/pypi/v/numexpr)](https://pypi.org/project/numexpr): for accelerating certain numerical operations;
+* `bottleneck` [![PyPI - `bottleneck` Version](https://img.shields.io/pypi/v/bottleneck)](https://pypi.org/project/bottleneck): for accelerating certain types of nan evaluations;
+* `openpyxl` [![PyPI - `openpyxl` Version](https://img.shields.io/pypi/v/openpyxl)](https://pypi.org/project/openpyxl): for saving MS Excel files.
 
 They should install at the first application start automatically.
 
-###### Required Python: >= 3.10
+###### Required Python: ![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fgithub.com%2FStSav012%2Fpsk_viewer%2Fraw%2Frefs%2Fheads%2Fmaster%2Fpyproject.toml)
 
 The package is developed under the newest Python to date. Older versions of Python should be compatible as long as [
 `ruff`](https://docs.astral.sh/ruff/) makes no mistakes.
@@ -29,14 +32,15 @@ proclaims.
 ###### Notes:
 
 * to run on MS Windows 7, you can install Python from [adang1345/PythonWin7](https://github.com/adang1345/PythonWin7/);
-* `PySide2` requires Python < 3.11; there is [a port](https://anaconda.org/conda-forge/pyside2) of `PySide2` on Python
-  3.11 by `conda-forge`, but it's unclear whether it's stable;
+* `PySide2` requires Python < 3.11; there is [a port of `PySide2` by ![`conda-forge`: Conda Version of `PySide2`](https://img.shields.io/conda/vn/conda-forge/pyside2)
+](https://anaconda.org/conda-forge/pyside2) on Python
+  3.11, 3.12, and 3.13, but it's unclear whether it's stable;
 * `PyQt6` and `PySide6` require pretty modern OS, e.g., 64-bit MS Windows 10 21H2 or later;
 * `pyqtgraph<0.13.3` is incompatible with `Qt6>=6.5.0`;
 * `PySide6==6.9.1` doesn't draw anything, it's a known bug.
 
 ### Getting Python
-Python might already been installed on your system.
+Python might have already been installed on your system.
 If your system supports repositories, check them first.
 Otherwise, download an appropriate Python distribution (or the source code) from https://www.python.org/downloads/ and install it.
 
@@ -47,7 +51,7 @@ The source code is available at https://github.com/StSav012/psk_viewer.
 
 ###### Use `pip` or another Python package manager
 
-[![PyPI - Version](https://img.shields.io/pypi/v/psk_viewer)](https://img.shields.io/pypi/v/psk_viewer)
+[![PyPI - Version](https://img.shields.io/pypi/v/psk_viewer)](https://pypi.org/project/psk_viewer)
 
 You can get the code with `pip` (the preferred way): 
 
