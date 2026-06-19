@@ -345,16 +345,12 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
 
         point: pg.SpotItem
         if ev.modifiers() == Qt.KeyboardModifier.ShiftModifier:
-            items: NDArray[np.float64] = item.scatter.data["item"]
-            mask: NDArray[np.bool_] = np.full(items.shape, True, np.bool_)
             for point in points:
-                mask &= items != point
                 self.box_find_lines.remove_found_line(point.pos().x())
                 self.user_found_lines_data = self.user_found_lines_data[
                     self.user_found_lines_data != point.pos().x()
                 ]
                 self.box_found_lines.model.remove_line(point.pos().x())
-            item.setData(item.xData[mask], item.yData[mask])
 
             with the(not self.box_found_lines.model.is_empty) as enabled:
                 self.toolbar.copy_trace_action.setEnabled(enabled)
