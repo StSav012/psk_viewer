@@ -204,8 +204,8 @@ class GUI(QMainWindow):
         fn.SI_PREFIX_EXPONENTS.update(
             dict([(s, (i - 8) * 3) for i, s in enumerate(fn.SI_PREFIXES)])
         )
-        if _translate("si prefix alternative micro", "u"):
-            fn.SI_PREFIX_EXPONENTS[_translate("si prefix alternative micro", "u")] = -6
+        if alt_micro := _translate("si prefix alternative micro", "u"):
+            fn.SI_PREFIX_EXPONENTS[alt_micro] = -6
         fn.FLOAT_REGEX = re.compile(
             r"(?P<number>[+-]?((((\d+(\.\d*)?)|(\d*\.\d+))([eE][+-]?\d+)?)"
             r"|(nan|NaN|NAN|inf|Inf|INF)))\s*"

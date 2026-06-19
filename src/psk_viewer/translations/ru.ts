@@ -804,12 +804,12 @@
     <message>
         <location filename="../window/gui/__init__.py" line="104"/>
         <source>PSK Spectrometer</source>
-        <translation type="obsolete">Спектрометр с фазовой манипуляцией</translation>
+        <translation>Спектрометр с фазовой манипуляцией</translation>
     </message>
     <message>
         <location filename="../window/gui/__init__.py" line="109"/>
         <source>Fast Sweep Spectrometer</source>
-        <translation type="obsolete">Спектрометр с быстрым свипированием частоты</translation>
+        <translation>Спектрометр с быстрым свипированием частоты</translation>
     </message>
 </context>
 <context>
@@ -1457,65 +1457,64 @@ Enter a correct value [cm]:</source>
 <context>
     <name>si prefixes</name>
     <message>
-        <location filename="../window/gui/__init__.py" line="199"/>
+        <location filename="../window/gui/__init__.py" line="201"/>
         <source>y,z,a,f,p,n,µ,m, ,k,M,G,T,P,E,Z,Y</source>
-        <translation type="obsolete">и,з,а,ф,п,н,мк,м, ,к,М,Г,Т,П,Э,З,И</translation>
+        <translation>и,з,а,ф,п,н,мк,м, ,к,М,Г,Т,П,Э,З,И</translation>
     </message>
 </context>
 <context>
     <name>si prefix alternative micro</name>
     <message>
-        <location filename="../window/gui/__init__.py" line="206"/>
         <location filename="../window/gui/__init__.py" line="207"/>
         <source>u</source>
-        <translation type="obsolete">мк</translation>
+        <translation>мк</translation>
     </message>
 </context>
 <context>
     <name>menu</name>
     <message>
-        <location filename="../window/gui/__init__.py" line="226"/>
+        <location filename="../window/gui/__init__.py" line="227"/>
         <source>Plot Options</source>
-        <translation type="obsolete">Параметры графика</translation>
+        <translation>Параметры графика</translation>
     </message>
 </context>
 <context>
     <name>plot context menu action</name>
     <message>
-        <location filename="../window/gui/__init__.py" line="229"/>
+        <location filename="../window/gui/__init__.py" line="230"/>
         <source>View All</source>
-        <translation type="obsolete">Автоматический масштаб</translation>
+        <translation>Автоматический масштаб</translation>
     </message>
     <message>
-        <location filename="../window/gui/__init__.py" line="233"/>
-        <location filename="../window/gui/__init__.py" line="241"/>
+        <location filename="../window/gui/__init__.py" line="234"/>
+        <location filename="../window/gui/__init__.py" line="242"/>
         <source>Alpha</source>
-        <translation type="obsolete">Непрозрачность</translation>
+        <translation>Непрозрачность</translation>
     </message>
     <message>
-        <location filename="../window/gui/__init__.py" line="236"/>
+        <location filename="../window/gui/__init__.py" line="237"/>
         <source>Grid</source>
-        <translation type="obsolete">Сетка</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/__init__.py" line="238"/>
-        <source>Show X Grid</source>
-        <translation type="obsolete">Показать вертикальные линии сетки</translation>
+        <translation>Сетка</translation>
     </message>
     <message>
         <location filename="../window/gui/__init__.py" line="239"/>
-        <source>Show Y Grid</source>
-        <translation type="obsolete">Показать горизонтальные линии сетки</translation>
+        <source>Show X Grid</source>
+        <translation>Показать вертикальные линии сетки</translation>
     </message>
     <message>
         <location filename="../window/gui/__init__.py" line="240"/>
-        <source>Opacity</source>
-        <translation type="obsolete">Непрозрачность</translation>
+        <source>Show Y Grid</source>
+        <translation>Показать горизонтальные линии сетки</translation>
     </message>
     <message>
-        <location filename="../window/gui/__init__.py" line="242"/>
+        <location filename="../window/gui/__init__.py" line="241"/>
+        <source>Opacity</source>
+        <translation>Непрозрачность</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/__init__.py" line="243"/>
         <source>Auto</source>
-        <translation type="obsolete">Авто</translation>
+        <translation>Авто</translation>
     </message>
 </context>
 <context>
