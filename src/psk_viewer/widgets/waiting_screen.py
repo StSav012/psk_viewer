@@ -138,7 +138,9 @@ class WaitingScreen(QWidget, Generic[_T]):
         if self._thread is not None:
             self._thread.join()
             self.hide()
-            return self._thread.result()
+            result: _T = self._thread.result()
+            self._thread = None
+            return result
         self.hide()
         return None
 
