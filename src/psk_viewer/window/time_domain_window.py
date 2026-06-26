@@ -1,6 +1,5 @@
 from collections.abc import Callable, Collection
 from pathlib import Path
-from threading import Lock
 from typing import cast
 
 # noinspection PyPackageRequirements
@@ -10,25 +9,19 @@ import pyqtgraph as pg  # type: ignore
 
 # noinspection PyPackageRequirements
 from numpy.typing import NDArray
-from pyqtgraph import GraphicsScene, PlotWidget
 from pyqtgraph.exporters.ImageExporter import ImageExporter
 from qtpy.QtCore import (
     QCoreApplication,
-    QPointF,
-    QRectF,
     Qt,
     Slot,
 )
 from qtpy.QtGui import (
     QAction,
-    QCloseEvent,
-    QFont,
     QGuiApplication,
     QPen,
     QScreen,
-    QShowEvent,
 )
-from qtpy.QtWidgets import QDockWidget, QMainWindow, QMessageBox, QWidget
+from qtpy.QtWidgets import QDockWidget, QMessageBox, QWidget
 
 from ..plot_data_item import PlotDataItem
 from ..utils import DataMode, SpectrometerData, load_data, the
@@ -51,24 +44,6 @@ class TimeDomainWindow(TimeDomainGUI):
     ) -> None:
         super().__init__(parent, flags)
 
-        self._data_mode: DataMode = DataMode.unknown
-
-        self._ghost_line: pg.PlotDataItem = self.figure.plot(np.empty(0), name="")
-        self._plot_line: pg.PlotDataItem = self.figure.plot(np.empty(0), name="")
-        self._ghost_data: PlotDataItem = PlotDataItem()
-        self._plot_data: PlotDataItem = PlotDataItem()
-
-        self._ignore_scale_change: Lock = Lock()
-
-        self._mouse_moved_signal_proxy: pg.SignalProxy = pg.SignalProxy(
-            cast(GraphicsScene, self.figure.scene()).sigMouseMoved,
-            rateLimit=10,
-            slot=self.on_mouse_moved,
-        )
-        self._axis_range_changed_signal_proxy: pg.SignalProxy = pg.SignalProxy(
-            self.figure.sigRangeChanged, rateLimit=20, slot=self.on_lim_changed
-        )
-
         self.setup_ui()
         self._setup_colors()
 
@@ -88,71 +63,7 @@ class TimeDomainWindow(TimeDomainGUI):
         self.set_axis_line_appearance()
         self.set_crosshair_lines_appearance()
 
-        with the(self._canvas) as canvas:
-            # customize menu
-            titles_to_leave: list[str] = [
-                canvas.ctrl.alphaGroup.parent().title(),
-                canvas.ctrl.gridGroup.parent().title(),
-            ]
-            action: QAction
-            for action in canvas.ctrlMenu.actions():
-                if action.text() not in titles_to_leave:
-                    canvas.ctrlMenu.removeAction(action)
-            canvas.vb.menu = canvas.ctrlMenu
-            canvas.ctrlMenu = None
-            canvas.getViewBox().getMenu(canvas).addAction(self._view_all_action)
-            canvas.ctrl.autoAlphaCheck.setChecked(False)
-            canvas.ctrl.autoAlphaCheck.hide()
-        self.figure.sceneObj.contextMenu = None
-
-    def closeEvent(self, event: QCloseEvent) -> None:
-        close_code: int
-        if self._data_mode == DataMode.unknown:  # nothing is loaded
-            close_code = QMessageBox.StandardButton.Yes
-        else:
-            # senseless joke in the loop
-            close: QMessageBox = QMessageBox(self)
-            close.setText(self.tr("Are you sure?"))
-            close.setIcon(QMessageBox.Icon.Question)
-            close.setWindowIcon(self.windowIcon())
-            close.setWindowTitle(self.tr("Spectrometer Data Viewer"))
-            close.setStandardButtons(
-                QMessageBox.StandardButton.Yes
-                | QMessageBox.StandardButton.No
-                | QMessageBox.StandardButton.Cancel
-            )
-            close_code = QMessageBox.StandardButton.No
-            while close_code == QMessageBox.StandardButton.No:
-                close_code = close.exec()
-
-        if close_code == QMessageBox.StandardButton.Yes:
-            self.settings.save(self)
-            self.settings.sync()
-
-            from .. import windows
-
-            windows.remove(self)
-
-            event.accept()
-        elif close_code == QMessageBox.StandardButton.Cancel:
-            event.ignore()
-
-    def showEvent(self, event: QShowEvent) -> None:
-
-        from .. import windows
-
-        windows.append(self)
-
-        window: QMainWindow
-        while windows:
-            for window in windows:
-                if window.isHidden():
-                    window.close()
-                    break
-            else:
-                break
-
-        event.accept()
+        self._setup_context_menu()
 
     def load_config(self) -> None:
         with self._loading:
@@ -205,17 +116,6 @@ class TimeDomainWindow(TimeDomainGUI):
 
         self._view_all_action.triggered.connect(self.on_view_all_triggered)
 
-    def on_lim_changed(self, arg: tuple[PlotWidget, list[list[float]]]) -> None:
-        if self._ignore_scale_change.locked():
-            return
-        rect: list[list[float]] = arg[1]
-        xlim: list[float]
-        ylim: list[float]
-        xlim, ylim = rect
-        with self._ignore_scale_change:
-            self.on_xlim_changed(xlim)
-            self.on_ylim_changed(ylim)
-
     def on_xlim_changed(self, xlim: list[float]) -> None:
         min_time, max_time = min(xlim), max(xlim)
         self.box_time.set_range(min_time, max_time)
@@ -225,92 +125,6 @@ class TimeDomainWindow(TimeDomainGUI):
         min_voltage, max_voltage = min(ylim), max(ylim)
         self.box_voltage.set_range(min_voltage, max_voltage)
         self.set_y_range(lower_value=min_voltage, upper_value=max_voltage)
-
-    def set_x_range(
-        self, lower_value: float | np.float64, upper_value: float | np.float64
-    ) -> None:
-        self.figure.getPlotItem().setXRange(lower_value, upper_value)
-
-    def set_y_range(
-        self, lower_value: float | np.float64, upper_value: float | np.float64
-    ) -> None:
-        self.figure.getPlotItem().setYRange(lower_value, upper_value)
-
-    def ensure_y_fits(self) -> None:
-        if (x := self._plot_line.xData) is None or x.size < 2:
-            return
-        if (y := self._plot_line.yData) is None or y.size < 2:
-            return
-        x_axis: pg.AxisItem = self._canvas.getAxis("bottom")
-        y_axis: pg.AxisItem = self._canvas.getAxis("left")
-        visible_points: NDArray[np.float64] = y[
-            (x >= min(x_axis.range)) & (x <= max(x_axis.range))
-        ]
-        if np.any(visible_points < min(y_axis.range)):
-            minimum: np.float64 = np.min(visible_points)
-            # noinspection PyTypeChecker
-            self.set_y_range(
-                minimum - 0.05 * (max(y_axis.range) - minimum), max(y_axis.range)
-            )
-        if np.any(visible_points > max(y_axis.range)):
-            maximum: np.float64 = np.max(visible_points)
-            # noinspection PyTypeChecker
-            self.set_y_range(
-                min(y_axis.range), maximum + 0.05 * (maximum - min(y_axis.range))
-            )
-
-    @Slot(tuple)
-    def on_mouse_moved(self, event: tuple[QPointF]) -> None:
-        if self._plot_line.xData is None and self._plot_line.yData is None:
-            return
-        pos: QPointF = event[0]
-        if self.figure.sceneBoundingRect().contains(pos):
-            point: QPointF = self._canvas.getViewBox().mapSceneToView(pos)
-            if self.figure.visibleRange().contains(point):
-                self.status_bar.clearMessage()
-                self._crosshair_v_line.setPos(point.x())
-                self._crosshair_h_line.setPos(point.y())
-                self._crosshair_h_line.setVisible(self.settings.show_crosshair)
-                self._crosshair_v_line.setVisible(self.settings.show_crosshair)
-                self._cursor_x.setVisible(True)
-                self._cursor_y.setVisible(True)
-                self._cursor_x.setValue(point.x())
-                self._cursor_y.setValue(point.y())
-
-                if self.settings.show_coordinates_at_crosshair:
-                    self._cursor_balloon.setPos(point)
-                    self._cursor_balloon.setHtml(
-                        self._cursor_x.text() + "<br>" + self._cursor_y.text()
-                    )
-                    balloon_border: QRectF = self._cursor_balloon.boundingRect()
-                    sx: float
-                    sy: float
-                    sx, sy = self._canvas.getViewBox().viewPixelSize()
-                    balloon_width: float = balloon_border.width() * sx
-                    balloon_height: float = balloon_border.height() * sy
-                    anchor_x: float = (
-                        0.0
-                        if point.x() - self.figure.visibleRange().left() < balloon_width
-                        else 1.0
-                    )
-                    anchor_y: float = (
-                        0.0
-                        if self.figure.visibleRange().bottom() - point.y()
-                        < balloon_height
-                        else 1.0
-                    )
-                    self._cursor_balloon.setAnchor((anchor_x, anchor_y))
-                self._cursor_balloon.setVisible(
-                    self.settings.show_coordinates_at_crosshair
-                )
-            else:
-                self.hide_cursors()
-        else:
-            self.hide_cursors()
-
-    @Slot()
-    def on_view_all_triggered(self) -> None:
-        self._canvas.getViewBox().autoRange()
 
     @Slot(float, float)
     def on_time_box_changed(self, min_time: float, max_time: float) -> None:
@@ -373,13 +187,6 @@ class TimeDomainWindow(TimeDomainGUI):
         self.set_crosshair_lines_appearance()
         self.display_gamma_or_voltage()
 
-    def hide_cursors(self) -> None:
-        self._crosshair_h_line.setVisible(False)
-        self._crosshair_v_line.setVisible(False)
-        self._cursor_x.setVisible(False)
-        self._cursor_y.setVisible(False)
-        self._cursor_balloon.setVisible(False)
-
     @Slot()
     def on_open_action_triggered(self) -> None:
         self.load_data()
@@ -402,61 +209,6 @@ class TimeDomainWindow(TimeDomainGUI):
             )
         )
         self._canvas.replot()
-
-    def set_axis_line_appearance(self) -> None:
-        def _(axis: pg.AxisItem) -> None:
-            styles: dict[QFont.Style, str] = {
-                QFont.Style.StyleNormal: "normal",
-                QFont.Style.StyleItalic: "italic",
-                QFont.Style.StyleOblique: "oblique",
-            }
-            variants: dict[QFont.Capitalization, str] = {
-                QFont.Capitalization.MixedCase: "normal",
-                QFont.Capitalization.AllUppercase: "normal",  # see transforms below
-                QFont.Capitalization.AllLowercase: "normal",  # see transforms below
-                QFont.Capitalization.SmallCaps: "small-caps",
-                QFont.Capitalization.Capitalize: "titling-caps",
-            }
-            transforms: dict[QFont.Capitalization, str] = {
-                QFont.Capitalization.MixedCase: "none",
-                QFont.Capitalization.AllUppercase: "uppercase",
-                QFont.Capitalization.AllLowercase: "lowercase",
-                QFont.Capitalization.SmallCaps: "none",  # see variants above
-                QFont.Capitalization.Capitalize: "capitalize",
-            }
-            decorations: dict[tuple[bool, bool, bool], str] = {
-                (False, False, False): "none",
-                (False, False, True): "overline",
-                (False, True, False): "underline",
-                (False, True, True): "underline overline",
-                (True, False, False): "line-through",
-                (True, False, True): "overline line-through",
-                (True, True, False): "underline line-through",
-                (True, True, True): "underline overline line-through",
-            }
-            font: QFont = self.settings.axis_label_font
-            axis.labelStyle.update(
-                {
-                    "font-family": font.family(),
-                    "font-size": f"{font.pointSizeF()}pt",
-                    "font-stretch": f"{font.stretch()}%",
-                    "font-style": styles[font.style()],
-                    "font-weight": f"{font.weight()}",
-                    "font-variant-caps": variants[font.capitalization()],
-                    "text-decoration-line": decorations[
-                        (font.strikeOut(), font.underline(), font.overline())
-                    ],
-                    "text-transform": transforms[font.capitalization()],
-                }
-            )
-            axis.setTickFont(self.settings.axis_tick_font)
-            axis.setFont(self.settings.axis_label_font)
-            pen: QPen = axis.pen()
-            pen.setWidthF(self.settings.axis_thickness)
-            axis.setPen(pen)
-
-        _(self._canvas.getAxis("bottom"))
-        _(self._canvas.getAxis("left"))
 
     def set_crosshair_lines_appearance(self) -> None:
         pen: QPen = pg.mkPen(
@@ -669,39 +421,6 @@ class TimeDomainWindow(TimeDomainGUI):
         self._plot_data.y_data_type = mode
         self._ghost_data.y_data_type = mode
         self.display_gamma_or_voltage()
-
-    def setup_left_axis(self) -> None:
-        a: pg.AxisItem = self._canvas.getAxis("left")
-        if self._plot_data.y_data_type == PlotDataItem.GAMMA_DATA:
-            a.enableAutoSIPrefix(False)
-            a.setLabel(
-                text=_translate("plot axes labels", "Absorption"),
-                units=_translate("unit", "cm<sup>−1</sup>"),
-            )
-            a.scale = 1.0
-            a.autoSIPrefixScale = 1.0
-
-            self._cursor_y.suffix = _translate("unit", "cm<sup>−1</sup>")
-            self._cursor_y.siPrefix = False
-            self._cursor_y.setFormatStr(
-                "{mantissa:.{decimals}f}×10<sup>{exp}</sup>{suffixGap}{suffix}"
-            )
-
-        elif self._plot_data.y_data_type == PlotDataItem.VOLTAGE_DATA:
-            a.enableAutoSIPrefix(True)
-            a.setLabel(
-                text=_translate("plot axes labels", "Voltage"),
-                units=_translate("unit", "V"),
-            )
-
-            self._cursor_y.suffix = _translate("unit", "V")
-            self._cursor_y.siPrefix = True
-            self._cursor_y.setFormatStr(
-                "{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}"
-            )
-
-        else:
-            raise ValueError(f"Invalid data type: {self._plot_data.y_data_type!r}")
 
     def display_gamma_or_voltage(self) -> None:
         self._plot_data.jump = np.nan
