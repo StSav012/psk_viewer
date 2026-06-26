@@ -1,5 +1,6 @@
 import importlib.util
 import mimetypes
+import sys
 from collections.abc import Callable, Collection, Iterable, Sequence
 from numbers import Number
 from pathlib import Path
@@ -676,21 +677,28 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
                     args=catalog_file_names,
                     label_alignment=Qt.AlignmentFlag.AlignLeading,
                 )
-                cat: Catalog | None = ws.exec()
-                if cat is None or cat.is_empty:
-                    if ws.is_cancelled():
-                        self.status_bar.showMessage(
-                            self.tr("Loading has been cancelled.")
-                        )
-                    else:
-                        self.status_bar.showMessage(
+                try:
+                    cat: Catalog | None = ws.exec()
+                except Exception as ex:
+                    self.status_bar.showMessage(
                             self.tr("Failed to load a catalog.")
                         )
+                    print(ex, file=sys.stderr)
                 else:
-                    self.status_bar.showMessage(self.tr("Catalogs loaded."))
-                self.box_found_lines.model.catalog = (
-                    cat or self.box_found_lines.model.catalog
-                )
+                    if cat is None or cat.is_empty:
+                        if ws.is_cancelled():
+                            self.status_bar.showMessage(
+                                self.tr("Loading has been cancelled.")
+                            )
+                        else:
+                            self.status_bar.showMessage(
+                                self.tr("Failed to load a catalog.")
+                            )
+                    else:
+                        self.status_bar.showMessage(self.tr("Catalogs loaded."))
+                        self.box_found_lines.model.catalog = cat
+                finally:
+                    ws.deleteLater()
 
     @property
     def line(self) -> PlotDataItem:
