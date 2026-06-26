@@ -180,10 +180,21 @@ def update_package(package_name: str) -> tuple[str, str, int | None]:
 
 
 def update_packages() -> list[str]:
+    from importlib.util import find_spec
+
     priority_packages: list[str] = ["pip", "setuptools", "wheel"]
     out: str
     err: str
     ret: int | None
+    if (
+        find_spec("pip") is None
+        and subprocess.run(
+            args=[sys.executable, "-m", "ensurepip"],
+            capture_output=True,
+            text=True,
+        ).returncode
+    ):
+        return []
     p: subprocess.CompletedProcess = subprocess.run(
         args=[sys.executable, "-m", "pip", "list", "--outdated"],
         capture_output=True,
