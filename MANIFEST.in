@@ -3,4 +3,4 @@ exclude requirements.txt
 exclude main.py
 exclude updater.py
 prune .github
-prune src/test
+prune test
