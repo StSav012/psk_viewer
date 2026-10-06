@@ -45,8 +45,30 @@ write_to = 'src/psk_viewer/_version.py'
 [tool.ruff.lint]
 fixable = ["ALL"]
 unfixable = []
-extend-select = ["B", "D", "I", "ANN", "NPY", "RET", "SIM", "UP"]
-extend-ignore = ["D1", "D203", "D213", "EM1", "N8", "PLR", "TRY003"]
+extend-select = [
+    "B",
+    "D",
+    "I",
+    "ANN",
+    "NPY",
+    "RET",
+    "SIM",
+    "UP",
+]
+extend-ignore = [
+    "ANN401",
+    "BLE001",
+    "D1",
+    "D203",
+    "D213",
+    "DTZ005",
+    "DTZ006",
+    "EM1",
+    "FLY002",
+    "N8",
+    "PLR",
+    "TRY003",
+]
 
 [tool.ruff.lint.isort]
 case-sensitive = true
