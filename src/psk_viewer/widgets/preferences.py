@@ -1,3 +1,4 @@
+from contextlib import nullcontext as the
 from functools import partial
 from logging import Logger, getLogger
 from pathlib import Path
@@ -24,7 +25,6 @@ from qtpy.QtWidgets import (
 )
 
 from ..settings import Settings
-from ..utils import the
 from .colorselector import ColorSelector
 from .font_selector import FontSelector
 from .open_file_path_entry import OpenFilePathEntry, OpenFilePathsEntry
@@ -267,15 +267,12 @@ class PreferencesBody(QSplitter):
         content: QListWidget
         content = self._content = QListWidget(self)
         self._stack: QStackedWidget = QStackedWidget(self)
-        key: (
-            str
-            | tuple[str, tuple[str, ...]]
-            | tuple[str, tuple[str, ...], tuple[tuple[str, Any], ...]]
-        )
+        key: Settings.DialogSectionTitle
         value: dict[
             str,
             Settings.CallbackOnly
             | Settings.PathCallbackOnly
+            | Settings.PathsCallbackOnly
             | Settings.SpinboxAndCallback
             | Settings.ComboboxAndCallback
             | Settings.EditableComboboxAndCallback,
@@ -287,22 +284,20 @@ class PreferencesBody(QSplitter):
             if not value:
                 continue
             new_item: QListWidgetItem
-            if isinstance(key, str):
-                new_item = QListWidgetItem(key)
-            elif isinstance(key, tuple):
-                if len(key) == 1:
-                    new_item = QListWidgetItem(key[0])
-                elif len(key) == 2:
-                    new_item = QListWidgetItem(icon(*key[1]), key[0])
-                    new_item.setData(Qt.ItemDataRole.UserRole, (key[1], ()))
-                elif len(key) == 3:
-                    new_item = QListWidgetItem(icon(*key[1], **dict(key[2])), key[0])
-                    new_item.setData(Qt.ItemDataRole.UserRole, (key[1], key[2]))
-                else:
-                    PreferencesBody.logger.error(f"Invalid key: {key!r}")
-                    continue
+            if key.icon_options and key.icons and key.title:
+                new_item = QListWidgetItem(
+                    icon(*key.icons, **dict(key.icon_options)), key.title
+                )
+                new_item.setData(
+                    Qt.ItemDataRole.UserRole, (key.icons, key.icon_options)
+                )
+            elif key.icons and key.title:
+                new_item = QListWidgetItem(icon(*key.icons), key.title)
+                new_item.setData(Qt.ItemDataRole.UserRole, (key.icons, ()))
+            elif key.title:
+                new_item = QListWidgetItem(key.title)
             else:
-                PreferencesBody.logger.error(f"Invalid key type: {key!r}")
+                PreferencesBody.logger.error(f"Invalid key: {key!r}")
                 continue
             content.addItem(new_item)
             box: PreferencePage = PreferencePage(

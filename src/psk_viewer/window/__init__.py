@@ -10,7 +10,7 @@ from ..utils import DataMode, SpectrometerData, load_data, superscript_number
 from .frequency_domain_window import FrequencyDomainWindow
 from .time_domain_window import TimeDomainWindow
 
-__all__ = ["tick_strings", "TimeDomainWindow", "FrequencyDomainWindow", "Window"]
+__all__ = ["FrequencyDomainWindow", "TimeDomainWindow", "Window", "tick_strings"]
 
 pg.ViewBox.suggestPadding = lambda *_: 0.0
 

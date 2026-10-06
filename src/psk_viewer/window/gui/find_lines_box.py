@@ -1,3 +1,4 @@
+from contextlib import nullcontext as the
 from typing import cast
 
 # noinspection PyPackageRequirements
@@ -19,7 +20,7 @@ from qtpy.QtWidgets import (
 
 from ...plot_data_item import PlotDataItem
 from ...settings import Settings
-from ...utils import DataMode, resource_path, the
+from ...utils import DataMode, resource_path
 
 __all__ = ["FindLinesBox"]
 

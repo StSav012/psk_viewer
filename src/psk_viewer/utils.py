@@ -5,10 +5,11 @@ import re
 import sys
 import unicodedata
 from collections.abc import Collection, Iterable, Iterator
-from contextlib import contextmanager, suppress
+from contextlib import suppress
+from dataclasses import dataclass, field
 from os import PathLike, linesep
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, BinaryIO, Final, NamedTuple, TypeVar
+from typing import Any, BinaryIO, Final, NamedTuple
 
 import numpy as np
 from numpy.typing import NDArray
@@ -20,30 +21,29 @@ from qtpy.QtWidgets import QInputDialog, QWidget
 _translate = QCoreApplication.translate
 
 __all__ = [
-    "copy_to_clipboard",
-    "load_data_csv",
-    "load_data_fs",
-    "load_data_scandat",
-    "load_data",
-    "resource_path",
-    "superscript_number",
-    "superscript_tag",
-    "find_qm_files",
-    "load_icon",
-    "mix_colors",
-    "HeaderWithUnit",
+    "DataMode",
     "FSData",
+    "HeaderWithUnit",
     "PSKData",
     "SpectrometerData",
     "XValues",
-    "DataMode",
-    "the",
-    "tag",
-    "p_tag",
-    "wrap_in_html",
-    "remove_html",
-    "html_to_rtf",
     "best_name",
+    "copy_to_clipboard",
+    "find_qm_files",
+    "html_to_rtf",
+    "load_data",
+    "load_data_csv",
+    "load_data_fs",
+    "load_data_scandat",
+    "load_icon",
+    "mix_colors",
+    "p_tag",
+    "remove_html",
+    "resource_path",
+    "superscript_number",
+    "superscript_tag",
+    "tag",
+    "wrap_in_html",
 ]
 
 VOLTAGE_GAIN: Final[float] = 5.0
@@ -60,9 +60,19 @@ IMAGE_EXT: str = ".svg"
 def load_icon(widget: QWidget, icon_name: str) -> QIcon:
     palette: QPalette = widget.palette()
 
-    class QTAData(NamedTuple):
+    @dataclass(
+        init=True,
+        repr=False,
+        eq=False,
+        order=False,
+        frozen=True,
+        match_args=False,
+        kw_only=False,
+        slots=True,
+    )
+    class QTAData:
         args: Iterable[str]
-        options: list[dict[str, Any]] = []
+        options: list[dict[str, Any]] = field(default_factory=list)
 
     def icon_from_data(data: bytes) -> QIcon:
         pixmap: QPixmap = QPixmap()
@@ -241,10 +251,10 @@ def load_icon(widget: QWidget, icon_name: str) -> QIcon:
 
 def mix_colors(color_1: QColor, color_2: QColor, ratio_1: float = 0.5) -> QColor:
     return QColor(
-        int(round(color_2.red() * (1.0 - ratio_1) + color_1.red() * ratio_1)),
-        int(round(color_2.green() * (1.0 - ratio_1) + color_1.green() * ratio_1)),
-        int(round(color_2.blue() * (1.0 - ratio_1) + color_1.blue() * ratio_1)),
-        int(round(color_2.alpha() * (1.0 - ratio_1) + color_1.alpha() * ratio_1)),
+        round(color_2.red() * (1.0 - ratio_1) + color_1.red() * ratio_1),
+        round(color_2.green() * (1.0 - ratio_1) + color_1.green() * ratio_1),
+        round(color_2.blue() * (1.0 - ratio_1) + color_1.blue() * ratio_1),
+        round(color_2.alpha() * (1.0 - ratio_1) + color_1.alpha() * ratio_1),
     )
 
 
@@ -263,8 +273,8 @@ def superscript_number(number: str) -> str:
         "-": "⁻",
         "−": "⁻",
     }
-    for d in ss_dict:
-        number = number.replace(d, ss_dict[d])
+    for d, ss in ss_dict.items():
+        number = number.replace(d, ss)
     return number
 
 
@@ -322,7 +332,6 @@ def rtf_table(t: str) -> str:
     for tr, row in tag_pattern.findall(t):
         if tr.lower() != "tr":
             continue
-        # noinspection PyTypeChecker
         cells: list[tuple[str, str]] = tag_pattern.findall(row)
         cols = max(cols, len(cells))
         for td, cell in cells:
@@ -433,7 +442,7 @@ def load_data_fs(filename: Path) -> FSData:
             line: str
             for line in f_in:
                 if line and not line.startswith("*"):
-                    t = list(map(lambda w: w.strip(), line.split(":", maxsplit=1)))
+                    t = [w.strip() for w in line.split(":", maxsplit=1)]
                     if len(t) > 1:
                         if t[0].lower() == "FStart [GHz]".lower():
                             min_frequency = float(t[1]) * 1e6
@@ -807,14 +816,6 @@ def find_qm_files(
                 yield file
 
 
-_T = TypeVar("_T")
-
-
-@contextmanager
-def the(obj: _T) -> Iterator[_T]:
-    yield obj
-
-
 def is_good_html(text: str) -> bool:
     _1, _2, _3, _4 = (
         text.count("<"),
@@ -859,7 +860,7 @@ def remove_html(line: str) -> str:
     return unescape(new_line).lstrip()
 
 
-def best_name(entry: object, allow_html: bool = True) -> str:
+def best_name(entry: Any, allow_html: bool = True) -> str:
     import html.entities
     from html import escape, unescape
 
@@ -876,11 +877,11 @@ def best_name(entry: object, allow_html: bool = True) -> str:
     if not isinstance(entry, CatalogEntryType):
         raise TypeError("Unsupported entry type")
 
+    entry: CatalogEntryType
+
     species_tag: int = entry.speciestag
     last: str = (
-        best_name.__dict__.get("last", dict())
-        .get(species_tag, dict())
-        .get(allow_html, "")
+        best_name.__dict__.get("last", {}).get(species_tag, {}).get(allow_html, "")
     )
     if last:
         return last
@@ -1029,9 +1030,6 @@ def best_name(entry: object, allow_html: bool = True) -> str:
         return s
 
     def _best_name() -> str:
-        if TYPE_CHECKING and not isinstance(entry, CatalogEntryType):
-            raise TypeError("Unsupported entry type")
-
         if isotopolog := entry.isotopolog:
             if allow_html:
                 if is_good_html(str(molecule_symbol := entry.moleculesymbol)) and (
@@ -1066,8 +1064,8 @@ def best_name(entry: object, allow_html: bool = True) -> str:
     if not species_tag:
         return res
     if "last" not in best_name.__dict__:
-        best_name.__dict__["last"] = dict()
+        best_name.__dict__["last"] = {}
     if species_tag not in best_name.__dict__["last"]:
-        best_name.__dict__["last"][species_tag] = dict()
+        best_name.__dict__["last"][species_tag] = {}
     best_name.__dict__["last"][species_tag][allow_html] = res
     return res

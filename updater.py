@@ -56,18 +56,18 @@ def get_github_date(
     if not isinstance(d, dict) or not d:
         logger.warning(f"Malformed JSON received: {d}")
         return None
-    commit: dict[str, int | str | dict[str, bool | str] | dict[str, str]] = d.get(
-        "commit", dict()
-    )
+    commit = d.get("commit", {})
     if not isinstance(commit, dict):
         logger.warning(f"Malformed commit info received: {commit}")
         return None
-    committer: dict[str, str] = commit.get("committer", dict())
-    if not isinstance(committer, dict) or "date" not in committer:
+    committer = commit.get("committer", {})
+    if not isinstance(committer, dict) or not isinstance(
+        (date := committer.get("date")), str
+    ):
         logger.warning(f"Malformed commit committer info received: {committer}")
         return None
     try:
-        return from_iso_format(committer["date"])
+        return from_iso_format(date)
     except ValueError:
         return None
 
@@ -112,7 +112,9 @@ def update_with_git() -> bool:
         code_directory: Path = Path(__file__).parent
         if (code_directory / ".git").exists():
             return (
-                subprocess.run(args=["git", "pull"], capture_output=True).returncode
+                subprocess.run(
+                    args=["git", "pull"], capture_output=True, check=False
+                ).returncode
                 == 0
             )
     return False
@@ -162,7 +164,7 @@ def parse_table(table_text: str) -> list[dict[str, str]]:
         offset += col + 1
     data: list[dict[str, str]] = []
     for line_no in range(2, len(text_lines)):
-        data.append(dict())
+        data.append({})
         offset = 0
         for col, title in zip(cols, titles, strict=True):
             data[-1][title] = text_lines[line_no][offset : (offset + col)].strip()
@@ -175,6 +177,7 @@ def update_package(package_name: str) -> tuple[str, str, int | None]:
         args=[sys.executable, "-m", "pip", "install", "-U", package_name],
         capture_output=True,
         text=True,
+        check=False,
     )
     return p.stdout, p.stderr, p.returncode
 
@@ -183,8 +186,8 @@ def update_packages() -> list[str]:
     from importlib.util import find_spec
 
     priority_packages: list[str] = ["pip", "setuptools", "wheel"]
-    out: str
-    err: str
+    _out: str
+    _err: str
     ret: int | None
     if (
         find_spec("pip") is None
@@ -192,6 +195,7 @@ def update_packages() -> list[str]:
             args=[sys.executable, "-m", "ensurepip"],
             capture_output=True,
             text=True,
+            check=False,
         ).returncode
     ):
         return []
@@ -199,6 +203,7 @@ def update_packages() -> list[str]:
         args=[sys.executable, "-m", "pip", "list", "--outdated"],
         capture_output=True,
         text=True,
+        check=False,
     )
     if p.returncode:
         return []
@@ -207,7 +212,7 @@ def update_packages() -> list[str]:
     with suppress(Exception):
         for pp in priority_packages:
             if pp in outdated_packages:
-                out, err, ret = update_package(pp)
+                _out, _err, ret = update_package(pp)
                 if ret:
                     return updated_packages
                 outdated_packages.remove(pp)
@@ -222,7 +227,7 @@ def update_packages() -> list[str]:
 def update_with_pip(package_name: str) -> bool:
     with suppress(Exception):
         if package_name not in update_packages():
-            out, err, ret = update_package(package_name)
+            _out, _err, ret = update_package(package_name)
             return not ret
     return False
 

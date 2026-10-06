@@ -1,3 +1,4 @@
+from contextlib import nullcontext as the
 from typing import cast
 
 from qtpy.QtCore import (
@@ -18,7 +19,7 @@ from qtpy.QtWidgets import (
 )
 
 from ..settings import Settings
-from ..utils import HeaderWithUnit, copy_to_clipboard, remove_html, tag, the
+from ..utils import HeaderWithUnit, copy_to_clipboard, remove_html, tag
 from .found_lines_model import FoundLinesModel
 from .rich_combo_box import RichComboBoxDelegate
 
@@ -150,8 +151,8 @@ class TableView(QTableView):
             ]
         else:
             si: QModelIndex
-            rows: list[int] = sorted(set(si.row() for si in self.selectedIndexes()))
-            cols: list[int] = sorted(set(si.column() for si in self.selectedIndexes()))
+            rows: list[int] = sorted({si.row() for si in self.selectedIndexes()})
+            cols: list[int] = sorted({si.column() for si in self.selectedIndexes()})
             text_matrix = [["" for _ in range(len(cols))] for _ in range(len(rows))]
             for si in self.selectedIndexes():
                 text_matrix[rows.index(si.row())][cols.index(si.column())] = (
@@ -210,8 +211,8 @@ class TableView(QTableView):
                 )
         else:
             si: QModelIndex
-            rows: list[int] = sorted(set(si.row() for si in self.selectedIndexes()))
-            cols: list[int] = sorted(set(si.column() for si in self.selectedIndexes()))
+            rows: list[int] = sorted({si.row() for si in self.selectedIndexes()})
+            cols: list[int] = sorted({si.column() for si in self.selectedIndexes()})
             text_matrix = [["" for _ in range(len(cols))] for _ in range(len(rows))]
             for si in self.selectedIndexes():
                 text_matrix[rows.index(si.row())][cols.index(si.column())] = tag(
@@ -252,7 +253,7 @@ class TableView(QTableView):
         elif e.matches(QKeySequence.StandardKey.Delete):
             model: QAbstractItemModel = self.model()
             selected_indices: list[QModelIndex] = (
-                list(model.mapToSource(index) for index in self.selectedIndexes())
+                [model.mapToSource(index) for index in self.selectedIndexes()]
                 if isinstance(model, QSortFilterProxyModel)
                 else self.selectedIndexes()
             )

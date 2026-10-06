@@ -1,4 +1,5 @@
 from collections.abc import Collection, Iterable
+from contextlib import nullcontext as the
 from pathlib import Path
 from typing import ClassVar, NamedTuple
 
@@ -23,7 +24,7 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from ..utils import load_icon, the
+from ..utils import load_icon
 
 __all__ = ["OpenFilePathEntry", "OpenFilePathsEntry"]
 

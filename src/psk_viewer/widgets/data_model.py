@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 from contextlib import suppress
-from typing import Final, NamedTuple, cast
+from typing import Final, NamedTuple
 
 import numpy as np
 from numpy.typing import NDArray
@@ -64,8 +64,8 @@ class DataModel(QAbstractTableModel):
         available_count: bool = False,
     ) -> int:
         if available_count:
-            return cast(int, self._numeric_data.shape[0])
-        return min(cast(int, self._numeric_data.shape[0]), self._rows_loaded)
+            return self._numeric_data.shape[0]
+        return min(self._numeric_data.shape[0], self._rows_loaded)
 
     def columnCount(
         self,
@@ -86,7 +86,7 @@ class DataModel(QAbstractTableModel):
                 s = s.replace("e+0", "e+")
             while "e-0" in s:
                 s = s.replace("e-0", "e-")
-            if s.endswith("e+") or s.endswith("e-"):
+            if s.endswith(("e+", "e-")):
                 s = s[:-2]
             if "e" in s:
                 s = s.replace("e+", "e")
@@ -221,7 +221,7 @@ class DataModel(QAbstractTableModel):
     def substitution_for_cell(
         self,
         index: QModelIndex | QPersistentModelIndex,
-        content: tuple[object],
+        content: tuple[object, ...],
         role: Qt.ItemDataRole | int,
     ) -> object:
         return None
@@ -279,7 +279,7 @@ class DataModel(QAbstractTableModel):
         self.beginResetModel()
         self._format = [
             DataModel.Format(
-                precision=int(round(f.precision)),
+                precision=round(f.precision),
                 scale=float(f.scale),
                 fancy=bool(f.fancy),
                 log10=bool(f.log10),

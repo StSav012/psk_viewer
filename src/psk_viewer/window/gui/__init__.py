@@ -2,10 +2,10 @@ import abc
 import re
 import sys
 from collections.abc import Iterator
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager, nullcontext as the, suppress
 from pathlib import Path
 from threading import Lock
-from typing import TYPE_CHECKING, Any, Literal, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 # noinspection PyPackageRequirements
 import numpy as np
@@ -49,7 +49,7 @@ from qtpy.QtWidgets import (
 from ... import __version__
 from ...plot_data_item import PlotDataItem
 from ...settings import Settings
-from ...utils import DataMode, find_qm_files, load_icon, the
+from ...utils import DataMode, find_qm_files, load_icon
 from ...widgets.file_dialog import OpenFileDialog, SaveFileDialog
 from ...widgets.valuelabel import ValueLabel
 
@@ -293,7 +293,7 @@ class GUI(QMainWindow, abc.ABC, metaclass=QABCMeta):
         ).split(",")
         fn.SI_PREFIXES_ASCII = fn.SI_PREFIXES
         fn.SI_PREFIX_EXPONENTS.update(
-            dict([(s, (i - 8) * 3) for i, s in enumerate(fn.SI_PREFIXES)])
+            {s: (i - 8) * 3 for i, s in enumerate(fn.SI_PREFIXES)}
         )
         if alt_micro := _translate("si prefix alternative micro", "u"):
             fn.SI_PREFIX_EXPONENTS[alt_micro] = -6
@@ -360,7 +360,7 @@ class GUI(QMainWindow, abc.ABC, metaclass=QABCMeta):
             ui_languages: frozenset[str] = frozenset(
                 [
                     *current_locale.uiLanguages(),
-                    *map(lambda s: s.replace("-", "_"), current_locale.uiLanguages()),
+                    *(s.replace("-", "_") for s in current_locale.uiLanguages()),
                 ]
             )
             for qm_file in find_qm_files(
@@ -400,7 +400,7 @@ class GUI(QMainWindow, abc.ABC, metaclass=QABCMeta):
         section: str,
         key: str,
         default: _T,
-        _type: type[_T] | Literal[None] = None,
+        _type: type[_T] | None = None,
     ) -> _T:
         if section not in self.settings.childGroups():
             return default
@@ -549,7 +549,7 @@ class GUI(QMainWindow, abc.ABC, metaclass=QABCMeta):
             )
 
     @Slot(tuple)
-    def on_mouse_moved(self, event: tuple[QPointF]) -> None:  # noqa: F821
+    def on_mouse_moved(self, event: tuple[QPointF]) -> None:
         if self._plot_line.xData is None and self._plot_line.yData is None:
             return
         pos: QPointF = event[0]

@@ -77,7 +77,7 @@ def peaks_positions(
 
     std: NDArray[np.float64] = (
         pd.Series(data_y)
-        .rolling(int(round(LINE_WIDTH / (data_x[1] - data_x[0]))), center=True)
+        .rolling((round(LINE_WIDTH / (data_x[1] - data_x[0]))), center=True)
         .std()
         .to_numpy()
     )

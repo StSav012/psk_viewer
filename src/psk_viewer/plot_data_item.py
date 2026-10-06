@@ -87,7 +87,7 @@ class PlotDataItem:
     def min_frequency(self) -> float | np.float64:
         if np.isnan(self._jump):
             return self._frequency_data[0]
-        step: int = int(round(self._jump / self.frequency_step))
+        step: int = round(self._jump / self.frequency_step)
         if 2 * step >= self._frequency_data.size:
             return np.nan
         return self._frequency_data[step]
@@ -96,7 +96,7 @@ class PlotDataItem:
     def max_frequency(self) -> float | np.float64:
         if np.isnan(self._jump):
             return self._frequency_data[-1]
-        step: int = int(round(self._jump / self.frequency_step))
+        step: int = round(self._jump / self.frequency_step)
         if 2 * step >= self._frequency_data.size:
             return np.nan
         return self._frequency_data[-step]
@@ -109,7 +109,7 @@ class PlotDataItem:
     def frequency_data(self) -> NDArray[np.float64]:
         if np.isnan(self._jump):
             return self._frequency_data
-        step: int = int(round(self._jump / self.frequency_step))
+        step: int = round(self._jump / self.frequency_step)
         if step == 0:
             return self._frequency_data
         if 2 * step >= self._frequency_data.size:
@@ -120,7 +120,7 @@ class PlotDataItem:
     def voltage_data(self) -> NDArray[np.float64]:
         if np.isnan(self._jump):
             return self._voltage_data
-        step: int = int(round(self._jump / self.frequency_step))
+        step: int = round(self._jump / self.frequency_step)
         if 2 * step >= self._voltage_data.size:
             return np.empty(0)
         if step == 0:
@@ -134,7 +134,7 @@ class PlotDataItem:
     def gamma_data(self) -> NDArray[np.float64]:
         if np.isnan(self._jump):
             return self._gamma_data
-        step: int = int(round(self._jump / self.frequency_step))
+        step: int = round(self._jump / self.frequency_step)
         if 2 * step >= self._gamma_data.size:
             return np.empty(0)
         if step == 0:
@@ -150,13 +150,11 @@ class PlotDataItem:
             return 0.0
         if np.isnan(self._jump):
             return self._frequency_data[-1] - self._frequency_data[0]
-        step: int = int(
-            round(
-                self._jump
-                / (
-                    (self._frequency_data[-1] - self._frequency_data[0])
-                    / (self._frequency_data.size - 1)
-                )
+        step: int = round(
+            self._jump
+            / (
+                (self._frequency_data[-1] - self._frequency_data[0])
+                / (self._frequency_data.size - 1)
             )
         )
         if 2 * step >= self._frequency_data.size:

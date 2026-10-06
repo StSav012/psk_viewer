@@ -42,7 +42,7 @@ class _Thread(Thread, Generic[_T]):
 
         self._target: Callable[..., _T] | None = target
         self._args: Sequence[Any] = args
-        self._kwargs: Mapping[str, Any] = kwargs or dict()
+        self._kwargs: Mapping[str, Any] = kwargs or {}
 
         self._result: _T | None = None
 
@@ -115,7 +115,7 @@ class WaitingScreen(QWidget, Generic[_T]):
 
         self._target: Callable[..., _T] | None = target
         self._args: Sequence[Any] = args
-        self._kwargs: Mapping[str, Any] = kwargs or dict()
+        self._kwargs: Mapping[str, Any] = kwargs or {}
         self._thread: _Thread[_T] | None = None
         self._is_cancelled: bool = False
 

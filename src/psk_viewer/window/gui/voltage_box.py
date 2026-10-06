@@ -1,5 +1,5 @@
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext as the
 from typing import cast
 
 import pyqtgraph as pg  # type: ignore
@@ -16,7 +16,6 @@ from qtpy.QtWidgets import (
 
 from ...plot_data_item import PlotDataItem
 from ...settings import Settings
-from ...utils import the
 
 __all__ = ["VoltageBox"]
 
@@ -78,13 +77,13 @@ class VoltageBox(QDockWidget):
             layout.addLayout(self.h_layout_voltage)
 
         with the(
-            dict(
-                siPrefix=True,
-                decimals=3,
-                dec=True,
-                compactHeight=False,
-                format="{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}",
-            )
+            {
+                "siPrefix": True,
+                "decimals": 3,
+                "dec": True,
+                "compactHeight": False,
+                "format": "{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}",
+            }
         ) as opts:
             self.spin_min.setOpts(**opts)
             self.spin_max.setOpts(**opts)
@@ -220,18 +219,19 @@ class VoltageBox(QDockWidget):
             self.settings.setValue("unit", mode)
         if display_gamma:
             self.setWindowTitle(self.tr("Absorption"))
-            opts = dict(
-                suffix=_translate("unit", "cm⁻¹"),
-                siPrefix=False,
-                format="{value:.{decimals}e}{suffixGap}{suffix}",
-            )
+            opts = {
+                "suffix": _translate("unit", "cm⁻¹"),
+                "siPrefix": False,
+                "suffixPower": -1,
+                "format": "{value:.{decimals}e}{suffixGap}{suffix}",
+            }
         else:
             self.setWindowTitle(self.tr("Voltage"))
-            opts = dict(
-                suffix=_translate("unit", "V"),
-                siPrefix=True,
-                format="{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}",
-            )
+            opts = {
+                "suffix": _translate("unit", "V"),
+                "siPrefix": True,
+                "format": "{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}",
+            }
         self.spin_min.setOpts(**opts)
         self.spin_max.setOpts(**opts)
         self.dataModeChanged.emit(mode)

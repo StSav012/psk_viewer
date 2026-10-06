@@ -1,7 +1,8 @@
+from contextlib import nullcontext as the
+
 from qtpy.QtCore import QCoreApplication, Qt
 from qtpy.QtWidgets import QWidget
 
-from ...utils import the
 from ...widgets.toolbar import FrequencyDomainToolbar
 from . import GUI
 from .find_lines_box import FindLinesBox

@@ -1,3 +1,4 @@
+from contextlib import nullcontext as the
 from typing import cast
 
 # noinspection PyPackageRequirements
@@ -22,7 +23,7 @@ from qtpy.QtWidgets import (
 )
 
 from ...settings import Settings
-from ...utils import HeaderWithUnit, the
+from ...utils import HeaderWithUnit
 from ...widgets.found_lines_model import FoundLinesModel
 from ...widgets.table_view import TableView
 

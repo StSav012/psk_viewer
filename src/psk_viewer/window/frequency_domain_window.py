@@ -2,9 +2,10 @@ import importlib.util
 import mimetypes
 import sys
 from collections.abc import Callable, Collection, Iterable, Sequence
+from contextlib import nullcontext as the
 from numbers import Number
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 # noinspection PyPackageRequirements
 import numpy as np
@@ -39,7 +40,6 @@ from ..utils import (
     load_data,
     p_tag,
     tag,
-    the,
 )
 from ..widgets.preferences import Preferences
 from .gui.frequency_domain_gui import FrequencyDomainGUI
@@ -230,7 +230,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
                 self.box_found_lines.model.all_data(0)
             )
             selected_points: list[int] = [
-                cast(int, np.argmin(np.abs(point.pos().x() - found_lines_frequencies)))
+                np.argmin(np.abs(point.pos().x() - found_lines_frequencies))
                 for point in points
             ]
             self.box_found_lines.select(selected_points)
@@ -671,22 +671,21 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
                 the(self.box_found_lines.model.header) as header,
             ):
                 f_out.writelines(
-                    map(
-                        lambda s: "# " + s + "\n",
-                        [
-                            sep.join(
-                                h.name if isinstance(h, HeaderWithUnit) else h
-                                for h in header
-                            ),
-                            sep.join(
-                                h.unit if isinstance(h, HeaderWithUnit) else ""
-                                for h in header
-                            ),
-                        ],
-                    )
+                    "# " + s + "\n"
+                    for s in [
+                        sep.join(
+                            h.name if isinstance(h, HeaderWithUnit) else h
+                            for h in header
+                        ),
+                        sep.join(
+                            h.unit if isinstance(h, HeaderWithUnit) else ""
+                            for h in header
+                        ),
+                    ]
                 )
-                for row in data:
-                    f_out.write(remove_html(sep.join(map(str, row))) + "\n")
+                f_out.writelines(
+                    remove_html(sep.join(map(str, row))) + "\n" for row in data
+                )
 
         def save_rtf(fn: Path) -> None:
             from ..utils import html_to_rtf, tag
@@ -844,13 +843,13 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
 
         self.toolbar.clear_action.setEnabled(True)
 
-        min_frequency: np.float64 = cast(np.float64, f[0])
-        max_frequency: np.float64 = cast(np.float64, f[-1])
+        min_frequency: np.float64 = f[0]
+        max_frequency: np.float64 = f[-1]
 
         self.box_frequency.switch_range(min_frequency, max_frequency)
 
-        step: int = int(
-            round(self.settings.jump / ((max_frequency - min_frequency) / (f.size - 1)))
+        step: int = round(
+            self.settings.jump / ((max_frequency - min_frequency) / (f.size - 1))
         )
         self.toolbar.differentiate_action.setEnabled(
             self._data_mode == DataMode.PSK and 0 < step < 0.25 * f.size

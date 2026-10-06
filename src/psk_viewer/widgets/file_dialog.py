@@ -1,7 +1,9 @@
 import mimetypes
+import operator
 import re
 from collections.abc import Collection
 from fnmatch import fnmatch
+from functools import reduce
 from importlib.util import find_spec
 from os import PathLike
 from pathlib import Path
@@ -18,7 +20,8 @@ _translate = QCoreApplication.translate
 
 
 def ensure_matches(fn: str, selected_filter: str) -> str:
-    patterns: list[str] = sum(
+    patterns: list[str] = reduce(
+        operator.iadd,
         (e.split() for e in re.findall(r"\((.*?)\)$", selected_filter)),
         [],
     )
@@ -273,7 +276,7 @@ class SaveFileDialog(FileDialog):
                 ):
                     selected_filter = filter_
                     if supported_name_filter.file_extensions:
-                        selected_ext = list(supported_name_filter.file_extensions)[0]
+                        selected_ext = next(iter(supported_name_filter.file_extensions))
 
         supported_mimetypes: list[str] = []
         mimetype: str | None

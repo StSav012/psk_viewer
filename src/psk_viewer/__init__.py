@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import enum
 import sys
 from datetime import datetime, timedelta, timezone
@@ -90,10 +88,10 @@ def _make_old_qt_compatible_again() -> None:
                 r"(?P<offset>[+\-].+)?": from_iso_calendar,
             }
             match: re.Match[str] | None
-            for p in patterns:
+            for p, c in patterns.items():
                 match = re.fullmatch(p, s)
                 if match is not None:
-                    return patterns[p](match)
+                    return c(match)
 
         return s
 

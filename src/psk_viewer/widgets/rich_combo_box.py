@@ -1,3 +1,5 @@
+from contextlib import nullcontext as the
+
 from qtpy.QtCore import (
     QAbstractItemModel,
     QModelIndex,
@@ -26,8 +28,6 @@ from qtpy.QtWidgets import (
 )
 
 __all__ = ["RichComboBox", "RichComboBoxDelegate"]
-
-from psk_viewer.utils import the
 
 
 class HTMLDelegate(QStyledItemDelegate):
@@ -164,7 +164,7 @@ class RichComboBoxDelegate(HTMLDelegate):
             and (best_candidate := index.data(Qt.ItemDataRole.ForegroundRole))
             is not None
         ):
-            text, data = best_candidate
+            _text, data = best_candidate
             editor.setCurrentData(data)
 
     def setModelData(

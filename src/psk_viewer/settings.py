@@ -1,8 +1,9 @@
-from collections.abc import Collection, Iterable, Iterator, Sequence
+from collections.abc import Collection, Hashable, Iterable, Iterator, Sequence
 from contextlib import contextmanager, suppress
+from dataclasses import dataclass, field
 from os import PathLike, linesep
 from pathlib import Path
-from typing import NamedTuple, cast
+from typing import cast
 
 import pyqtgraph as pg  # type: ignore
 from qtpy.QtCore import QByteArray, QCoreApplication, QObject, QSettings
@@ -17,31 +18,110 @@ _translate = QCoreApplication.translate
 
 
 class Settings(QSettings):
-    """convenient internal representation of the application settings."""
+    """Convenient internal representation of the application settings."""
 
-    class CallbackOnly(NamedTuple):
+    @dataclass(
+        init=True,
+        repr=False,
+        eq=False,
+        order=False,
+        frozen=True,
+        match_args=False,
+        kw_only=False,
+        slots=True,
+    )
+    class CallbackOnly:
         callback: str
-        children: dict[str, NamedTuple] = {}
+        children: dict[str, object] = field(default_factory=dict)
 
-    class PathCallbackOnly(NamedTuple):
+    @dataclass(
+        init=True,
+        repr=False,
+        eq=False,
+        order=False,
+        frozen=True,
+        match_args=False,
+        kw_only=False,
+        slots=True,
+    )
+    class PathCallbackOnly:
         callback: str
-        name_filters: Collection[OpenFilePathEntry.NameFilter] = []
+        name_filters: Collection[OpenFilePathEntry.NameFilter] = field(
+            default_factory=list
+        )
 
-    class PathsCallbackOnly(NamedTuple):
+    @dataclass(
+        init=True,
+        repr=False,
+        eq=False,
+        order=False,
+        frozen=True,
+        match_args=False,
+        kw_only=False,
+        slots=True,
+    )
+    class PathsCallbackOnly:
         callback: str
-        name_filters: Collection[OpenFilePathEntry.NameFilter] = []
+        name_filters: Collection[OpenFilePathEntry.NameFilter] = field(
+            default_factory=list
+        )
 
-    class SpinboxAndCallback(NamedTuple):
+    @dataclass(
+        init=True,
+        repr=False,
+        eq=False,
+        order=False,
+        frozen=True,
+        match_args=False,
+        kw_only=False,
+        slots=True,
+    )
+    class SpinboxAndCallback:
         spinbox_opts: dict[str, bool | int | float | str]
         callback: str
 
-    class ComboboxAndCallback(NamedTuple):
+    @dataclass(
+        init=True,
+        repr=False,
+        eq=False,
+        order=False,
+        frozen=True,
+        match_args=False,
+        kw_only=False,
+        slots=True,
+    )
+    class ComboboxAndCallback:
         combobox_data: dict[str, str]
         callback: str
 
-    class EditableComboboxAndCallback(NamedTuple):
+    @dataclass(
+        init=True,
+        repr=False,
+        eq=False,
+        order=False,
+        frozen=True,
+        match_args=False,
+        kw_only=False,
+        slots=True,
+    )
+    class EditableComboboxAndCallback:
         combobox_items: Sequence[str]
         callback: str
+
+    @dataclass(
+        init=True,
+        repr=True,
+        eq=False,
+        order=False,
+        frozen=True,
+        match_args=False,
+        kw_only=False,
+        slots=True,
+    )
+    class DialogSectionTitle:
+        title: str
+        icons: tuple[str, ...] = field(default_factory=tuple)
+        icon_options: tuple[tuple[str, Hashable], ...] = field(default_factory=tuple)
 
     def __init__(
         self,
@@ -76,11 +156,16 @@ class Settings(QSettings):
     def dialog(
         self,
     ) -> dict[
-        tuple[str, tuple[str]] | tuple[str, tuple[str, str], object],
-        dict[str, CallbackOnly | SpinboxAndCallback]
-        | dict[str, PathCallbackOnly | PathsCallbackOnly]
-        | dict[str, SpinboxAndCallback]
-        | dict[str, ComboboxAndCallback],
+        DialogSectionTitle,
+        dict[
+            str,
+            CallbackOnly
+            | SpinboxAndCallback
+            | ComboboxAndCallback
+            | EditableComboboxAndCallback
+            | PathCallbackOnly
+            | PathsCallbackOnly,
+        ],
     ]:
         self._line_ends = {
             "\n": _translate("line end", r"line feed (\n, U+000A)"),
@@ -120,7 +205,9 @@ class Settings(QSettings):
             "format": "{value:.{decimals}f}{suffixGap}{suffix}",
         }
         return {
-            (self.tr("Processing"), ("mdi6.calculator-variant",)): (
+            Settings.DialogSectionTitle(
+                self.tr("Processing"), ("mdi6.calculator-variant",)
+            ): (
                 {
                     self.tr("Jump:"): Settings.SpinboxAndCallback(
                         jump_opts, Settings.jump.fget.__name__
@@ -129,7 +216,7 @@ class Settings(QSettings):
                 if self.display_processing
                 else {}
             ),
-            (self.tr("Crosshair"), ("mdi6.crosshairs",)): {
+            Settings.DialogSectionTitle(self.tr("Crosshair"), ("mdi6.crosshairs",)): {
                 self.tr("Show crosshair lines"): Settings.CallbackOnly(
                     Settings.show_crosshair.fget.__name__
                 ),
@@ -143,7 +230,7 @@ class Settings(QSettings):
                     line_opts, Settings.crosshair_lines_thickness.fget.__name__
                 ),
             },
-            (self.tr("Line"), ("mdi6.brush",)): {
+            Settings.DialogSectionTitle(self.tr("Line"), ("mdi6.brush",)): {
                 self.tr("Color:"): Settings.CallbackOnly(
                     Settings.line_color.fget.__name__
                 ),
@@ -154,7 +241,7 @@ class Settings(QSettings):
                     line_opts, Settings.line_thickness.fget.__name__
                 ),
             },
-            (
+            Settings.DialogSectionTitle(
                 self.tr("Plot"),
                 ("mdi6.arrow-right-thin", "mdi6.arrow-up-thin"),
                 (("options", ((("offset", (0, 0.2)),), (("offset", (-0.2, 0)),))),),
@@ -181,7 +268,9 @@ class Settings(QSettings):
                 ),
             },
             # NB: there should be the same icon as in the toolbar
-            (self.tr("Marks"), ("mdi6.format-color-highlight",)): {
+            Settings.DialogSectionTitle(
+                self.tr("Marks"), ("mdi6.format-color-highlight",)
+            ): {
                 self.tr("Copy frequency to clipboard"): Settings.CallbackOnly(
                     Settings.copy_frequency.fget.__name__
                 ),
@@ -204,7 +293,7 @@ class Settings(QSettings):
                     line_opts, Settings.mark_pen_thickness.fget.__name__
                 ),
             },
-            (self.tr("Export"), ("mdi6.file-export",)): {
+            Settings.DialogSectionTitle(self.tr("Export"), ("mdi6.file-export",)): {
                 self.tr("Line ending:"): Settings.ComboboxAndCallback(
                     self._line_ends, Settings.line_end.fget.__name__
                 ),
@@ -212,7 +301,7 @@ class Settings(QSettings):
                     self._csv_separators, Settings.csv_separator.fget.__name__
                 ),
             },
-            (self.tr("Locale"), ("mdi6.translate",)): {
+            Settings.DialogSectionTitle(self.tr("Locale"), ("mdi6.translate",)): {
                 self.tr("Translation file:"): Settings.PathCallbackOnly(
                     Settings.translation_path.fget.__name__,
                     name_filters=[
@@ -223,7 +312,7 @@ class Settings(QSettings):
                     ],
                 ),
             },
-            (self.tr("Catalog"), ("mdi6.card-search",)): {
+            Settings.DialogSectionTitle(self.tr("Catalog"), ("mdi6.card-search",)): {
                 self.tr("Files:"): Settings.PathsCallbackOnly(
                     Settings.catalog_paths.fget.__name__,
                     name_filters=[
@@ -627,7 +716,6 @@ class Settings(QSettings):
             # noinspection PyUnresolvedReferences
             self.setValue(name, o.saveState())
         with suppress(AttributeError), self.section("geometry"):
-            # noinspection PyUnresolvedReferences
             self.setValue(name, o.saveGeometry())
 
     def restore(self, o: QWidget) -> None:
@@ -638,5 +726,4 @@ class Settings(QSettings):
             # noinspection PyUnresolvedReferences
             o.restoreState(self.value(name, QByteArray()))
         with suppress(AttributeError), self.section("geometry"):
-            # noinspection PyUnresolvedReferences
             o.restoreGeometry(self.value(name, QByteArray()))

@@ -59,7 +59,7 @@ class ValueLabel(QLabel):
         else:
             self.formatStr = formatStr
 
-    def setValue(self, value: int | float) -> None:
+    def setValue(self, value: float) -> None:
         now: float = time.monotonic()
         self.values.append((now, value))
         cutoff: float = now - self.averageTime
@@ -98,7 +98,7 @@ class ValueLabel(QLabel):
             parts.update({"siPrefix": p, "scaledValue": s * val})
         else:
             # no SI prefix /suffix requested; scale is 1
-            exp: int = int(math.floor(math.log10(abs(val)))) if val != 0.0 else 0
+            exp: int = math.floor(math.log10(abs(val))) if val != 0.0 else 0
             man: float = val * math.pow(0.1, exp)
             parts.update(
                 {"siPrefix": "", "scaledValue": val, "exp": exp, "mantissa": man}

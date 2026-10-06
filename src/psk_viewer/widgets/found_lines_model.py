@@ -152,7 +152,7 @@ class FoundLinesModel(DataModel):
     def substitution_for_cell(
         self,
         index: QModelIndex | QPersistentModelIndex,
-        content: tuple[object],
+        content: tuple[object, ...],
         role: Qt.ItemDataRole | int,
     ) -> object:
         _key: tuple[int, int] = index.row(), index.column()
@@ -175,6 +175,8 @@ class FoundLinesModel(DataModel):
             return None
 
         frequency, *_ = content
+        if not isinstance(frequency, float):
+            return None
         frequency *= 1e-6
         entries: CatalogType = catalog.filter(
             min_frequency=frequency - self._df * 1e-6,

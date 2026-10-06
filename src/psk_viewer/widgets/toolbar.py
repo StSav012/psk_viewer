@@ -6,7 +6,7 @@ from qtpy.QtWidgets import QAction, QApplication, QMenu, QToolBar, QWidget
 
 from ..utils import load_icon, mix_colors
 
-__all__ = ["TimeDomainToolbar", "FrequencyDomainToolbar"]
+__all__ = ["FrequencyDomainToolbar", "TimeDomainToolbar"]
 
 
 class ToolBar(QToolBar):

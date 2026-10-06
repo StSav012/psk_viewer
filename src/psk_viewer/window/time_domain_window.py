@@ -1,4 +1,5 @@
 from collections.abc import Callable, Collection
+from contextlib import nullcontext as the
 from pathlib import Path
 from typing import cast
 
@@ -24,7 +25,7 @@ from qtpy.QtGui import (
 from qtpy.QtWidgets import QDockWidget, QMessageBox, QWidget
 
 from ..plot_data_item import PlotDataItem
-from ..utils import DataMode, SpectrometerData, load_data, the
+from ..utils import DataMode, SpectrometerData, load_data
 from ..widgets.preferences import Preferences
 from .gui.time_domain_gui import TimeDomainGUI
 
@@ -362,9 +363,7 @@ class TimeDomainWindow(TimeDomainGUI):
         self._plot_data.x_data_type = PlotDataItem.TIME_DATA
         self._ghost_data.x_data_type = PlotDataItem.TIME_DATA
 
-        self._plot_line.setData(
-            name=str(filename.parent / filename.stem),
-        )
+        self._plot_line.setData(name=str(filename.parent / filename.stem))
 
         self.display_gamma_or_voltage()
 
@@ -452,7 +451,6 @@ class TimeDomainWindow(TimeDomainGUI):
             sep: str = self.settings.csv_separator
             if self.box_voltage.show_gamma:
                 data = np.column_stack((x, y))
-                # noinspection PyTypeChecker
                 np.savetxt(
                     fn,
                     data,
@@ -477,7 +475,6 @@ class TimeDomainWindow(TimeDomainGUI):
                 )
             else:
                 data = np.column_stack((x, y * 1e3))
-                # noinspection PyTypeChecker
                 np.savetxt(
                     fn,
                     data,

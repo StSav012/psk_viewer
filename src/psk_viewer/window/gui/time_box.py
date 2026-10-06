@@ -1,5 +1,5 @@
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext as the
 from typing import cast
 
 import pyqtgraph as pg  # type: ignore
@@ -15,7 +15,6 @@ from qtpy.QtWidgets import (
 )
 
 from ...settings import Settings
-from ...utils import the
 
 __all__ = ["TimeBox"]
 
@@ -72,13 +71,13 @@ class TimeBox(QDockWidget):
             layout.addLayout(self.grid_layout)
 
         with the(
-            dict(
-                siPrefix=True,
-                decimals=3,
-                dec=True,
-                compactHeight=False,
-                format="{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}",
-            )
+            {
+                "siPrefix": True,
+                "decimals": 3,
+                "dec": True,
+                "compactHeight": False,
+                "format": "{scaledValue:.{decimals}f}{suffixGap}{siPrefix}{suffix}",
+            }
         ) as opts:
             self.spin_min.setOpts(**opts)
             self.spin_max.setOpts(**opts)
