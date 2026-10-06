@@ -704,6 +704,20 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
                     )
                 )
 
+        def save_ods(fn: Path) -> None:
+            from ..utils import html_to_ods, wrap_in_html
+
+            with open(fn, "wb") as f_out:
+                f_out.write(
+                    html_to_ods(
+                        wrap_in_html(
+                            self.box_found_lines.table.stringify_table_html(
+                                whole_table=True, with_headers=True
+                            ),
+                        )
+                    )
+                )
+
         def save_xlsx(fn: Path) -> None:
             with pd.ExcelWriter(fn) as writer:
                 df: pd.DataFrame = pd.DataFrame(data)
@@ -717,6 +731,7 @@ class FrequencyDomainWindow(FrequencyDomainGUI):
         supported_formats_callbacks: dict[str, Callable[[Path], None]] = {
             ".csv": save_csv,
             ".rtf": save_rtf,
+            ".ods": save_ods,
         }
         if importlib.util.find_spec("openpyxl") is not None:
             supported_formats_callbacks[".xlsx"] = save_xlsx

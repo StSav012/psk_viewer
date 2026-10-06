@@ -1,3 +1,4 @@
+import importlib.util
 from collections.abc import Callable, Collection
 from contextlib import nullcontext as the
 from pathlib import Path
@@ -539,6 +540,46 @@ class TimeDomainWindow(TimeDomainGUI):
                     )
                 )
 
+        def save_ods(fn: Path) -> None:
+            from ..utils import html_to_ods, tag, wrap_in_html
+
+            table: list[list[str]] = []
+            if self.box_voltage.show_gamma:
+                table.append(
+                    [
+                        _translate("plot axes labels", "Time (s)"),
+                        _translate("plot axes labels", "Absorption (cm⁻¹)"),
+                    ]
+                )
+                for _x, _y in zip(x, y, strict=True):
+                    table.append([f"{_x:.8e}", f"{_y:.6e}"])
+            else:
+                table.append(
+                    [
+                        _translate("plot axes labels", "Time (s)"),
+                        _translate("plot axes labels", "Voltage (mV)"),
+                    ]
+                )
+                for _x, _y in zip(x, y * 1e3, strict=True):
+                    table.append([f"{_x:.8e}", f"{_y:.6f}"])
+            with open(fn, "wb") as f_out:
+                f_out.write(
+                    html_to_ods(
+                        wrap_in_html(
+                            tag(
+                                "table",
+                                "".join(
+                                    tag(
+                                        "tr",
+                                        "".join(tag("td", cell) for cell in row),
+                                    )
+                                    for row in table
+                                ),
+                            ),
+                        )
+                    )
+                )
+
         def save_xlsx(fn: Path) -> None:
             data: NDArray[np.float64]
             with pd.ExcelWriter(fn) as writer:
@@ -573,8 +614,10 @@ class TimeDomainWindow(TimeDomainGUI):
         supported_formats_callbacks: dict[str, Callable[[Path], None]] = {
             ".csv": save_csv,
             ".rtf": save_rtf,
-            ".xlsx": save_xlsx,
+            ".ods": save_ods,
         }
+        if importlib.util.find_spec("openpyxl") is not None:
+            supported_formats_callbacks[".xlsx"] = save_xlsx
 
         if not (filename := self._save_table_dialog.get_save_filename()):
             return

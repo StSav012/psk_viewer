@@ -22,6 +22,7 @@ from ._html import (
     tex_to_html_entity,
     wrap_in_html,
 )
+from ._ods import html_to_ods, ods_object_descriptor
 from ._rtf import html_to_rtf
 from ._types import DataMode, FSData, HeaderWithUnit, PSKData, SpectrometerData, XValues
 
@@ -37,6 +38,7 @@ __all__ = [
     "best_name",
     "copy_to_clipboard",
     "find_qm_files",
+    "html_to_ods",
     "html_to_rtf",
     "load_data",
     "load_data_csv",
@@ -303,7 +305,7 @@ def superscript_tag(html_code: str) -> str:
 
 def copy_to_clipboard(
     plain_text: str,
-    rich_text: str = "",
+    text: str = "",
     text_type: Qt.TextFormat | str = Qt.TextFormat.PlainText,
 ) -> None:
     from qtpy.QtCore import QMimeData
@@ -317,10 +319,13 @@ def copy_to_clipboard(
         mime_data.setData(text_type, plain_text.encode())
     elif text_type == Qt.TextFormat.RichText:
         mime_data.setData(
-            "text/rtf", html_to_rtf(tag("html", rich_text)).encode("utf-8")
+            'application/x-openoffice-embed-source-xml;windows_formatname="Star Embed Source (XML)"',
+            html_to_ods(wrap_in_html(text)),
         )
-        mime_data.setData("text/markdown", rich_text.encode("utf-8"))
-        mime_data.setHtml(wrap_in_html(rich_text))
+        mime_data.setData(*ods_object_descriptor(displayname="clipboard.ods"))
+        mime_data.setData("text/rtf", html_to_rtf(tag("html", text)).encode("utf-8"))
+        mime_data.setData("text/markdown", text.encode("utf-8"))
+        mime_data.setHtml(wrap_in_html(text))
         mime_data.setText(plain_text)
     else:
         mime_data.setText(plain_text)

@@ -155,6 +155,10 @@ class GUI(QMainWindow, abc.ABC, metaclass=QABCMeta):
                     file_extension=".rtf",
                 ),
                 SaveFileDialog.SupportedMimetypeItem(
+                    required_packages=[],
+                    file_extension=".ods",
+                ),
+                SaveFileDialog.SupportedMimetypeItem(
                     required_packages=["openpyxl"],
                     file_extension=".xlsx",
                 ),
