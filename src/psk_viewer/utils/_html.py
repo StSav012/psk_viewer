@@ -2,6 +2,7 @@ import html
 import html.entities
 import itertools
 import os
+import re
 
 __all__ = [
     "chem_html",
@@ -117,13 +118,27 @@ def charge(s: str) -> str:
     return s
 
 
+v_or_nu_pattern: re.Pattern[str] = re.compile(
+    r"(?P<plus>\s*\+?\s*)(?<!\w)(?P<factor>\d*\s*)(?P<v_or_nu>[vν])(?P<subscript>[\dt]*)"
+)
+
+
 def v_or_nu(s: str) -> str:
-    if "=" not in s:
-        return s[0] + " = " + s[1:]
     ss: list[str] = list(map(str.strip, s.split("=")))
-    for _i in range(len(ss)):
-        if ss[_i].startswith(("v", "ν")) and ss[_i][1:]:
-            ss[_i] = ss[_i][0] + sub_tag(ss[_i][1:])
+    for i in range(len(ss)):
+        pos: int = 0
+        while m := v_or_nu_pattern.search(ss[i], pos=pos):
+            new_v_or_nu: str = m["v_or_nu"]
+            if m["factor"]:
+                new_v_or_nu = m["factor"].strip() + " " + new_v_or_nu
+            if m["plus"]:
+                new_v_or_nu = m["plus"].strip() + " " + new_v_or_nu
+                if m.start() > 0:
+                    new_v_or_nu = " " + new_v_or_nu
+            if m["subscript"]:
+                new_v_or_nu += sub_tag(m["subscript"])
+            ss[i] = ss[i][: m.start()] + new_v_or_nu + ss[i][m.end() :]
+            pos = m.end()
     return " = ".join(ss)
 
 
@@ -136,13 +151,13 @@ def chem_html(formula: str) -> str:
     html_formula: str = html.escape(formula)
     html_formula_pieces: list[str] = list(map(str.strip, html_formula.split(",")))
     for i in range(len(html_formula_pieces)):
-        if html_formula_pieces[i].startswith("v"):
+        if v_or_nu_pattern.search(html_formula_pieces[i]):
             html_formula_pieces = html_formula_pieces[:i] + [
                 ", ".join(html_formula_pieces[i:])
             ]
             break
     for i in range(len(html_formula_pieces)):
-        if html_formula_pieces[i].startswith("v"):
+        if v_or_nu_pattern.search(html_formula_pieces[i]):
             html_formula_pieces[i] = v_or_nu(html_formula_pieces[i])
             break
         for function in (subscript, prefix, charge):
