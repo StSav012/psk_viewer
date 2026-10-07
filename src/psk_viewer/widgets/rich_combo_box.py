@@ -15,6 +15,7 @@ from qtpy.QtGui import (
     QPainter,
     QPalette,
     QTextDocument,
+    QTextOption,
 )
 from qtpy.QtWidgets import (
     QApplication,
@@ -34,6 +35,9 @@ class HTMLDelegate(QStyledItemDelegate):
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._doc: QTextDocument = QTextDocument(self)
+        to: QTextOption = QTextOption()
+        to.setWrapMode(QTextOption.WrapMode.NoWrap)
+        self._doc.setDefaultTextOption(to)
 
     def paint(
         self,
@@ -81,11 +85,8 @@ class HTMLDelegate(QStyledItemDelegate):
         with the(self._doc) as doc:
             doc.clear()
             doc.setHtml(options.text)
-            doc.setTextWidth(options.rect.width())
-            return QSize(
-                round(doc.idealWidth()),
-                round(QTextDocument().size().height()),
-            )
+            doc.adjustSize()
+            return doc.size().toSize()
 
 
 class RichComboBox(QComboBox):
