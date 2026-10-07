@@ -1,3 +1,4 @@
+import abc
 from contextlib import nullcontext as the
 
 from qtpy.QtCore import QCoreApplication, Qt
@@ -13,7 +14,7 @@ __all__ = ["TimeDomainGUI"]
 _translate = QCoreApplication.translate
 
 
-class TimeDomainGUI(GUI):
+class TimeDomainGUI(GUI, abc.ABC):
     def __init__(
         self,
         parent: QWidget | None = None,

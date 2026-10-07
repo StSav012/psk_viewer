@@ -1,3 +1,4 @@
+import abc
 from contextlib import nullcontext as the
 
 from qtpy.QtCore import QCoreApplication, Qt
@@ -15,7 +16,7 @@ __all__ = ["FrequencyDomainGUI"]
 _translate = QCoreApplication.translate
 
 
-class FrequencyDomainGUI(GUI):
+class FrequencyDomainGUI(GUI, abc.ABC):
     def __init__(
         self,
         parent: QWidget | None = None,
