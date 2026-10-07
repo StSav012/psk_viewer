@@ -1,6 +1,7 @@
 from collections.abc import Collection, Hashable, Iterable, Iterator, Sequence
 from contextlib import contextmanager, suppress
 from dataclasses import dataclass, field
+from importlib.util import find_spec
 from os import PathLike, linesep
 from pathlib import Path
 from typing import cast
@@ -312,51 +313,67 @@ class Settings(QSettings):
                     ],
                 ),
             },
-            Settings.DialogSectionTitle(self.tr("Catalog"), ("mdi6.card-search",)): {
-                self.tr("Files:"): Settings.PathsCallbackOnly(
-                    Settings.catalog_paths.fget.__name__,
-                    name_filters=[
-                        OpenFilePathsEntry.NameFilter(
-                            name=_translate("file type", "JSON file"),
-                            suffixes=[".json"],
+            **(
+                {
+                    Settings.DialogSectionTitle(
+                        self.tr("Catalog"), ("mdi6.card-search",)
+                    ): {
+                        self.tr("Files:"): Settings.PathsCallbackOnly(
+                            Settings.catalog_paths.fget.__name__,
+                            name_filters=[
+                                OpenFilePathsEntry.NameFilter(
+                                    name=_translate("file type", "JSON file"),
+                                    suffixes=[".json"],
+                                ),
+                                OpenFilePathsEntry.NameFilter(
+                                    name=_translate("file type", "TAR file"),
+                                    suffixes=[".tar"],
+                                ),
+                                OpenFilePathsEntry.NameFilter(
+                                    name=_translate(
+                                        "file type", "JSON with GZip compression"
+                                    ),
+                                    suffixes=[".json.gz"],
+                                ),
+                                OpenFilePathsEntry.NameFilter(
+                                    name=_translate(
+                                        "file type", "JSON with Bzip2 compression"
+                                    ),
+                                    suffixes=[".json.bz2"],
+                                ),
+                                OpenFilePathsEntry.NameFilter(
+                                    name=_translate(
+                                        "file type", "JSON with LZMA2 compression"
+                                    ),
+                                    suffixes=[".json.xz", ".json.lzma"],
+                                ),
+                                OpenFilePathsEntry.NameFilter(
+                                    name=_translate(
+                                        "file type", "Tar archive with GZip compression"
+                                    ),
+                                    suffixes=[".tar.gz", ".tgz"],
+                                ),
+                                OpenFilePathsEntry.NameFilter(
+                                    name=_translate(
+                                        "file type",
+                                        "Tar archive with Bzip2 compression",
+                                    ),
+                                    suffixes=[".tar.bz2", ".tbz2"],
+                                ),
+                                OpenFilePathsEntry.NameFilter(
+                                    name=_translate(
+                                        "file type",
+                                        "Tar archive with LZMA2 compression",
+                                    ),
+                                    suffixes=[".tar.xz", ".txz"],
+                                ),
+                            ],
                         ),
-                        OpenFilePathsEntry.NameFilter(
-                            name=_translate("file type", "TAR file"),
-                            suffixes=[".tar"],
-                        ),
-                        OpenFilePathsEntry.NameFilter(
-                            name=_translate("file type", "JSON with GZip compression"),
-                            suffixes=[".json.gz"],
-                        ),
-                        OpenFilePathsEntry.NameFilter(
-                            name=_translate("file type", "JSON with Bzip2 compression"),
-                            suffixes=[".json.bz2"],
-                        ),
-                        OpenFilePathsEntry.NameFilter(
-                            name=_translate("file type", "JSON with LZMA2 compression"),
-                            suffixes=[".json.xz", ".json.lzma"],
-                        ),
-                        OpenFilePathsEntry.NameFilter(
-                            name=_translate(
-                                "file type", "Tar archive with GZip compression"
-                            ),
-                            suffixes=[".tar.gz", ".tgz"],
-                        ),
-                        OpenFilePathsEntry.NameFilter(
-                            name=_translate(
-                                "file type", "Tar archive with Bzip2 compression"
-                            ),
-                            suffixes=[".tar.bz2", ".tbz2"],
-                        ),
-                        OpenFilePathsEntry.NameFilter(
-                            name=_translate(
-                                "file type", "Tar archive with LZMA2 compression"
-                            ),
-                            suffixes=[".tar.xz", ".txz"],
-                        ),
-                    ],
-                ),
-            },
+                    }
+                }
+                if find_spec("pycatsearch") is not None
+                else {}
+            ),
         }
 
     @contextmanager

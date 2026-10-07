@@ -31,6 +31,8 @@ class TableView(QTableView):
         super().__init__(parent)
         self.settings: Settings = settings
 
+        self.catalog_available: bool = False
+
         def popup(pos: QPoint) -> None:
             menu: QMenu = QMenu()
             model: QAbstractItemModel = self.model()
@@ -43,6 +45,11 @@ class TableView(QTableView):
             index: int
             column: str | HeaderWithUnit
             for index, column in enumerate(model.header):
+                if (
+                    not self.catalog_available
+                    and index == self.model().columnCount() - 1
+                ):
+                    continue
                 action: QAction = QAction(str(column))
                 action.setCheckable(True)
                 action.setChecked(not self.isColumnHidden(index))
@@ -90,11 +97,19 @@ class TableView(QTableView):
         if old == new:
             return
         # hide columns according to the settings
-        with self.settings.section("marksTable"), self.settings.read_array("columns"):
+        with (
+            self.settings.section("marksTable"),
+            self.settings.read_array("columns"),
+            the(self.model()) as model,
+        ):
+            last_column: int = model.columnCount() - 1 if model is not None else -1
             column: int
             for column in range(old, new):
                 self.settings.setArrayIndex(column)
-                hidden: bool = not cast(
+                hidden: bool = (
+                    not self.catalog_available
+                    and (model is not None and column == last_column)
+                ) or not cast(
                     bool,
                     self.settings.value(
                         "visible", not self.isColumnHidden(column), bool
@@ -117,6 +132,9 @@ class TableView(QTableView):
         super().setModel(model)
         if model is None:
             return
+        last_column: int = model.columnCount() - 1
+        if not self.catalog_available and not self.isColumnHidden(last_column):
+            self.setColumnHidden(last_column, True)
         for column in range(model.columnCount() - 1):
             self.setItemDelegateForColumn(column, None)
         self.setItemDelegateForColumn(

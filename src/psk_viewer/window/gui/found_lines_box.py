@@ -1,4 +1,5 @@
 from contextlib import nullcontext as the
+from importlib.util import find_spec
 from typing import cast
 
 # noinspection PyPackageRequirements
@@ -77,6 +78,7 @@ class FoundLinesBox(QDockWidget):
             ]
         )
 
+        self.table.catalog_available = find_spec("pycatsearch") is not None
         sortable_model: QSortFilterProxyModel = QSortFilterProxyModel(
             self.model.parent()
         )
@@ -96,6 +98,10 @@ class FoundLinesBox(QDockWidget):
 
         self.model.fancy_table_numbers = self.settings.fancy_table_numbers
         self.model.log10_gamma = self.settings.log10_gamma
+
+        with the(self.form_layout_found_lines.labelForField) as labelForField:
+            self.spin_df.setVisible(self.table.catalog_available)
+            labelForField(self.spin_df).setVisible(self.table.catalog_available)
 
         self.adjustSize()
 
