@@ -204,17 +204,22 @@ def wrap_in_html(text: str, line_end: str = os.linesep) -> str:
 
 
 def tag(name: str, text: str = "", **attrs: str) -> str:
-    parts: list[str] = [
-        "<",
-        " ".join(
-            (name, *itertools.starmap(lambda a, v: f"{a}={str(v)!r}", attrs.items()))
-        ),
-    ]
-    if text:
-        parts.extend([">", text, "</", name, ">"])
-    else:
-        parts.append("/>")
-    return "".join(parts)
+    return "".join(
+        [
+            "<",
+            " ".join(
+                (
+                    name,
+                    *itertools.starmap(lambda a, v: f"{a}={str(v)!r}", attrs.items()),
+                )
+            ),
+            ">",
+            text,
+            "</",
+            name,
+            ">",
+        ]
+    )
 
 
 def p_tag(text: str) -> str:
