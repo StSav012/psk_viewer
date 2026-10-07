@@ -88,27 +88,24 @@ def subscript(s: str) -> str:
 
 
 def prefix(s: str) -> str:
-    no_digits: bool = False
-    _i: int = len(s)
-    while not no_digits:
-        _i = s.rfind("-", 0, _i)
-        if _i == -1:
-            break
-        if s[:_i].isalpha() and s[:_i].isupper():
-            break
-        no_digits = True
-        _c: str
-        unescaped_prefix: str = html.unescape(s[:_i])
-        for _c in unescaped_prefix:
-            if _c.isdigit() or _c == "<":
-                no_digits = False
-                break
-        if no_digits and (
-            unescaped_prefix[0].islower()
-            or unescaped_prefix[0] == "("
-            and unescaped_prefix.count("(") == unescaped_prefix.count(")")
-        ):
-            return i_tag(s[:_i]) + s[_i:]
+    parts: list[str] = html.unescape(s).split("-")
+    for i in range(len(parts) - 1, -1, -1):
+        part: str = parts[i]
+        if not part or part.isdecimal():
+            continue
+        is_good_prefix: bool = (
+            (
+                ("'" in part)
+                or part[0].islower()
+                or part.endswith(
+                    ("A", "D", "E", "G", "J", "L", "M", "Q", "R", "T", "X", "Z")
+                )
+            )
+            and part.count("(") == part.count(")")
+            and not any(c.isdigit() for c in part)
+        )
+        if is_good_prefix:
+            return "-".join([i_tag(p) for p in parts[: i + 1]] + parts[i + 1 :])
     return s
 
 
