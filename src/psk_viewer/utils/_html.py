@@ -88,23 +88,20 @@ def subscript(s: str) -> str:
 
 
 def prefix(s: str) -> str:
-    parts: list[str] = html.unescape(s).split("-")
+    parts: list[str] = s.split("-")
     for i in range(len(parts) - 1, -1, -1):
-        part: str = parts[i]
+        part: str = html.unescape(parts[i])
         if not part or part.isdecimal():
             continue
-        is_good_prefix: bool = (
+        if (
             (
                 ("'" in part)
                 or part[0].islower()
-                or part.endswith(
-                    ("A", "D", "E", "G", "J", "L", "M", "Q", "R", "T", "X", "Z")
-                )
+                or part.endswith(("A", "D", "E", "G", "J", "L", "M", "Q", "R", "T", "X", "Z"))
             )
             and part.count("(") == part.count(")")
             and not any(c.isdigit() for c in part)
-        )
-        if is_good_prefix:
+        ):
             return "-".join([i_tag(p) for p in parts[: i + 1]] + parts[i + 1 :])
     return s
 
@@ -141,23 +138,13 @@ def v_or_nu(s: str) -> str:
 
 def chem_html(formula: str) -> str:
     """Convert plain text chemical formula into HTML markup."""
-    if "<" in formula or ">" in formula:
-        # we cannot tell whether it's a tag or a mathematical sign
-        return formula
-
-    html_formula: str = html.escape(formula)
-    html_formula_pieces: list[str] = list(map(str.strip, html_formula.split(",")))
+    html_formula_pieces: list[str] = [html.escape(p.strip()) for p in formula.split(",")]
     for i in range(len(html_formula_pieces)):
         if v_or_nu_pattern.search(html_formula_pieces[i]):
-            html_formula_pieces = html_formula_pieces[:i] + [
-                ", ".join(html_formula_pieces[i:])
-            ]
+            html_formula_pieces = html_formula_pieces[:i] + [", ".join(html_formula_pieces[i:])]
             break
     for i in range(len(html_formula_pieces)):
-        if v_or_nu_pattern.search(html_formula_pieces[i]):
-            html_formula_pieces[i] = v_or_nu(html_formula_pieces[i])
-            break
-        for function in (subscript, prefix, charge):
+        for function in (subscript, prefix, charge, v_or_nu):
             html_formula_pieces[i] = function(html_formula_pieces[i])
     return ", ".join(html_formula_pieces)
 
