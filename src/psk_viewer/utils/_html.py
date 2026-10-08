@@ -132,23 +132,21 @@ v_or_nu_pattern: re.Pattern[str] = re.compile(
 )
 
 
+def _v_or_nu_repl(m: re.Match[str]) -> str:
+    new_v_or_nu: str = m["v_or_nu"]
+    if m["factor"]:
+        new_v_or_nu = m["factor"].strip() + " " + new_v_or_nu
+    if m["plus"]:
+        new_v_or_nu = m["plus"].strip() + " " + new_v_or_nu
+        if m.start() > 0:
+            new_v_or_nu = " " + new_v_or_nu
+    if m["subscript"]:
+        new_v_or_nu += sub_tag(m["subscript"])
+    return new_v_or_nu
+
+
 def v_or_nu(s: str) -> str:
-    ss: list[str] = list(map(str.strip, s.split("=")))
-    for i in range(len(ss)):
-        pos: int = 0
-        while m := v_or_nu_pattern.search(ss[i], pos=pos):
-            new_v_or_nu: str = m["v_or_nu"]
-            if m["factor"]:
-                new_v_or_nu = m["factor"].strip() + " " + new_v_or_nu
-            if m["plus"]:
-                new_v_or_nu = m["plus"].strip() + " " + new_v_or_nu
-                if m.start() > 0:
-                    new_v_or_nu = " " + new_v_or_nu
-            if m["subscript"]:
-                new_v_or_nu += sub_tag(m["subscript"])
-            ss[i] = ss[i][: m.start()] + new_v_or_nu + ss[i][m.end() :]
-            pos = m.end()
-    return " = ".join(ss)
+    return " = ".join(v_or_nu_pattern.sub(_v_or_nu_repl, ss.strip()) for ss in s.split("="))
 
 
 def chem_html(formula: str) -> str:
