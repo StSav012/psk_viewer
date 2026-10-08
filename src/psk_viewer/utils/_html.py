@@ -103,49 +103,42 @@ def prefix(s: str) -> str:
     return s
 
 
+bin_op_pattern: re.Pattern[str] = re.compile(r"\s*(?P<op>[+=])\s*(?=.)")
+
+
+def _bin_op_repl(m: re.Match[str]) -> str:
+    return " " + m["op"] + " "
+
+
+def bin_op(s: str) -> str:
+    return bin_op_pattern.sub(_bin_op_repl, s)
+
+
+factor_pattern: re.Pattern[str] = re.compile(r"\b(?P<factor>\d+)\s*(?P<next>.)")
+
+
+def _factor_repl(m: re.Match[str]) -> str:
+    if m["next"].isalpha():
+        return m["factor"] + " " + m["next"]
+    return m["factor"] + m["next"]
+
+
+def factor(s: str) -> str:
+    return factor_pattern.sub(_factor_repl, s)
+
+
 def charge(s: str) -> str:
     if s[-1] in "+-":
         return s[:-1] + sup_tag(s[-1])
     return s
 
 
-v_or_nu_pattern: re.Pattern[str] = re.compile(
-    r"(?P<plus>\s*\+?\s*)(?<!\w)(?P<factor>\d*\s*)(?P<v_or_nu>[vν])(?P<subscript>[\dt]*)"
-)
-
-
-def _v_or_nu_repl(m: re.Match[str]) -> str:
-    new_v_or_nu: str = m["v_or_nu"]
-    if m["factor"]:
-        new_v_or_nu = m["factor"].strip() + " " + new_v_or_nu
-    if m["plus"]:
-        new_v_or_nu = m["plus"].strip() + " " + new_v_or_nu
-        if m.start() > 0:
-            new_v_or_nu = " " + new_v_or_nu
-    if m["subscript"]:
-        new_v_or_nu += sub_tag(m["subscript"])
-    return new_v_or_nu
-
-
-def v_or_nu(s: str) -> str:
-    return " = ".join(v_or_nu_pattern.sub(_v_or_nu_repl, ss.strip()) for ss in s.split("="))
-
-
 def chem_html(formula: str) -> str:
     """Convert plain text chemical formula into HTML markup."""
-    html_formula_pieces: list[str] = [
-        html.escape(p.strip()) for p in formula.split(",")
-    ]
-    for i in range(len(html_formula_pieces)):
-        if v_or_nu_pattern.search(html_formula_pieces[i]):
-            html_formula_pieces = html_formula_pieces[:i] + [
-                ", ".join(html_formula_pieces[i:])
-            ]
-            break
-    for i in range(len(html_formula_pieces)):
-        for function in (subscript, isotope, prefix, charge, v_or_nu):
-            html_formula_pieces[i] = function(html_formula_pieces[i])
-    return ", ".join(html_formula_pieces)
+    html_formula: str = html.escape(formula.strip())
+    for function in (subscript, isotope, prefix, bin_op, factor, charge):
+        html_formula = function(html_formula)
+    return html_formula
 
 
 def is_good_html(text: str) -> bool:
