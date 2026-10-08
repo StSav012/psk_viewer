@@ -56,35 +56,17 @@ def tex_to_html_entity(s: str) -> str:
     return s
 
 
+subscript_pattern: re.Pattern[str] = re.compile(
+    r"(?<=(?<!&#)[)A-z])(?P<sub>\d+(?:,\d+)*|t\b)"
+)
+
+
+def _subscript_repl(m: re.Match[str]) -> str:
+    return sub_tag(m["sub"])
+
+
 def subscript(s: str) -> str:
-    number_start: int = -1
-    number_started: bool = False
-    cap_alpha_started: bool = False
-    low_alpha_started: bool = False
-    _i: int = 0
-    while _i < len(s):
-        _c: str = s[_i]
-        if number_started and not _c.isdigit():
-            number_started = False
-            s = s[:number_start] + sub_tag(s[number_start:_i]) + s[_i:]
-            _i += 1
-        if (
-            (cap_alpha_started or low_alpha_started)
-            and _c.isdigit()
-            and not number_started
-        ):
-            number_start = _i
-            number_started = True
-        if low_alpha_started:
-            cap_alpha_started = False
-            low_alpha_started = False
-        if cap_alpha_started and _c.islower() or _c == ")":
-            low_alpha_started = True
-        cap_alpha_started = _c.isupper()
-        _i += 1
-    if number_started:
-        s = s[:number_start] + sub_tag(s[number_start:])
-    return s
+    return subscript_pattern.sub(_subscript_repl, s)
 
 
 isotope_pattern: re.Pattern[str] = re.compile(
