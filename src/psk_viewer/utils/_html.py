@@ -87,6 +87,19 @@ def subscript(s: str) -> str:
     return s
 
 
+isotope_pattern: re.Pattern[str] = re.compile(
+    r"(?P<par>\()?(?P<element>[A-Z][a-z]?)-(?P<mass>\d+)(?(par)\)|-?)"
+)
+
+
+def _isotope_repl(m: re.Match[str]) -> str:
+    return sup_tag(m["mass"]) + m["element"]
+
+
+def isotope(s: str) -> str:
+    return isotope_pattern.sub(_isotope_repl, s)
+
+
 def prefix(s: str) -> str:
     parts: list[str] = s.split("-")
     for i in range(len(parts) - 1, -1, -1):
@@ -97,7 +110,9 @@ def prefix(s: str) -> str:
             (
                 ("'" in part)
                 or part[0].islower()
-                or part.endswith(("A", "D", "E", "G", "J", "L", "M", "Q", "R", "T", "X", "Z"))
+                or part.endswith(
+                    ("A", "D", "E", "G", "J", "L", "M", "Q", "R", "T", "X", "Z")
+                )
             )
             and part.count("(") == part.count(")")
             and not any(c.isdigit() for c in part)
@@ -138,13 +153,17 @@ def v_or_nu(s: str) -> str:
 
 def chem_html(formula: str) -> str:
     """Convert plain text chemical formula into HTML markup."""
-    html_formula_pieces: list[str] = [html.escape(p.strip()) for p in formula.split(",")]
+    html_formula_pieces: list[str] = [
+        html.escape(p.strip()) for p in formula.split(",")
+    ]
     for i in range(len(html_formula_pieces)):
         if v_or_nu_pattern.search(html_formula_pieces[i]):
-            html_formula_pieces = html_formula_pieces[:i] + [", ".join(html_formula_pieces[i:])]
+            html_formula_pieces = html_formula_pieces[:i] + [
+                ", ".join(html_formula_pieces[i:])
+            ]
             break
     for i in range(len(html_formula_pieces)):
-        for function in (subscript, prefix, charge, v_or_nu):
+        for function in (subscript, isotope, prefix, charge, v_or_nu):
             html_formula_pieces[i] = function(html_formula_pieces[i])
     return ", ".join(html_formula_pieces)
 
