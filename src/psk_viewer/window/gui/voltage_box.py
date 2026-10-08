@@ -128,10 +128,12 @@ class VoltageBox(QDockWidget):
 
     def load_config(self) -> None:
         with self.settings.section("display"):
-            self.switch_data_action.setChecked(
+            display_gamma: bool = (
                 self.settings.value("unit", PlotDataItem.VOLTAGE_DATA, str)
                 == PlotDataItem.GAMMA_DATA
             )
+        self.switch_data_action.setChecked(display_gamma)
+        self._configure_for_mode(display_gamma)
 
     @contextmanager
     def block_children(self) -> Iterator[None]:
@@ -217,12 +219,15 @@ class VoltageBox(QDockWidget):
         )
         with self.settings.section("display"):
             self.settings.setValue("unit", mode)
+        self._configure_for_mode(display_gamma)
+        self.dataModeChanged.emit(mode)
+
+    def _configure_for_mode(self, display_gamma: bool) -> None:
         if display_gamma:
             self.setWindowTitle(self.tr("Absorption"))
             opts = {
                 "suffix": _translate("unit", "cm⁻¹"),
                 "siPrefix": False,
-                "suffixPower": -1,
                 "format": "{value:.{decimals}e}{suffixGap}{suffix}",
             }
         else:
@@ -234,7 +239,6 @@ class VoltageBox(QDockWidget):
             }
         self.spin_min.setOpts(**opts)
         self.spin_max.setOpts(**opts)
-        self.dataModeChanged.emit(mode)
 
     @property
     def show_gamma(self) -> bool:
