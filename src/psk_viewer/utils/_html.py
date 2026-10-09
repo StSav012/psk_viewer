@@ -135,7 +135,9 @@ def charge(s: str) -> str:
 
 def chem_html(formula: str) -> str:
     """Convert plain text chemical formula into HTML markup."""
-    html_formula: str = html.escape(formula.strip())
+    html_formula: str = formula.strip()
+    if not is_good_html(html_formula):
+        html_formula = html.escape(html_formula)
     for function in (subscript, isotope, prefix, bin_op, factor, charge):
         html_formula = function(html_formula)
     return html_formula
