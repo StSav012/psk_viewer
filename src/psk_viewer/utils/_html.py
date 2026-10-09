@@ -103,7 +103,7 @@ def prefix(s: str) -> str:
     return s
 
 
-bin_op_pattern: re.Pattern[str] = re.compile(r"\s*(?P<op>[+=])\s*(?=.)")
+bin_op_pattern: re.Pattern[str] = re.compile(r"\s*(?P<op>[+=]|&amp;)\s*(?=.)")
 
 
 def _bin_op_repl(m: re.Match[str]) -> str:
@@ -137,7 +137,9 @@ def chem_html(formula: str) -> str:
     """Convert plain text chemical formula into HTML markup."""
     html_formula: str = formula.strip()
     if not is_good_html(html_formula):
-        html_formula = html.escape(html_formula)
+        html_formula = html.escape(html_formula.replace(r"\&", "&"))
+    else:
+        html_formula = html_formula.replace(r"\&", "&amp;")
     for function in (subscript, isotope, prefix, bin_op, factor, charge):
         html_formula = function(html_formula)
     return html_formula
