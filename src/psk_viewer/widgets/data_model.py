@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 from contextlib import suppress
-from typing import Final, NamedTuple
+from typing import Any, Final, NamedTuple
 
 import numpy as np
 from numpy.typing import NDArray
@@ -15,6 +15,22 @@ from qtpy.QtCore import (
 from ..utils import HeaderWithUnit, superscript_tag
 
 __all__ = ("DataModel",)
+
+
+def fancy_format(v: float, precision: int, replace_hyphen: bool) -> str:
+    s: str = f"{v:.{precision}e}"
+    while "e+0" in s:
+        s = s.replace("e+0", "e+")
+    while "e-0" in s:
+        s = s.replace("e-0", "e-")
+    if s.endswith(("e+", "e-")):
+        s = s[:-2]
+    if "e" in s:
+        s = s.replace("e+", "e")
+        s = s.replace("e", "×10<sup>") + "</sup>"
+    if replace_hyphen:
+        s = s.replace("-", "−")
+    return superscript_tag(s)
 
 
 class DataModel(QAbstractTableModel):
@@ -33,7 +49,7 @@ class DataModel(QAbstractTableModel):
         self._rows_loaded: int = DataModel.ROW_BATCH_COUNT
 
         self._header: list[str | HeaderWithUnit] = []
-        self._format: list[DataModel.Format] = []
+        self._format: list[DataModel.Format | None] = []
 
     @property
     def header(self) -> list[str | HeaderWithUnit]:
@@ -73,29 +89,13 @@ class DataModel(QAbstractTableModel):
     ) -> int:
         return len(self._header)
 
-    def formatted_item(
-        self,
-        row: int,
-        column: int,
+    @staticmethod
+    def format_item(
+        value: Any,
+        fmt: Format | None,
         replace_hyphen: bool = False,
         force_plain: bool = False,
     ) -> str:
-        def fancy_format(v: float) -> str:
-            s: str = f"{v:.{precision}e}"
-            while "e+0" in s:
-                s = s.replace("e+0", "e+")
-            while "e-0" in s:
-                s = s.replace("e-0", "e-")
-            if s.endswith(("e+", "e-")):
-                s = s[:-2]
-            if "e" in s:
-                s = s.replace("e+", "e")
-                s = s.replace("e", "×10<sup>") + "</sup>"
-            if replace_hyphen:
-                s = s.replace("-", "−")
-            return superscript_tag(s)
-
-        value: object | None = self.item(row, column)
         if value is None:
             return "???"
         if isinstance(value, str):
@@ -104,13 +104,15 @@ class DataModel(QAbstractTableModel):
             return ""
         if isinstance(value, complex) and value.imag == 0.0:
             value = value.real
-        if not isinstance(value, (float, complex)) or column >= len(self._format):
+        if not isinstance(value, (float, complex)):
+            return str(value)
+        if fmt is None:
             return str(value).replace("-", "−", -int(replace_hyphen))
         precision: int
         scale: float
         fancy: bool
         log10: bool
-        precision, scale, fancy, log10 = self._format[column]
+        precision, scale, fancy, log10 = fmt
         if log10 and isinstance(value, float):
             value = np.log10(np.complex128(value)).item()
             if isinstance(value, complex) and value.imag == 0.0:
@@ -118,10 +120,10 @@ class DataModel(QAbstractTableModel):
         if np.isnan(scale):
             if fancy and not force_plain:
                 if isinstance(value, float):
-                    return fancy_format(value)
+                    return fancy_format(value, precision, replace_hyphen)
                 if isinstance(value, complex):
-                    re_s: str = fancy_format(value.real)
-                    im_s: str = fancy_format(value.imag)
+                    re_s: str = fancy_format(value.real, precision, replace_hyphen)
+                    im_s: str = fancy_format(value.imag, precision, replace_hyphen)
                     if value.imag < 0:
                         return re_s + im_s + "j"
                     return re_s + "+" + im_s + "j"
@@ -136,6 +138,19 @@ class DataModel(QAbstractTableModel):
                 "-", "−", -int(replace_hyphen)
             )
         return repr(value)
+
+    def formatted_item(
+        self,
+        row: int,
+        column: int,
+        replace_hyphen: bool = False,
+        force_plain: bool = False,
+    ) -> str:
+        value: object | None = self.item(row, column)
+        fmt: DataModel.Format | None = (
+            self._format[column] if column < len(self._format) else None
+        )
+        return self.format_item(value, fmt, replace_hyphen, force_plain)
 
     def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
         if 0 <= index.column() < self.data_column_count:
@@ -275,14 +290,18 @@ class DataModel(QAbstractTableModel):
             return True
         return False
 
-    def set_format(self, new_format: list[Format]) -> None:
+    def set_format(self, new_format: list[Format | None]) -> None:
         self.beginResetModel()
         self._format = [
-            DataModel.Format(
-                precision=round(f.precision),
-                scale=float(f.scale),
-                fancy=bool(f.fancy),
-                log10=bool(f.log10),
+            (
+                DataModel.Format(
+                    precision=round(f.precision),
+                    scale=float(f.scale),
+                    fancy=bool(f.fancy),
+                    log10=bool(f.log10),
+                )
+                if f is not None
+                else None
             )
             for f in new_format
         ]

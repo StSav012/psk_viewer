@@ -1,7 +1,7 @@
 from collections.abc import Iterable, Sequence
 from contextlib import suppress
-from math import inf
 from pathlib import Path
+from typing import Any, Final
 
 # noinspection PyPackageRequirements
 import numpy as np
@@ -27,8 +27,29 @@ __all__ = ["FoundLinesModel"]
 _translate = QCoreApplication.translate
 
 
+def line_sum(entry: Any, frequency: float, df: float) -> tuple[float, float]:
+    total_intensity: float = sum(
+        (10.0**line.intensity / (1.0 + ((line.frequency - frequency) / df) ** 2))
+        for line in entry.lines
+    )
+    mean_frequency: float = (
+        sum(
+            (
+                line.frequency
+                * 10.0**line.intensity
+                / (1.0 + ((line.frequency - frequency) / df) ** 2)
+            )
+            for line in entry.lines
+        )
+        / total_intensity
+    )
+    return mean_frequency, total_intensity
+
+
 class FoundLinesModel(DataModel):
     frequencies_removed: Signal = Signal(frozenset, name="frequencies_removed")
+
+    extra_column_start_index: Final[int] = 3
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -38,12 +59,20 @@ class FoundLinesModel(DataModel):
         self._log10_gamma: bool = False
         self._fancy_table_numbers: bool = False
 
-        self._header = [""] * 4
+        self._header = [""] * 7
 
         self.set_format(
             [
                 DataModel.Format(precision=3, scale=1e-6),
                 DataModel.Format(precision=4, scale=1e3),
+                DataModel.Format(
+                    precision=4,
+                    scale=np.nan,
+                    fancy=self._fancy_table_numbers,
+                    log10=self._log10_gamma,
+                ),
+                None,
+                DataModel.Format(precision=3, scale=1e-6),
                 DataModel.Format(
                     precision=4,
                     scale=np.nan,
@@ -80,10 +109,27 @@ class FoundLinesModel(DataModel):
                     else _translate("unit", "log₁₀(cm⁻¹)")
                 ),
             )
+        if len(self._header) >= 6:
+            self._header[5] = HeaderWithUnit(
+                name=_translate("plot axes labels", "Total Absorption"),
+                unit=(
+                    _translate("unit", "cm⁻¹")
+                    if not self._log10_gamma
+                    else _translate("unit", "log₁₀(cm⁻¹)")
+                ),
+            )
         self.set_format(
             [
                 DataModel.Format(precision=3, scale=1e-6),
                 DataModel.Format(precision=4, scale=1e3),
+                DataModel.Format(
+                    precision=4,
+                    scale=np.nan,
+                    fancy=self._fancy_table_numbers,
+                    log10=self._log10_gamma,
+                ),
+                None,
+                DataModel.Format(precision=3, scale=1e-6),
                 DataModel.Format(
                     precision=4,
                     scale=np.nan,
@@ -114,6 +160,14 @@ class FoundLinesModel(DataModel):
             [
                 DataModel.Format(precision=3, scale=1e-6),
                 DataModel.Format(precision=4, scale=1e3),
+                DataModel.Format(
+                    precision=4,
+                    scale=np.nan,
+                    fancy=self._fancy_table_numbers,
+                    log10=self._log10_gamma,
+                ),
+                None,
+                DataModel.Format(precision=3, scale=1e-6),
                 DataModel.Format(
                     precision=4,
                     scale=np.nan,
@@ -155,7 +209,8 @@ class FoundLinesModel(DataModel):
         content: tuple[object, ...],
         role: Qt.ItemDataRole | int,
     ) -> object:
-        _key: tuple[int, int] = index.row(), index.column()
+        row, col = index.row(), index.column()
+        _key: tuple[int, int] = row, col
         with suppress(LookupError):
             return self._data[_key][role]
 
@@ -166,7 +221,7 @@ class FoundLinesModel(DataModel):
             from pycatsearch.catalog import Catalog
 
             # noinspection PyPackageRequirements
-            from pycatsearch.utils import LINES, CatalogEntryType, CatalogType
+            from pycatsearch.utils import CatalogEntryType, CatalogType
         except ImportError:
             return None
 
@@ -174,49 +229,229 @@ class FoundLinesModel(DataModel):
         if not isinstance(catalog, Catalog):
             return None
 
+        if len(content) != self.extra_column_start_index:
+            return None
         frequency, *_ = content
-        if not isinstance(frequency, float):
+        if not isinstance(frequency, float) or frequency <= 0.0:
             return None
         frequency *= 1e-6
-        entries: CatalogType = catalog.filter(
-            min_frequency=frequency - self._df * 1e-6,
-            max_frequency=frequency + self._df * 1e-6,
+        df: float = self._df * 1e-6
+        entries: CatalogType = catalog.filter_by_species_tags(
+            min_frequency=frequency - df,
+            max_frequency=frequency + df,
         )
         substances: list[tuple[float, CatalogEntryType]] = []
         for entry in entries.values():
-            key = CatalogEntryType()
-            for slot in entry.__slots__:
-                if slot != LINES:
-                    setattr(key, slot, getattr(entry, slot))
             weight: float = sum(
-                (
-                    (10.0**line.intensity / (line.frequency - frequency) ** 2)
-                    if line.frequency != frequency
-                    else inf
-                )
+                (10.0**line.intensity / (1.0 + ((line.frequency - frequency) / df) ** 2))
                 for line in entry.lines
             )
-            substances.append((weight, key))
+            substances.append((weight, entry))
         if not substances:
+            for column in range(
+                self.extra_column_start_index, self.extra_column_start_index + 3
+            ):
+                self._data[(row, column)] = {}
             return None
         substances.sort(reverse=True, key=lambda s: s[0])
         best_line_entry: CatalogEntryType = substances[0][1]
         label: str = best_name(best_line_entry)
-        data: dict[Qt.ItemDataRole | int, object] = {
-            Qt.ItemDataRole.DisplayRole: label,
-            Qt.ItemDataRole.UserRole: label,
-            Qt.ItemDataRole.ForegroundRole: (label, best_line_entry),
-            Qt.ItemDataRole.BackgroundRole: [
-                (best_name(substance[1]), substance[1]) for substance in substances
-            ],
+        mean_frequency, total_intensity = line_sum(best_line_entry, frequency, df)
+        # noinspection bad-assignment
+        data: dict[int, dict[Qt.ItemDataRole | int, Any]] = {
+            self.extra_column_start_index + 0: {
+                Qt.ItemDataRole.DisplayRole: label,
+                Qt.ItemDataRole.UserRole: label,
+                Qt.ItemDataRole.ForegroundRole: (label, best_line_entry),
+                Qt.ItemDataRole.BackgroundRole: [
+                    (best_name(substance[1]), substance[1]) for substance in substances
+                ],
+            },
+            self.extra_column_start_index + 1: {
+                Qt.ItemDataRole.DisplayRole: self.format_item(
+                    mean_frequency * 1e6,
+                    (self._format[4] if len(self._format) > 4 else None),
+                    replace_hyphen=True,
+                ),
+                Qt.ItemDataRole.UserRole: self.format_item(
+                    mean_frequency * 1e6,
+                    (self._format[4] if len(self._format) > 4 else None),
+                    replace_hyphen=False,
+                    force_plain=True,
+                ),
+            },
+            self.extra_column_start_index + 2: {
+                Qt.ItemDataRole.DisplayRole: self.format_item(
+                    total_intensity,
+                    (self._format[5] if len(self._format) > 5 else None),
+                    replace_hyphen=True,
+                ),
+                Qt.ItemDataRole.UserRole: self.format_item(
+                    total_intensity,
+                    (self._format[5] if len(self._format) > 5 else None),
+                    replace_hyphen=False,
+                    force_plain=True,
+                ),
+            },
         }
-        if _key not in self._data:
-            self._data[_key] = {}
-        for _role, value in data.items():
-            # preserve previously set values
-            if _role not in self._data[_key]:
-                self._data[_key][_role] = value
-        return data.get(role)
+        for column, _d in data.items():
+            _key = row, column
+            if _key not in self._data:
+                self._data[_key] = {}
+            for _role, value in _d.items():
+                # preserve previously set values
+                if _role not in self._data[_key]:
+                    self._data[_key][_role] = value
+        return data[col].get(role)
+
+    def setData(
+        self,
+        index: QModelIndex | QPersistentModelIndex,
+        value: Any,
+        role: Qt.ItemDataRole | int = Qt.ItemDataRole.EditRole,
+    ) -> bool:
+        if not index.isValid():
+            return False
+        if (
+            role == Qt.ItemDataRole.ForegroundRole
+            and index.column() == self.extra_column_start_index
+        ):
+            row: int = index.row()
+            data: dict[int, dict[Qt.ItemDataRole | int, Any]]
+            if (entry := value[1]) is not None:
+                mean_frequency, total_intensity = line_sum(
+                    entry,
+                    self._numeric_data[row, 0].item() * 1e-6,
+                    self._df * 1e-6,
+                )
+                data = {
+                    self.extra_column_start_index + 1: {
+                        Qt.ItemDataRole.DisplayRole: self.format_item(
+                            mean_frequency * 1e6,
+                            (self._format[4] if len(self._format) > 4 else None),
+                            replace_hyphen=True,
+                        ),
+                        Qt.ItemDataRole.UserRole: self.format_item(
+                            mean_frequency * 1e6,
+                            (self._format[4] if len(self._format) > 4 else None),
+                            replace_hyphen=False,
+                            force_plain=True,
+                        ),
+                    },
+                    self.extra_column_start_index + 2: {
+                        Qt.ItemDataRole.DisplayRole: self.format_item(
+                            total_intensity,
+                            (self._format[5] if len(self._format) > 5 else None),
+                            replace_hyphen=True,
+                        ),
+                        Qt.ItemDataRole.UserRole: self.format_item(
+                            total_intensity,
+                            (self._format[5] if len(self._format) > 5 else None),
+                            replace_hyphen=False,
+                            force_plain=True,
+                        ),
+                    },
+                }
+                for column, _d in data.items():
+                    _key = row, column
+                    if _key not in self._data:
+                        self._data[_key] = {}
+                    for _role, value in _d.items():
+                        self._data[_key][_role] = value
+            else:
+                data = {
+                    self.extra_column_start_index + 1: {
+                        Qt.ItemDataRole.DisplayRole: "",
+                        Qt.ItemDataRole.ForegroundRole: None,
+                        Qt.ItemDataRole.UserRole: None,
+                    },
+                    self.extra_column_start_index + 2: {
+                        Qt.ItemDataRole.DisplayRole: "",
+                        Qt.ItemDataRole.ForegroundRole: None,
+                        Qt.ItemDataRole.UserRole: None,
+                    },
+                }
+                for column, _d in data.items():
+                    _key = row, column
+                    if _key not in self._data:
+                        self._data[_key] = {}
+                    for _role, value in _d.items():
+                        self._data[_key][_role] = value
+        return super().setData(index, value, role)
+
+    def setItemData(
+        self,
+        index: QModelIndex | QPersistentModelIndex,
+        roles: dict[Qt.ItemDataRole | int, Any],
+    ) -> bool:
+        if not index.isValid():
+            return False
+        if (
+            Qt.ItemDataRole.ForegroundRole in roles
+            and index.column() == self.extra_column_start_index
+        ):
+            row: int = index.row()
+            data: dict[int, dict[Qt.ItemDataRole | int, Any]]
+            if (entry := roles[Qt.ItemDataRole.ForegroundRole][1]) is not None:
+                mean_frequency, total_intensity = line_sum(
+                    entry,
+                    self._numeric_data[row, 0].item() * 1e-6,
+                    self._df * 1e-6,
+                )
+                data = {
+                    self.extra_column_start_index + 1: {
+                        Qt.ItemDataRole.DisplayRole: self.format_item(
+                            mean_frequency * 1e6,
+                            (self._format[4] if len(self._format) > 4 else None),
+                            replace_hyphen=True,
+                        ),
+                        Qt.ItemDataRole.UserRole: self.format_item(
+                            mean_frequency * 1e6,
+                            (self._format[4] if len(self._format) > 4 else None),
+                            replace_hyphen=False,
+                            force_plain=True,
+                        ),
+                    },
+                    self.extra_column_start_index + 2: {
+                        Qt.ItemDataRole.DisplayRole: self.format_item(
+                            total_intensity,
+                            (self._format[5] if len(self._format) > 5 else None),
+                            replace_hyphen=True,
+                        ),
+                        Qt.ItemDataRole.UserRole: self.format_item(
+                            total_intensity,
+                            (self._format[5] if len(self._format) > 5 else None),
+                            replace_hyphen=False,
+                            force_plain=True,
+                        ),
+                    },
+                }
+                for column, _d in data.items():
+                    _key = row, column
+                    if _key not in self._data:
+                        self._data[_key] = {}
+                    for _role, value in _d.items():
+                        self._data[_key][_role] = value
+            else:
+                data = {
+                    self.extra_column_start_index + 1: {
+                        Qt.ItemDataRole.DisplayRole: "",
+                        Qt.ItemDataRole.ForegroundRole: None,
+                        Qt.ItemDataRole.UserRole: None,
+                    },
+                    self.extra_column_start_index + 2: {
+                        Qt.ItemDataRole.DisplayRole: "",
+                        Qt.ItemDataRole.ForegroundRole: None,
+                        Qt.ItemDataRole.UserRole: None,
+                    },
+                }
+                for column, _d in data.items():
+                    _key = row, column
+                    if _key not in self._data:
+                        self._data[_key] = {}
+                    for _role, value in _d.items():
+                        self._data[_key][_role] = value
+        return super().setItemData(index, roles)
 
     def add_line(self, plot_data: PlotDataItem, frequency: float) -> None:
         self.add_lines(plot_data, [frequency])

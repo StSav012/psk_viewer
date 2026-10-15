@@ -35,19 +35,19 @@ class TableView(QTableView):
 
         def popup(pos: QPoint) -> None:
             menu: QMenu = QMenu()
-            model: QAbstractItemModel = self.model()
-            if isinstance(model, QSortFilterProxyModel):
-                model = model.sourceModel()
-            if not isinstance(model, FoundLinesModel):
+            _model: QAbstractItemModel = self.model()
+            if isinstance(_model, QSortFilterProxyModel):
+                _model = _model.sourceModel()
+            if not isinstance(_model, FoundLinesModel):
                 return
             # store the actions not to lose all of them but the last
             actions: list[QAction] = []
             index: int
             column: str | HeaderWithUnit
-            for index, column in enumerate(model.header):
+            for index, column in enumerate(_model.header):
                 if (
                     not self.catalog_available
-                    and index == self.model().columnCount() - 1
+                    and index >= _model.extra_column_start_index
                 ):
                     continue
                 action: QAction = QAction(str(column))
@@ -86,9 +86,9 @@ class TableView(QTableView):
         with the(self.verticalHeader()) as header:
             header.setVisible(False)
             header.setHighlightSections(False)
-        if self.model() is not None:
+        if isinstance((model := self.model()), FoundLinesModel):
             self.setItemDelegateForColumn(
-                self.model().columnCount() - 1,
+                model.extra_column_start_index,
                 RichComboBoxDelegate(self),
             )
 
@@ -132,15 +132,23 @@ class TableView(QTableView):
         super().setModel(model)
         if model is None:
             return
-        last_column: int = model.columnCount() - 1
-        if not self.catalog_available and not self.isColumnHidden(last_column):
-            self.setColumnHidden(last_column, True)
-        for column in range(model.columnCount() - 1):
-            self.setItemDelegateForColumn(column, None)
-        self.setItemDelegateForColumn(
-            model.columnCount() - 1,
-            RichComboBoxDelegate(self),
+        source_model = (
+            model.sourceModel() if isinstance(model, QSortFilterProxyModel) else model
         )
+        for column in range(source_model.columnCount() - 1):
+            if (
+                isinstance(source_model, FoundLinesModel)
+                and column >= source_model.extra_column_start_index
+                and not self.catalog_available
+                and not self.isColumnHidden(column)
+            ):
+                self.setColumnHidden(column, True)
+            self.setItemDelegateForColumn(column, None)
+        if isinstance(source_model, FoundLinesModel):
+            self.setItemDelegateForColumn(
+                source_model.extra_column_start_index,
+                RichComboBoxDelegate(self),
+            )
         model.headerDataChanged.connect(self.resizeColumnsToContents)
         model.modelReset.connect(self.resizeColumnsToContents)
 

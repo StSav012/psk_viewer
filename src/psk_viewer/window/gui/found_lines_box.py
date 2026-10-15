@@ -75,6 +75,14 @@ class FoundLinesBox(QDockWidget):
                     fancy=self.settings.fancy_table_numbers,
                     log10=self.settings.log10_gamma,
                 ),
+                None,
+                FoundLinesModel.Format(3, 1e-6),
+                FoundLinesModel.Format(
+                    precision=4,
+                    scale=np.nan,
+                    fancy=self.settings.fancy_table_numbers,
+                    log10=self.settings.log10_gamma,
+                ),
             ]
         )
 
@@ -134,6 +142,18 @@ class FoundLinesBox(QDockWidget):
                 ),
             ),
             self.tr("Substance"),
+            HeaderWithUnit(
+                name=_translate("plot axes labels", "Mean Frequency"),
+                unit=_translate("unit", "MHz"),
+            ),
+            HeaderWithUnit(
+                name=_translate("plot axes labels", "Total Absorption"),
+                unit=(
+                    _translate("unit", "cm⁻¹")
+                    if not self.model.log10_gamma
+                    else _translate("unit", "log₁₀(cm⁻¹)")
+                ),
+            ),
         ]
 
     def setup_ui_actions(self) -> None:
