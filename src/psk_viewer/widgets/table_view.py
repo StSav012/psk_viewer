@@ -203,7 +203,9 @@ class TableView(QTableView):
             text_matrix = [
                 [
                     tag(
-                        "td", model.index(row, column).data(Qt.ItemDataRole.DisplayRole)
+                        "td",
+                        model.index(row, column).data(Qt.ItemDataRole.DisplayRole)
+                        or "",
                     )
                     for column in range(model.columnCount())
                     if not self.isColumnHidden(column)
@@ -234,7 +236,7 @@ class TableView(QTableView):
             text_matrix = [["" for _ in range(len(cols))] for _ in range(len(rows))]
             for si in self.selectedIndexes():
                 text_matrix[rows.index(si.row())][cols.index(si.column())] = tag(
-                    "td", si.data(Qt.ItemDataRole.DisplayRole)
+                    "td", si.data(Qt.ItemDataRole.DisplayRole) or ""
                 )
             if with_headers:
                 text_matrix.insert(
