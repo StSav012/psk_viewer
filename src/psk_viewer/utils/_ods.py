@@ -81,7 +81,7 @@ def html_tag_to_ods_tag(m: re.Match[str]) -> str:
         )
     if tag_name == "td":
         try:
-            float(content)
+            float(content.replace("−", "-", 1))
         except ValueError:
             return tag(
                 "table:table-cell",
@@ -92,7 +92,10 @@ def html_tag_to_ods_tag(m: re.Match[str]) -> str:
             return tag(
                 "table:table-cell",
                 tag("text:p", content),
-                **{"office:value-type": "float", "office:value": content},
+                **{
+                    "office:value-type": "float",
+                    "office:value": content.replace("−", "-", 1),
+                },
             )
     tag_name, tag_attrs = tag_repl.get(tag_name, (tag_name, {}))
     return tag(tag_name, content, **tag_attrs)
