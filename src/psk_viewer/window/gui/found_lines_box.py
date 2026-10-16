@@ -159,6 +159,7 @@ class FoundLinesBox(QDockWidget):
     def setup_ui_actions(self) -> None:
         self.table.doubleClicked.connect(self.on_table_cell_double_clicked)
         self.spin_df.valueChanged.connect(self.on_spin_df_changed)
+        self.model.rowsInserted.connect(self.on_model_rows_inserted)
 
     def load_config(self) -> None:
         with self.settings.section("catalog"):
@@ -193,3 +194,7 @@ class FoundLinesBox(QDockWidget):
         self.show_frequency_requested.emit(
             float(index.siblingAtColumn(0).data(Qt.ItemDataRole.UserRole)) * 1e6
         )
+
+    @Slot(QModelIndex, int, int)
+    def on_model_rows_inserted(self, parent: QModelIndex, start: int, end: int) -> None:
+        self.select(list(range(start, end + 1)))
