@@ -243,7 +243,10 @@ class FoundLinesModel(DataModel):
         substances: list[tuple[float, CatalogEntryType]] = []
         for entry in entries.values():
             weight: float = sum(
-                (10.0**line.intensity / (1.0 + ((line.frequency - frequency) / df) ** 2))
+                (
+                    10.0**line.intensity
+                    / (1.0 + ((line.frequency - frequency) / df) ** 2)
+                )
                 for line in entry.lines
             )
             substances.append((weight, entry))

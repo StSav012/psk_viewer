@@ -1,5 +1,4 @@
 from contextlib import nullcontext as the
-from typing import cast
 
 from qtpy.QtCore import (
     QAbstractItemModel,
@@ -109,11 +108,8 @@ class TableView(QTableView):
                 hidden: bool = (
                     not self.catalog_available
                     and (model is not None and column == last_column)
-                ) or not cast(
-                    bool,
-                    self.settings.value(
-                        "visible", not self.isColumnHidden(column), bool
-                    ),
+                ) or not self.settings.value(
+                    "visible", not self.isColumnHidden(column), bool
                 )
                 if hidden != self.isColumnHidden(column):
                     super().setColumnHidden(column, hidden)
