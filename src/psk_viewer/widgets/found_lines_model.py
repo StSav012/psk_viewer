@@ -59,7 +59,7 @@ class FoundLinesModel(DataModel):
         self._log10_gamma: bool = False
         self._fancy_table_numbers: bool = False
 
-        self._header = [""] * 7
+        self._header = [""] * 6
 
         self.set_format(
             [
