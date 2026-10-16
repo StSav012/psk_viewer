@@ -292,12 +292,14 @@ class GUI(QMainWindow, abc.ABC, metaclass=QABCMeta):
         self._canvas.getViewBox().setDefaultPadding(0.0)
 
     def _setup_translation(self) -> None:
+        # https://www.nist.gov/pml/owm/metric-si-prefixes#Prefixes
         fn.SI_PREFIXES = _translate(
-            "si prefixes", "y,z,a,f,p,n,µ,m, ,k,M,G,T,P,E,Z,Y"
+            "si prefixes", "q,r,y,z,a,f,p,n,µ,m, ,k,M,G,T,P,E,Z,Y,R,Q"
         ).split(",")
         fn.SI_PREFIXES_ASCII = fn.SI_PREFIXES
+        zero_power_index: int = fn.SI_PREFIXES.index(" ")
         fn.SI_PREFIX_EXPONENTS.update(
-            {s: (i - 8) * 3 for i, s in enumerate(fn.SI_PREFIXES)}
+            {s.strip(): (i - zero_power_index) * 3 for i, s in enumerate(fn.SI_PREFIXES)}
         )
         if alt_micro := _translate("si prefix alternative micro", "u"):
             fn.SI_PREFIX_EXPONENTS[alt_micro] = -6
