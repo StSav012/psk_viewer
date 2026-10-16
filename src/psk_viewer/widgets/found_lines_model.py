@@ -307,6 +307,15 @@ class FoundLinesModel(DataModel):
                     self._data[_key][_role] = value
         return data[col].get(role)
 
+    def flags(self, index: QModelIndex | QPersistentModelIndex) -> Qt.ItemFlag:
+        if index.column() == self.extra_column_start_index:
+            return (
+                Qt.ItemFlag.ItemIsEnabled
+                | Qt.ItemFlag.ItemIsSelectable
+                | Qt.ItemFlag.ItemIsEditable
+            )
+        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
+
     def setData(
         self,
         index: QModelIndex | QPersistentModelIndex,
