@@ -190,4 +190,6 @@ class FoundLinesBox(QDockWidget):
 
     @Slot(QModelIndex)
     def on_table_cell_double_clicked(self, index: QModelIndex) -> None:
-        self.show_frequency_requested.emit(self.model.item(index.row(), 0))
+        self.show_frequency_requested.emit(
+            float(index.siblingAtColumn(0).data(Qt.ItemDataRole.UserRole)) * 1e6
+        )
