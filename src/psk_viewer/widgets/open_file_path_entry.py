@@ -287,15 +287,16 @@ class OpenFilePathsEntry(QTableWidget):
 
     @paths.setter
     def paths(self, paths: Iterable[Path]) -> None:
+        paths = list(paths)
+        self.setRowCount(len(paths) + 1)
         row: int
         item: QTableWidgetItem
         for row, path in enumerate(paths):
-            self.setRowCount(row + 2)
             item = QTableWidgetItem(str(path))
             item.setToolTip(str(path))
             item.setData(Qt.ItemDataRole.UserRole, path)
             self.setItem(row, 0, item)
-        self.setItem(self.rowCount() - 1, 0, QTableWidgetItem())
+        self.setItem(len(paths), 0, QTableWidgetItem())
 
     @Slot(QTableWidgetItem)
     def _on_item_double_clicked(self, item: QTableWidgetItem) -> None:
