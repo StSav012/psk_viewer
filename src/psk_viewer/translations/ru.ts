@@ -2,1167 +2,109 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="ru_RU" sourcelanguage="_US">
 <context>
-    <name>App</name>
+    <name>FindLinesBox</name>
     <message>
-        <source>Are you sure?</source>
-        <translation type="obsolete">Вы уверены?</translation>
-    </message>
-    <message>
-        <source>Spectrometer Data Viewer</source>
-        <translation type="obsolete">Программа просмотра файлов спектрометра</translation>
-    </message>
-    <message>
-        <source>%s&#xa0;— Spectrometer Data Viewer</source>
-        <translation type="obsolete">%s — Программа просмотра файлов спектрометра</translation>
-    </message>
-    <message>
-        <source>Absorption</source>
-        <translation type="obsolete">Поглощение</translation>
-    </message>
-    <message>
-        <source>Voltage</source>
-        <translation type="obsolete">Напряжение</translation>
-    </message>
-    <message>
-        <source>Keep absorption range</source>
-        <translation type="obsolete">Не менять пределы по поглощению</translation>
-    </message>
-    <message>
-        <source>Keep voltage range</source>
-        <translation type="obsolete">Не менять пределы по напряжению</translation>
-    </message>
-</context>
-<context>
-    <name>FoundLinesModel</name>
-    <message>
-        <source>Substance</source>
-        <translation type="obsolete">Вещество</translation>
-    </message>
-</context>
-<context>
-    <name>FrequencyDomainGUI</name>
-    <message>
-        <source>Minimum:</source>
-        <translation type="obsolete">Минимум:</translation>
-    </message>
-    <message>
-        <source>Maximum:</source>
-        <translation type="obsolete">Максимум:</translation>
-    </message>
-    <message>
-        <source>Center:</source>
-        <translation type="obsolete">Центр:</translation>
-    </message>
-    <message>
-        <source>Span:</source>
-        <translation type="obsolete">Промежуток:</translation>
-    </message>
-    <message>
+        <location filename="../window/gui/find_lines_box.py" line="85"/>
+        <location filename="../window/gui/find_lines_box.py" line="114"/>
         <source>Search threshold:</source>
-        <translation type="obsolete">Порог поиска:</translation>
+        <translation>Порог поиска:</translation>
     </message>
     <message>
+        <location filename="../window/gui/find_lines_box.py" line="110"/>
+        <location filename="../window/gui/find_lines_box.py" line="118"/>
+        <source>Find Lines Automatically</source>
+        <translation>Найти линии автоматически</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/find_lines_box.py" line="117"/>
+        <source>Try to detect lines automatically</source>
+        <translation>Попробовать обнаружить линии поглощения автоматически</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/find_lines_box.py" line="120"/>
+        <source>Clear Automatically Found Lines</source>
+        <translation>Стереть автоматически найденные линии</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/find_lines_box.py" line="122"/>
+        <source>Previous Line</source>
+        <translation>Предыдущая линия</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/find_lines_box.py" line="123"/>
+        <source>Next Line</source>
+        <translation>Следующая линия</translation>
+    </message>
+</context>
+<context>
+    <name>FoundLinesBox</name>
+    <message>
+        <location filename="../window/gui/found_lines_box.py" line="61"/>
+        <location filename="../window/gui/found_lines_box.py" line="121"/>
         <source>Frequency uncertainty:</source>
-        <translation type="obsolete">Неопределённость по частоте:</translation>
+        <translation>Неопределённость по частоте:</translation>
     </message>
     <message>
-        <source>Show Absorption</source>
-        <translation type="obsolete">Показать поглощение</translation>
-    </message>
-    <message>
-        <source>Switch Y data between absorption and voltage</source>
-        <translation type="obsolete">Переключить значения по оси Y между поглощением и напряжением</translation>
-    </message>
-    <message>
-        <source>Frequency</source>
-        <translation type="obsolete">Частота</translation>
-    </message>
-    <message>
-        <source>Keep frequency range</source>
-        <translation type="obsolete">Не менять пределы по частоте</translation>
-    </message>
-    <message>
-        <source>−50%</source>
-        <translation type="obsolete">−50%</translation>
-    </message>
-    <message>
-        <source>−10%</source>
-        <translation type="obsolete">−10%</translation>
-    </message>
-    <message>
-        <source>+10%</source>
-        <translation type="obsolete">+10%</translation>
-    </message>
-    <message>
-        <source>+50%</source>
-        <translation type="obsolete">+50%</translation>
-    </message>
-    <message>
-        <source>Vertical Axis</source>
-        <translation type="obsolete">Вертикальная ось</translation>
-    </message>
-    <message>
-        <source>Keep voltage range</source>
-        <translation type="obsolete">Не менять пределы по напряжению</translation>
-    </message>
-    <message>
-        <source>Find Lines Automatically</source>
-        <translation type="obsolete">Найти линии автоматически</translation>
-    </message>
-    <message>
-        <source>Try to detect lines automatically</source>
-        <translation type="obsolete">Попробовать обнаружить линии поглощения автоматически</translation>
-    </message>
-    <message>
-        <source>Clear Automatically Found Lines</source>
-        <translation type="obsolete">Стереть автоматически найденные линии</translation>
-    </message>
-    <message>
-        <source>Previous Line</source>
-        <translation type="obsolete">Предыдущая линия</translation>
-    </message>
-    <message>
-        <source>Next Line</source>
-        <translation type="obsolete">Следующая линия</translation>
-    </message>
-    <message>
+        <location filename="../window/gui/found_lines_box.py" line="117"/>
         <source>Found Lines</source>
-        <translation type="obsolete">Найденные линии</translation>
+        <translation>Найденные линии</translation>
     </message>
-</context>
-<context>
-    <name>FrequencyDomainWindow</name>
     <message>
-        <source>Absorption</source>
-        <translation type="obsolete">Поглощение</translation>
-    </message>
-    <message>
-        <source>Voltage</source>
-        <translation type="obsolete">Напряжение</translation>
-    </message>
-    <message>
-        <source>Keep absorption range</source>
-        <translation type="obsolete">Не менять пределы по поглощению</translation>
-    </message>
-    <message>
-        <source>Keep voltage range</source>
-        <translation type="obsolete">Не менять пределы по напряжению</translation>
-    </message>
-    <message>
-        <location filename="../window/frequency_domain_window.py" line="148"/>
-        <location filename="../window/frequency_domain_window.py" line="1038"/>
-        <source>Are you sure?</source>
-        <translation>Вы уверены?</translation>
-    </message>
-    <message>
-        <location filename="../window/frequency_domain_window.py" line="151"/>
-        <location filename="../window/frequency_domain_window.py" line="1041"/>
-        <location filename="../window/frequency_domain_window.py" line="1073"/>
-        <source>Spectrometer Data Viewer</source>
-        <translation>Программа просмотра файлов спектрометра</translation>
-    </message>
-    <message>
-        <location filename="../window/frequency_domain_window.py" line="379"/>
-        <source>Found {} lines</source>
-        <translation>Нашлось {} линий</translation>
-    </message>
-    <message>
-        <location filename="../window/frequency_domain_window.py" line="650"/>
-        <source>Loading catalogs:</source>
-        <translation>Загрузка каталогов:</translation>
-    </message>
-    <message>
-        <location filename="../window/frequency_domain_window.py" line="664"/>
-        <source>Loading a catalog from&lt;br&gt;{}</source>
-        <translation>Загрузка каталога из&lt;br&gt;{}</translation>
-    </message>
-    <message>
-        <location filename="../window/frequency_domain_window.py" line="674"/>
-        <source>Unable to load a catalog: Python package missing.</source>
-        <translation>Невозможно загрузить каталог: нет пакета в Python.</translation>
-    </message>
-    <message>
-        <location filename="../window/frequency_domain_window.py" line="690"/>
-        <source>Loading has been cancelled.</source>
-        <translation>Загрузка каталога прервана.</translation>
-    </message>
-    <message>
-        <location filename="../window/frequency_domain_window.py" line="694"/>
-        <source>Failed to load a catalog.</source>
-        <translation>Не удалось загрузить каталог.</translation>
-    </message>
-    <message>
-        <location filename="../window/frequency_domain_window.py" line="697"/>
-        <source>Catalogs loaded.</source>
-        <translation>Каталоги загружены.</translation>
-    </message>
-    <message>
-        <location filename="../window/frequency_domain_window.py" line="1207"/>
-        <source>%s&#xa0;— Spectrometer Data Viewer</source>
-        <translation>%s&#xa0;— Программа просмотра файлов спектрометра</translation>
-    </message>
-</context>
-<context>
-    <name>GUI</name>
-    <message>
-        <source>Minimum:</source>
-        <translation type="obsolete">Минимум:</translation>
-    </message>
-    <message>
-        <source>Maximum:</source>
-        <translation type="obsolete">Максимум:</translation>
-    </message>
-    <message>
-        <source>Center:</source>
-        <translation type="obsolete">Центр:</translation>
-    </message>
-    <message>
-        <source>Span:</source>
-        <translation type="obsolete">Промежуток:</translation>
-    </message>
-    <message>
-        <source>Show Absorption</source>
-        <translation type="obsolete">Показать поглощение</translation>
-    </message>
-    <message>
-        <source>Switch Y data between absorption and voltage</source>
-        <translation type="obsolete">Переключить значения по оси Y между поглощением и напряжением</translation>
-    </message>
-    <message>
-        <source>Search threshold:</source>
-        <translation type="obsolete">Порог поиска:</translation>
-    </message>
-    <message>
-        <source>Frequency</source>
-        <translation type="obsolete">Частота</translation>
-    </message>
-    <message>
-        <source>Keep frequency range</source>
-        <translation type="obsolete">Не менять пределы по частоте</translation>
-    </message>
-    <message>
-        <source>−50%</source>
-        <translation type="obsolete">−50%</translation>
-    </message>
-    <message>
-        <source>−10%</source>
-        <translation type="obsolete">−10%</translation>
-    </message>
-    <message>
-        <source>+10%</source>
-        <translation type="obsolete">+10%</translation>
-    </message>
-    <message>
-        <source>+50%</source>
-        <translation type="obsolete">+50%</translation>
-    </message>
-    <message>
-        <source>Vertical Axis</source>
-        <translation type="obsolete">Вертикальная ось</translation>
-    </message>
-    <message>
-        <source>Keep voltage range</source>
-        <translation type="obsolete">Не менять пределы по напряжению</translation>
-    </message>
-    <message>
-        <source>Find Lines Automatically</source>
-        <translation type="obsolete">Найти линии автоматически</translation>
-    </message>
-    <message>
-        <source>Try to detect lines automatically</source>
-        <translation type="obsolete">Попробовать обнаружить линии поглощения автоматически</translation>
-    </message>
-    <message>
-        <source>Clear Automatically Found Lines</source>
-        <translation type="obsolete">Стереть автоматически найденные линии</translation>
-    </message>
-    <message>
-        <source>Previous Line</source>
-        <translation type="obsolete">Предыдущая линия</translation>
-    </message>
-    <message>
-        <source>Next Line</source>
-        <translation type="obsolete">Следующая линия</translation>
-    </message>
-    <message>
-        <source>Found Lines</source>
-        <translation type="obsolete">Найденные линии</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/__init__.py" line="220"/>
-        <source>Spectrometer Data Viewer (version {0})</source>
-        <translation>Программа просмотра файлов спектрометра (версия {0})</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/__init__.py" line="223"/>
-        <source>Spectrometer Data Viewer</source>
-        <translation>Программа просмотра файлов спектрометра</translation>
-    </message>
-</context>
-<context>
-    <name>NavigationToolbar</name>
-    <message>
-        <source>Open</source>
-        <translation type="obsolete">Открыть</translation>
-    </message>
-    <message>
-        <source>Load spectrometer data</source>
-        <translation type="obsolete">Загрузить файл данных спектрометра</translation>
-    </message>
-    <message>
-        <source>Clear</source>
-        <translation type="obsolete">Очистить</translation>
-    </message>
-    <message>
-        <source>Clear lines and markers</source>
-        <translation type="obsolete">Стереть линии и отметки на точках</translation>
-    </message>
-    <message>
-        <source>Open Ghost</source>
-        <translation type="obsolete">Открыть фоном</translation>
-    </message>
-    <message>
-        <source>Load spectrometer data as a background curve</source>
-        <translation type="obsolete">Загрузить файл данных спектрометра в фон</translation>
-    </message>
-    <message>
-        <source>Clear Ghost</source>
-        <translation type="obsolete">Очистить открытое фоном</translation>
-    </message>
-    <message>
-        <source>Clear the background curve</source>
-        <translation type="obsolete">Стереть кривую, открытую фоном</translation>
-    </message>
-    <message>
-        <source>Calculate second derivative</source>
-        <translation type="obsolete">Вычислить вторую производную</translation>
-    </message>
-    <message>
-        <source>Calculate finite-step second derivative</source>
-        <translation type="obsolete">Вычислить вторую квазипроизводную с конечным шагом</translation>
-    </message>
-    <message>
-        <source>Save Data</source>
-        <translation type="obsolete">Сохранить данные</translation>
-    </message>
-    <message>
-        <source>Export the visible data</source>
-        <translation type="obsolete">Экспортировать отображаемые данные</translation>
-    </message>
-    <message>
-        <source>Copy Figure</source>
-        <translation type="obsolete">Копировать изображение</translation>
-    </message>
-    <message>
-        <source>Copy the plot as an image</source>
-        <translation type="obsolete">Копировать изображение графика</translation>
-    </message>
-    <message>
-        <source>Save Figure</source>
-        <translation type="obsolete">Сохранить рисунок</translation>
-    </message>
-    <message>
-        <source>Save the plot as an image</source>
-        <translation type="obsolete">Сохранить график в виде изображения</translation>
-    </message>
-    <message>
-        <source>Mark</source>
-        <translation type="obsolete">Выделить</translation>
-    </message>
-    <message>
-        <source>Mark data points (hold Shift to delete)</source>
-        <translation type="obsolete">Отметить точки данных (удерживайте Shift для удаления)</translation>
-    </message>
-    <message>
-        <source>Load Marks</source>
-        <translation type="obsolete">Загрузить отмеченное</translation>
-    </message>
-    <message>
-        <source>Load marked points values from a file</source>
-        <translation type="obsolete">Загрузить отмеченные точки из файла</translation>
-    </message>
-    <message>
-        <source>Copy Marked</source>
-        <translation type="obsolete">Копировать отмеченное</translation>
-    </message>
-    <message>
-        <source>Copy marked points values into clipboard</source>
-        <translation type="obsolete">Копировать отмеченные точки в буфер обмена</translation>
-    </message>
-    <message>
-        <source>Save Marked</source>
-        <translation type="obsolete">Сохранить отмеченное</translation>
-    </message>
-    <message>
-        <source>Save marked points values</source>
-        <translation type="obsolete">Сохранить значения отмеченных точек</translation>
-    </message>
-    <message>
-        <source>Clear Marked</source>
-        <translation type="obsolete">Очистить отмеченное</translation>
-    </message>
-    <message>
-        <source>Clear marked points</source>
-        <translation type="obsolete">Очистить отмеченные точки</translation>
-    </message>
-    <message>
-        <source>Configure</source>
-        <translation type="obsolete">Настроить</translation>
-    </message>
-    <message>
-        <source>Edit parameters</source>
-        <translation type="obsolete">Изменить параметры</translation>
-    </message>
-    <message>
-        <source>About Qt</source>
-        <translation type="obsolete">О платформе Qt</translation>
-    </message>
-</context>
-<context>
-    <name>OpenFileDialog</name>
-    <message>
-        <source>All supported</source>
-        <translation type="obsolete">Все поддерживаемые</translation>
-    </message>
-</context>
-<context>
-    <name>OpenFilePathEntry</name>
-    <message>
-        <source>Translations</source>
-        <translation type="obsolete">Файлы с переводами</translation>
-    </message>
-    <message>
-        <location filename="../widgets/open_file_path_entry.py" line="58"/>
-        <source>&amp;Browse…</source>
-        <translation>&amp;Обзор…</translation>
-    </message>
-</context>
-<context>
-    <name>Settings</name>
-    <message>
-        <source>Axis</source>
-        <translation type="obsolete">Ось</translation>
-    </message>
-    <message>
-        <source>View</source>
-        <translation type="obsolete">Вид</translation>
-    </message>
-    <message>
-        <source>Ghost Color:</source>
-        <translation type="obsolete">Цвет линии фоновых данных:</translation>
-    </message>
-    <message>
-        <source>Label Font:</source>
-        <translation type="obsolete">Шрифт названия:</translation>
-    </message>
-    <message>
-        <source>Number Font:</source>
-        <translation type="obsolete">Шрифт чисел:</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="123"/>
-        <source>Processing</source>
-        <translation>Обработка</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="132"/>
-        <source>Crosshair</source>
-        <translation>Перекрестье</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="146"/>
-        <source>Line</source>
-        <translation>Линия</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="158"/>
-        <source>Plot</source>
-        <translation>График</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="184"/>
-        <source>Marks</source>
-        <translation>Отметки</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="207"/>
-        <source>Export</source>
-        <translation>Экспорт</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="215"/>
-        <source>Locale</source>
-        <translation>Язык</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="226"/>
-        <source>Catalog</source>
-        <translation>Каталог</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="125"/>
-        <source>Jump:</source>
-        <translation>Җамп:</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="133"/>
-        <source>Show crosshair lines</source>
-        <translation>Показывать линии перекрестья</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="136"/>
-        <source>Show coordinates</source>
-        <translation>Показывать координаты</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="139"/>
-        <location filename="../settings.py" line="147"/>
-        <source>Color:</source>
-        <translation>Цвет:</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="142"/>
-        <location filename="../settings.py" line="153"/>
-        <source>Thickness:</source>
-        <translation>Толщина:</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="150"/>
-        <source>Ghost color:</source>
-        <translation>Цвет линии фоновых данных:</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="162"/>
-        <source>Axis line thickness:</source>
-        <translation>Толщина линии оси:</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="165"/>
-        <source>Label font:</source>
-        <translation>Шрифт названия:</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="168"/>
-        <source>Number font:</source>
-        <translation>Шрифт чисел:</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="171"/>
-        <source>Use custom colors</source>
-        <translation>Использовать свои цвета</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="174"/>
-        <source>Custom background color:</source>
-        <translation>Свой цвет фона:</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="177"/>
-        <source>Custom text color:</source>
-        <translation>Свой цвет текста:</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="185"/>
-        <source>Copy frequency to clipboard</source>
-        <translation>Копировать частоту в буфер обмена</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="188"/>
-        <source>Fancy exponents in the table</source>
-        <translation>Заковыристые степени в таблице</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="191"/>
-        <source>Show log₁₀ absorption</source>
-        <translation></translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="194"/>
-        <source>Fill color:</source>
-        <translation>Цвет заливки:</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="197"/>
-        <source>Border color:</source>
-        <translation>Цвет границы:</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="200"/>
-        <source>Size:</source>
-        <translation>Размер:</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="203"/>
-        <source>Border thickness:</source>
-        <translation>Толщина границы:</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="208"/>
-        <source>Line ending:</source>
-        <translation>Перевод строки:</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="211"/>
-        <source>CSV separator:</source>
-        <translation>Разделитель значений с файле CSV:</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="216"/>
-        <source>Translation file:</source>
-        <translation>Файл перевода:</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="220"/>
-        <source>Translations</source>
-        <translation>Перевод</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="227"/>
-        <source>Files:</source>
-        <translation>Файлы:</translation>
-    </message>
-</context>
-<context>
-    <name>TimeDomainGUI</name>
-    <message>
-        <source>Minimum:</source>
-        <translation type="obsolete">Минимум:</translation>
-    </message>
-    <message>
-        <source>Maximum:</source>
-        <translation type="obsolete">Максимум:</translation>
-    </message>
-    <message>
-        <source>Center:</source>
-        <translation type="obsolete">Центр:</translation>
-    </message>
-    <message>
-        <source>Span:</source>
-        <translation type="obsolete">Промежуток:</translation>
-    </message>
-    <message>
-        <source>Show Absorption</source>
-        <translation type="obsolete">Показать поглощение</translation>
-    </message>
-    <message>
-        <source>Switch Y data between absorption and voltage</source>
-        <translation type="obsolete">Переключить значения по оси Y между поглощением и напряжением</translation>
-    </message>
-    <message>
-        <source>Time</source>
-        <translation type="obsolete">Время</translation>
-    </message>
-    <message>
-        <source>Keep time range</source>
-        <translation type="obsolete">Не менять пределы по времени</translation>
-    </message>
-    <message>
-        <source>−50%</source>
-        <translation type="obsolete">−50%</translation>
-    </message>
-    <message>
-        <source>−10%</source>
-        <translation type="obsolete">−10%</translation>
-    </message>
-    <message>
-        <source>+10%</source>
-        <translation type="obsolete">+10%</translation>
-    </message>
-    <message>
-        <source>+50%</source>
-        <translation type="obsolete">+50%</translation>
-    </message>
-    <message>
-        <source>Vertical Axis</source>
-        <translation type="obsolete">Вертикальная ось</translation>
-    </message>
-    <message>
-        <source>Keep voltage range</source>
-        <translation type="obsolete">Не менять пределы по напряжению</translation>
-    </message>
-</context>
-<context>
-    <name>TimeDomainWindow</name>
-    <message>
-        <source>Absorption</source>
-        <translation type="obsolete">Поглощение</translation>
-    </message>
-    <message>
-        <source>Voltage</source>
-        <translation type="obsolete">Напряжение</translation>
-    </message>
-    <message>
-        <source>Keep absorption range</source>
-        <translation type="obsolete">Не менять пределы по поглощению</translation>
-    </message>
-    <message>
-        <source>Keep voltage range</source>
-        <translation type="obsolete">Не менять пределы по напряжению</translation>
-    </message>
-    <message>
-        <location filename="../window/time_domain_window.py" line="118"/>
-        <location filename="../window/time_domain_window.py" line="476"/>
-        <source>Are you sure?</source>
-        <translation>Вы уверены?</translation>
-    </message>
-    <message>
-        <location filename="../window/time_domain_window.py" line="121"/>
-        <location filename="../window/time_domain_window.py" line="479"/>
-        <location filename="../window/time_domain_window.py" line="503"/>
-        <source>Spectrometer Data Viewer</source>
-        <translation>Программа просмотра файлов спектрометра</translation>
-    </message>
-    <message>
-        <location filename="../window/time_domain_window.py" line="621"/>
-        <source>%s&#xa0;— Spectrometer Data Viewer</source>
-        <translation>%s&#xa0;— Программа просмотра файлов спектрометра</translation>
-    </message>
-</context>
-<context>
-    <name>_FoundLinesModel</name>
-    <message>
+        <location filename="../window/gui/found_lines_box.py" line="144"/>
         <source>Substance</source>
-        <translation type="obsolete">Вещество</translation>
+        <translation>Вещество</translation>
     </message>
 </context>
 <context>
-    <name>file dialog</name>
+    <name>FrequencyBox</name>
     <message>
-        <source>Image files</source>
-        <translation type="obsolete">Изображения</translation>
-    </message>
-</context>
-<context>
-    <name>file type</name>
-    <message>
-        <source>Text with separators</source>
-        <translation type="obsolete">Текст с разделителями</translation>
+        <location filename="../window/gui/frequency_box.py" line="64"/>
+        <location filename="../window/gui/frequency_box.py" line="106"/>
+        <source>Minimum:</source>
+        <translation>Минимум:</translation>
     </message>
     <message>
-        <source>Plain text</source>
-        <translation type="obsolete">Просто текст</translation>
+        <location filename="../window/gui/frequency_box.py" line="65"/>
+        <location filename="../window/gui/frequency_box.py" line="107"/>
+        <source>Maximum:</source>
+        <translation>Максимум:</translation>
     </message>
     <message>
-        <source>Microsoft Excel</source>
-        <translation type="obsolete">Microsoft Excel</translation>
+        <location filename="../window/gui/frequency_box.py" line="66"/>
+        <location filename="../window/gui/frequency_box.py" line="108"/>
+        <source>Center:</source>
+        <translation>Центр:</translation>
     </message>
     <message>
-        <source>Supported formats</source>
-        <translation type="obsolete">Поддерживаемые форматы</translation>
+        <location filename="../window/gui/frequency_box.py" line="67"/>
+        <location filename="../window/gui/frequency_box.py" line="109"/>
+        <source>Span:</source>
+        <translation>Промежуток:</translation>
     </message>
     <message>
-        <source>All files</source>
-        <translation type="obsolete">Все файлы</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="231"/>
-        <source>JSON file</source>
-        <translation>Файл JSON</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="235"/>
-        <source>TAR file</source>
-        <translation>Файл TAR</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="239"/>
-        <source>JSON with GZip compression</source>
-        <translation>JSON со сжатием GZip</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="243"/>
-        <source>JSON with Bzip2 compression</source>
-        <translation>JSON со сжатием Bzip2</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="247"/>
-        <source>JSON with LZMA2 compression</source>
-        <translation>JSON со сжатием LZMA2</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="251"/>
-        <source>Tar archive with GZip compression</source>
-        <translation>Архив tar со сжатием GZip</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="257"/>
-        <source>Tar archive with Bzip2 compression</source>
-        <translation>Архив tar со сжатием Bzip2</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="263"/>
-        <source>Tar archive with LZMA2 compression</source>
-        <translation>Архив tar со сжатием LZMA2</translation>
-    </message>
-    <message>
-        <location filename="../widgets/file_dialog.py" line="166"/>
-        <location filename="../widgets/open_file_path_entry.py" line="138"/>
-        <location filename="../widgets/open_file_path_entry.py" line="369"/>
-        <source>All supported</source>
-        <translation>Все поддерживаемые</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/__init__.py" line="104"/>
-        <source>PSK Spectrometer</source>
-        <translation>Спектрометр с фазовой манипуляцией</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/__init__.py" line="109"/>
-        <source>Fast Sweep Spectrometer</source>
-        <translation>Спектрометр с быстрым свипированием частоты</translation>
-    </message>
-</context>
-<context>
-    <name>header with unit</name>
-    <message>
-        <source>{name} [{unit}]</source>
-        <translation type="obsolete">{name} ({unit})</translation>
-    </message>
-    <message>
-        <location filename="../utils.py" line="689"/>
-        <source>{name} ({unit})</source>
-        <translation>{name}, {unit}</translation>
-    </message>
-</context>
-<context>
-    <name>line end</name>
-    <message>
-        <location filename="../settings.py" line="56"/>
-        <location filename="../settings.py" line="86"/>
-        <source>line feed (\n, U+000A)</source>
-        <translation>подача строки (\n, U+000A)</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="57"/>
-        <location filename="../settings.py" line="87"/>
-        <source>carriage return (\r, U+000D)</source>
-        <translation>возврат каретки (\r, U+000D)</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="58"/>
-        <location filename="../settings.py" line="88"/>
-        <source>CR+LF (\r\n)</source>
-        <translation>ПС+ВК (\r\n)</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="59"/>
-        <location filename="../settings.py" line="89"/>
-        <source>LF+CR (\n\r)</source>
-        <translation>ВК+ПС (\n\r)</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="60"/>
-        <location filename="../settings.py" line="90"/>
-        <source>next line (U+0085)</source>
-        <translation>переход на следующую строку (U+0085)</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="61"/>
-        <location filename="../settings.py" line="91"/>
-        <source>line separator (U+2028)</source>
-        <translation>разделитель строк (U+2028)</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="62"/>
-        <location filename="../settings.py" line="92"/>
-        <source>paragraph separator (U+2029)</source>
-        <translation>разделитель абзацев (U+2029)</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="65"/>
-        <location filename="../settings.py" line="95"/>
-        <source>system ({0})</source>
-        <translation>системный ({0})</translation>
-    </message>
-</context>
-<context>
-    <name>csv separator</name>
-    <message>
-        <location filename="../settings.py" line="69"/>
-        <location filename="../settings.py" line="99"/>
-        <source>comma (,)</source>
-        <translation>запятая (,)</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="70"/>
-        <location filename="../settings.py" line="100"/>
-        <source>tab (\t)</source>
-        <translation>табуляция (\t)</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="71"/>
-        <location filename="../settings.py" line="101"/>
-        <source>semicolon (;)</source>
-        <translation>точка с запятой (;)</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="72"/>
-        <location filename="../settings.py" line="102"/>
-        <source>space ( )</source>
-        <translation>пробел ( )</translation>
-    </message>
-</context>
-<context>
-    <name>unit</name>
-    <message>
-        <location filename="../settings.py" line="106"/>
-        <source>Hz</source>
-        <translation>Гц</translation>
-    </message>
-    <message>
-        <location filename="../settings.py" line="114"/>
-        <source>px</source>
-        <translation>пикс</translation>
-    </message>
-    <message>
-        <location filename="../widgets/font_selector.py" line="56"/>
-        <source>pt</source>
-        <translation>пт</translation>
-    </message>
-    <message>
-        <location filename="../widgets/found_lines_model.py" line="78"/>
-        <location filename="../window/frequency_domain_window.py" line="1380"/>
-        <location filename="../window/gui/found_lines_box.py" line="124"/>
-        <location filename="../window/gui/voltage_box.py" line="224"/>
-        <location filename="../window/time_domain_window.py" line="751"/>
-        <source>cm⁻¹</source>
-        <translation>см⁻¹</translation>
-    </message>
-    <message>
-        <location filename="../widgets/found_lines_model.py" line="80"/>
-        <location filename="../window/gui/found_lines_box.py" line="126"/>
-        <source>log₁₀(cm⁻¹)</source>
-        <translation>lg(см⁻¹)</translation>
-    </message>
-    <message>
-        <location filename="../window/frequency_domain_window.py" line="1284"/>
-        <location filename="../window/frequency_domain_window.py" line="1289"/>
-        <location filename="../window/time_domain_window.py" line="678"/>
-        <location filename="../window/time_domain_window.py" line="683"/>
-        <source>cm&lt;sup&gt;−1&lt;/sup&gt;</source>
-        <translation>см&lt;sup&gt;−1&lt;/sup&gt;</translation>
-    </message>
-    <message>
-        <location filename="../window/frequency_domain_window.py" line="1299"/>
-        <location filename="../window/frequency_domain_window.py" line="1302"/>
-        <location filename="../window/gui/voltage_box.py" line="231"/>
-        <location filename="../window/time_domain_window.py" line="693"/>
-        <location filename="../window/time_domain_window.py" line="696"/>
-        <source>V</source>
-        <translation>В</translation>
-    </message>
-    <message>
-        <location filename="../window/frequency_domain_window.py" line="1379"/>
-        <location filename="../window/frequency_domain_window.py" line="1404"/>
-        <location filename="../window/gui/found_lines_box.py" line="115"/>
-        <source>MHz</source>
-        <translation>МГц</translation>
-    </message>
-    <message>
-        <location filename="../window/frequency_domain_window.py" line="1405"/>
-        <location filename="../window/gui/found_lines_box.py" line="119"/>
-        <location filename="../window/time_domain_window.py" line="776"/>
-        <source>mV</source>
-        <translation>мВ</translation>
-    </message>
-    <message>
-        <location filename="../window/time_domain_window.py" line="750"/>
-        <location filename="../window/time_domain_window.py" line="775"/>
-        <source>s</source>
-        <translation>c</translation>
-    </message>
-</context>
-<context>
-    <name>dialog prompt</name>
-    <message>
-        <location filename="../utils.py" line="543"/>
-        <source>Encountered invalid value of the cell length: {} cm
-Enter a correct value [cm]:</source>
-        <translation>Обнаружено неверное значение длины ячейки: {} см
-Введите корректное значение (см):</translation>
-    </message>
-</context>
-<context>
-    <name>plot axes labels</name>
-    <message>
-        <location filename="../widgets/found_lines_model.py" line="76"/>
-        <location filename="../window/frequency_domain_window.py" line="1283"/>
-        <location filename="../window/frequency_domain_window.py" line="1373"/>
-        <location filename="../window/gui/found_lines_box.py" line="122"/>
-        <location filename="../window/time_domain_window.py" line="677"/>
-        <location filename="../window/time_domain_window.py" line="744"/>
-        <source>Absorption</source>
-        <translation>Поглощение</translation>
-    </message>
-    <message>
-        <location filename="../window/frequency_domain_window.py" line="1298"/>
-        <location filename="../window/frequency_domain_window.py" line="1398"/>
-        <location filename="../window/gui/found_lines_box.py" line="118"/>
-        <location filename="../window/gui/frequency_domain_gui.py" line="85"/>
-        <location filename="../window/gui/time_domain_gui.py" line="71"/>
-        <location filename="../window/time_domain_window.py" line="692"/>
-        <location filename="../window/time_domain_window.py" line="769"/>
-        <source>Voltage</source>
-        <translation>Напряжение</translation>
-    </message>
-    <message>
-        <location filename="../window/frequency_domain_window.py" line="1372"/>
-        <location filename="../window/frequency_domain_window.py" line="1397"/>
-        <location filename="../window/gui/found_lines_box.py" line="114"/>
-        <location filename="../window/gui/frequency_domain_gui.py" line="80"/>
+        <location filename="../window/gui/frequency_box.py" line="103"/>
         <source>Frequency</source>
         <translation>Частота</translation>
     </message>
     <message>
-        <location filename="../window/gui/time_domain_gui.py" line="66"/>
-        <location filename="../window/time_domain_window.py" line="743"/>
-        <location filename="../window/time_domain_window.py" line="768"/>
-        <source>Time</source>
-        <translation>Время</translation>
+        <location filename="../window/gui/frequency_box.py" line="111"/>
+        <source>−50%</source>
+        <translation>−50%</translation>
     </message>
     <message>
-        <location filename="../window/time_domain_window.py" line="791"/>
-        <location filename="../window/time_domain_window.py" line="800"/>
-        <location filename="../window/time_domain_window.py" line="836"/>
-        <location filename="../window/time_domain_window.py" line="849"/>
-        <source>Time (s)</source>
-        <translation>Время, с</translation>
+        <location filename="../window/gui/frequency_box.py" line="112"/>
+        <source>−10%</source>
+        <translation>−10%</translation>
     </message>
     <message>
-        <location filename="../window/time_domain_window.py" line="792"/>
-        <location filename="../window/time_domain_window.py" line="837"/>
-        <source>Absorption (cm⁻¹)</source>
-        <translation>Поглощение, см⁻¹</translation>
+        <location filename="../window/gui/frequency_box.py" line="113"/>
+        <source>+10%</source>
+        <translation>+10%</translation>
     </message>
     <message>
-        <location filename="../window/time_domain_window.py" line="801"/>
-        <location filename="../window/time_domain_window.py" line="850"/>
-        <source>Voltage (mV)</source>
-        <translation>Напряжение, мВ</translation>
-    </message>
-</context>
-<context>
-    <name>OpenFilePathsEntry</name>
-    <message>
-        <location filename="../widgets/open_file_path_entry.py" line="195"/>
-        <source>&amp;Browse…</source>
-        <translation>&amp;Обзор…</translation>
-    </message>
-    <message>
-        <location filename="../widgets/open_file_path_entry.py" line="202"/>
-        <source>&amp;Clear</source>
-        <translation>Очи&amp;стить</translation>
-    </message>
-    <message>
-        <location filename="../widgets/open_file_path_entry.py" line="208"/>
-        <source>Open File &amp;Location</source>
-        <translation>Открыть &amp;местонахождение файла</translation>
-    </message>
-</context>
-<context>
-    <name>Preferences</name>
-    <message>
-        <location filename="../widgets/preferences.py" line="352"/>
-        <source>Preferences</source>
-        <translation>Параметры</translation>
-    </message>
-</context>
-<context>
-    <name>TimeDomainToolbar</name>
-    <message>
-        <location filename="../widgets/toolbar.py" line="120"/>
-        <source>Open</source>
-        <translation>Открыть</translation>
-    </message>
-    <message>
-        <location filename="../widgets/toolbar.py" line="122"/>
-        <source>Load spectrometer data</source>
-        <translation>Загрузить файл данных спектрометра</translation>
-    </message>
-    <message>
-        <location filename="../widgets/toolbar.py" line="126"/>
-        <source>Clear</source>
-        <translation>Очистить</translation>
-    </message>
-    <message>
-        <location filename="../widgets/toolbar.py" line="128"/>
-        <source>Clear lines</source>
-        <translation>Стереть линии</translation>
-    </message>
-    <message>
-        <location filename="../widgets/toolbar.py" line="134"/>
-        <source>Open Ghost</source>
-        <translation>Открыть фоном</translation>
-    </message>
-    <message>
-        <location filename="../widgets/toolbar.py" line="135"/>
-        <source>Load spectrometer data as a background curve</source>
-        <translation>Загрузить файл данных спектрометра в фон</translation>
-    </message>
-    <message>
-        <location filename="../widgets/toolbar.py" line="140"/>
-        <source>Clear Ghost</source>
-        <translation>Очистить открытое фоном</translation>
-    </message>
-    <message>
-        <location filename="../widgets/toolbar.py" line="141"/>
-        <source>Clear the background curve</source>
-        <translation>Стереть кривую, открытую фоном</translation>
-    </message>
-    <message>
-        <location filename="../widgets/toolbar.py" line="147"/>
-        <source>Save Data</source>
-        <translation>Сохранить данные</translation>
-    </message>
-    <message>
-        <location filename="../widgets/toolbar.py" line="148"/>
-        <source>Export the visible data</source>
-        <translation>Экспортировать отображаемые данные</translation>
-    </message>
-    <message>
-        <location filename="../widgets/toolbar.py" line="153"/>
-        <source>Copy Figure</source>
-        <translation>Копировать изображение</translation>
-    </message>
-    <message>
-        <location filename="../widgets/toolbar.py" line="154"/>
-        <source>Copy the plot as an image</source>
-        <translation>Копировать изображение графика</translation>
-    </message>
-    <message>
-        <location filename="../widgets/toolbar.py" line="159"/>
-        <source>Save Figure</source>
-        <translation>Сохранить рисунок</translation>
-    </message>
-    <message>
-        <location filename="../widgets/toolbar.py" line="160"/>
-        <source>Save the plot as an image</source>
-        <translation>Сохранить график в виде изображения</translation>
-    </message>
-    <message>
-        <location filename="../widgets/toolbar.py" line="166"/>
-        <source>Toolbox</source>
-        <translation>Инструменты</translation>
-    </message>
-    <message>
-        <location filename="../widgets/toolbar.py" line="167"/>
-        <source>Show or hide toolboxes</source>
-        <translation>Показать или скрыть инструменты</translation>
-    </message>
-    <message>
-        <location filename="../widgets/toolbar.py" line="171"/>
-        <source>Configure</source>
-        <translation>Настроить</translation>
-    </message>
-    <message>
-        <location filename="../widgets/toolbar.py" line="173"/>
-        <source>Edit parameters</source>
-        <translation>Изменить параметры</translation>
-    </message>
-    <message>
-        <location filename="../widgets/toolbar.py" line="178"/>
-        <source>About Qt</source>
-        <translation>О платформе Qt</translation>
+        <location filename="../window/gui/frequency_box.py" line="114"/>
+        <source>+50%</source>
+        <translation>+50%</translation>
     </message>
 </context>
 <context>
@@ -1324,6 +266,508 @@ Enter a correct value [cm]:</source>
     </message>
 </context>
 <context>
+    <name>FrequencyDomainWindow</name>
+    <message>
+        <location filename="../window/frequency_domain_window.py" line="803"/>
+        <source>Are you sure?</source>
+        <translation>Вы уверены?</translation>
+    </message>
+    <message>
+        <location filename="../window/frequency_domain_window.py" line="806"/>
+        <location filename="../window/frequency_domain_window.py" line="838"/>
+        <source>Spectrometer Data Viewer</source>
+        <translation>Программа просмотра файлов спектрометра</translation>
+    </message>
+    <message>
+        <location filename="../window/frequency_domain_window.py" line="240"/>
+        <source>Found {} lines</source>
+        <translation>Нашлось {} линий</translation>
+    </message>
+    <message>
+        <location filename="../window/frequency_domain_window.py" line="451"/>
+        <source>Loading catalogs:</source>
+        <translation>Загрузка каталогов:</translation>
+    </message>
+    <message>
+        <location filename="../window/frequency_domain_window.py" line="465"/>
+        <source>Loading a catalog from&lt;br&gt;{}</source>
+        <translation>Загрузка каталога из&lt;br&gt;{}</translation>
+    </message>
+    <message>
+        <location filename="../window/frequency_domain_window.py" line="475"/>
+        <source>Unable to load a catalog: Python package missing.</source>
+        <translation>Невозможно загрузить каталог: нет пакета в Python.</translation>
+    </message>
+    <message>
+        <location filename="../window/frequency_domain_window.py" line="496"/>
+        <source>Loading has been cancelled.</source>
+        <translation>Загрузка каталога прервана.</translation>
+    </message>
+    <message>
+        <location filename="../window/frequency_domain_window.py" line="490"/>
+        <location filename="../window/frequency_domain_window.py" line="500"/>
+        <source>Failed to load a catalog.</source>
+        <translation>Не удалось загрузить каталог.</translation>
+    </message>
+    <message>
+        <location filename="../window/frequency_domain_window.py" line="503"/>
+        <source>Catalogs loaded.</source>
+        <translation>Каталоги загружены.</translation>
+    </message>
+    <message>
+        <location filename="../window/frequency_domain_window.py" line="976"/>
+        <source>%s&#xa0;— Spectrometer Data Viewer</source>
+        <translation>%s&#xa0;— Программа просмотра файлов спектрометра</translation>
+    </message>
+</context>
+<context>
+    <name>GUI</name>
+    <message>
+        <location filename="../window/gui/__init__.py" line="207"/>
+        <source>Are you sure?</source>
+        <translation>Вы уверены?</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/__init__.py" line="318"/>
+        <source>Spectrometer Data Viewer (version {0})</source>
+        <translation>Программа просмотра файлов спектрометра (версия {0})</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/__init__.py" line="210"/>
+        <location filename="../window/gui/__init__.py" line="321"/>
+        <source>Spectrometer Data Viewer</source>
+        <translation>Программа просмотра файлов спектрометра</translation>
+    </message>
+</context>
+<context>
+    <name>OpenFilePathEntry</name>
+    <message>
+        <location filename="../widgets/open_file_path_entry.py" line="59"/>
+        <source>&amp;Browse…</source>
+        <translation>&amp;Обзор…</translation>
+    </message>
+</context>
+<context>
+    <name>OpenFilePathsEntry</name>
+    <message>
+        <location filename="../widgets/open_file_path_entry.py" line="196"/>
+        <source>&amp;Browse…</source>
+        <translation>&amp;Обзор…</translation>
+    </message>
+    <message>
+        <location filename="../widgets/open_file_path_entry.py" line="203"/>
+        <source>&amp;Clear</source>
+        <translation>Очи&amp;стить</translation>
+    </message>
+    <message>
+        <location filename="../widgets/open_file_path_entry.py" line="209"/>
+        <source>Open File &amp;Location</source>
+        <translation>Открыть &amp;местонахождение файла</translation>
+    </message>
+</context>
+<context>
+    <name>Preferences</name>
+    <message>
+        <location filename="../widgets/preferences.py" line="347"/>
+        <source>Preferences</source>
+        <translation>Параметры</translation>
+    </message>
+</context>
+<context>
+    <name>Settings</name>
+    <message>
+        <location filename="../settings.py" line="210"/>
+        <source>Processing</source>
+        <translation>Обработка</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="220"/>
+        <source>Crosshair</source>
+        <translation>Перекрестье</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="234"/>
+        <source>Line</source>
+        <translation>Линия</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="246"/>
+        <source>Plot</source>
+        <translation>График</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="273"/>
+        <source>Marks</source>
+        <translation>Отметки</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="297"/>
+        <source>Export</source>
+        <translation>Экспорт</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="305"/>
+        <source>Locale</source>
+        <translation>Язык</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="319"/>
+        <source>Catalog</source>
+        <translation>Каталог</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="213"/>
+        <source>Jump:</source>
+        <translation>Җамп:</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="221"/>
+        <source>Show crosshair lines</source>
+        <translation>Показывать линии перекрестья</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="224"/>
+        <source>Show coordinates</source>
+        <translation>Показывать координаты</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="227"/>
+        <location filename="../settings.py" line="235"/>
+        <source>Color:</source>
+        <translation>Цвет:</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="230"/>
+        <location filename="../settings.py" line="241"/>
+        <source>Thickness:</source>
+        <translation>Толщина:</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="238"/>
+        <source>Ghost color:</source>
+        <translation>Цвет линии фоновых данных:</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="250"/>
+        <source>Axis line thickness:</source>
+        <translation>Толщина линии оси:</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="253"/>
+        <source>Label font:</source>
+        <translation>Шрифт названия:</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="256"/>
+        <source>Number font:</source>
+        <translation>Шрифт чисел:</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="259"/>
+        <source>Use custom colors</source>
+        <translation>Использовать свои цвета</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="262"/>
+        <source>Custom background color:</source>
+        <translation>Свой цвет фона:</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="265"/>
+        <source>Custom text color:</source>
+        <translation>Свой цвет текста:</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="275"/>
+        <source>Copy frequency to clipboard</source>
+        <translation>Копировать частоту в буфер обмена</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="278"/>
+        <source>Fancy exponents in the table</source>
+        <translation>Заковыристые степени в таблице</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="281"/>
+        <source>Show log₁₀ absorption</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="284"/>
+        <source>Fill color:</source>
+        <translation>Цвет заливки:</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="287"/>
+        <source>Border color:</source>
+        <translation>Цвет границы:</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="290"/>
+        <source>Size:</source>
+        <translation>Размер:</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="293"/>
+        <source>Border thickness:</source>
+        <translation>Толщина границы:</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="298"/>
+        <source>Line ending:</source>
+        <translation>Перевод строки:</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="301"/>
+        <source>CSV separator:</source>
+        <translation>Разделитель значений с файле CSV:</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="306"/>
+        <source>Translation file:</source>
+        <translation>Файл перевода:</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="310"/>
+        <source>Translations</source>
+        <translation>Перевод</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="321"/>
+        <source>Files:</source>
+        <translation>Файлы:</translation>
+    </message>
+</context>
+<context>
+    <name>TimeBox</name>
+    <message>
+        <location filename="../window/gui/time_box.py" line="58"/>
+        <location filename="../window/gui/time_box.py" line="94"/>
+        <source>Minimum:</source>
+        <translation>Минимум:</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/time_box.py" line="59"/>
+        <location filename="../window/gui/time_box.py" line="95"/>
+        <source>Maximum:</source>
+        <translation>Максимум:</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/time_box.py" line="60"/>
+        <location filename="../window/gui/time_box.py" line="96"/>
+        <source>Center:</source>
+        <translation>Центр:</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/time_box.py" line="61"/>
+        <location filename="../window/gui/time_box.py" line="97"/>
+        <source>Span:</source>
+        <translation>Промежуток:</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/time_box.py" line="91"/>
+        <source>Time</source>
+        <translation>Время</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/time_box.py" line="99"/>
+        <source>−50%</source>
+        <translation>−50%</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/time_box.py" line="100"/>
+        <source>−10%</source>
+        <translation>−10%</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/time_box.py" line="101"/>
+        <source>+10%</source>
+        <translation>+10%</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/time_box.py" line="102"/>
+        <source>+50%</source>
+        <translation>+50%</translation>
+    </message>
+</context>
+<context>
+    <name>TimeDomainToolbar</name>
+    <message>
+        <location filename="../widgets/toolbar.py" line="120"/>
+        <source>Open</source>
+        <translation>Открыть</translation>
+    </message>
+    <message>
+        <location filename="../widgets/toolbar.py" line="122"/>
+        <source>Load spectrometer data</source>
+        <translation>Загрузить файл данных спектрометра</translation>
+    </message>
+    <message>
+        <location filename="../widgets/toolbar.py" line="126"/>
+        <source>Clear</source>
+        <translation>Очистить</translation>
+    </message>
+    <message>
+        <location filename="../widgets/toolbar.py" line="128"/>
+        <source>Clear lines</source>
+        <translation>Стереть линии</translation>
+    </message>
+    <message>
+        <location filename="../widgets/toolbar.py" line="134"/>
+        <source>Open Ghost</source>
+        <translation>Открыть фоном</translation>
+    </message>
+    <message>
+        <location filename="../widgets/toolbar.py" line="135"/>
+        <source>Load spectrometer data as a background curve</source>
+        <translation>Загрузить файл данных спектрометра в фон</translation>
+    </message>
+    <message>
+        <location filename="../widgets/toolbar.py" line="140"/>
+        <source>Clear Ghost</source>
+        <translation>Очистить открытое фоном</translation>
+    </message>
+    <message>
+        <location filename="../widgets/toolbar.py" line="141"/>
+        <source>Clear the background curve</source>
+        <translation>Стереть кривую, открытую фоном</translation>
+    </message>
+    <message>
+        <location filename="../widgets/toolbar.py" line="147"/>
+        <source>Save Data</source>
+        <translation>Сохранить данные</translation>
+    </message>
+    <message>
+        <location filename="../widgets/toolbar.py" line="148"/>
+        <source>Export the visible data</source>
+        <translation>Экспортировать отображаемые данные</translation>
+    </message>
+    <message>
+        <location filename="../widgets/toolbar.py" line="153"/>
+        <source>Copy Figure</source>
+        <translation>Копировать изображение</translation>
+    </message>
+    <message>
+        <location filename="../widgets/toolbar.py" line="154"/>
+        <source>Copy the plot as an image</source>
+        <translation>Копировать изображение графика</translation>
+    </message>
+    <message>
+        <location filename="../widgets/toolbar.py" line="159"/>
+        <source>Save Figure</source>
+        <translation>Сохранить рисунок</translation>
+    </message>
+    <message>
+        <location filename="../widgets/toolbar.py" line="160"/>
+        <source>Save the plot as an image</source>
+        <translation>Сохранить график в виде изображения</translation>
+    </message>
+    <message>
+        <location filename="../widgets/toolbar.py" line="166"/>
+        <source>Toolbox</source>
+        <translation>Инструменты</translation>
+    </message>
+    <message>
+        <location filename="../widgets/toolbar.py" line="167"/>
+        <source>Show or hide toolboxes</source>
+        <translation>Показать или скрыть инструменты</translation>
+    </message>
+    <message>
+        <location filename="../widgets/toolbar.py" line="171"/>
+        <source>Configure</source>
+        <translation>Настроить</translation>
+    </message>
+    <message>
+        <location filename="../widgets/toolbar.py" line="173"/>
+        <source>Edit parameters</source>
+        <translation>Изменить параметры</translation>
+    </message>
+    <message>
+        <location filename="../widgets/toolbar.py" line="178"/>
+        <source>About Qt</source>
+        <translation>О платформе Qt</translation>
+    </message>
+</context>
+<context>
+    <name>TimeDomainWindow</name>
+    <message>
+        <location filename="../window/time_domain_window.py" line="227"/>
+        <source>Are you sure?</source>
+        <translation>Вы уверены?</translation>
+    </message>
+    <message>
+        <location filename="../window/time_domain_window.py" line="230"/>
+        <location filename="../window/time_domain_window.py" line="254"/>
+        <source>Spectrometer Data Viewer</source>
+        <translation>Программа просмотра файлов спектрометра</translation>
+    </message>
+    <message>
+        <location filename="../window/time_domain_window.py" line="374"/>
+        <source>%s&#xa0;— Spectrometer Data Viewer</source>
+        <translation>%s&#xa0;— Программа просмотра файлов спектрометра</translation>
+    </message>
+</context>
+<context>
+    <name>VoltageBox</name>
+    <message>
+        <location filename="../window/gui/voltage_box.py" line="60"/>
+        <location filename="../window/gui/voltage_box.py" line="97"/>
+        <source>Minimum:</source>
+        <translation>Минимум:</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/voltage_box.py" line="61"/>
+        <location filename="../window/gui/voltage_box.py" line="98"/>
+        <source>Maximum:</source>
+        <translation>Максимум:</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/voltage_box.py" line="94"/>
+        <source>Vertical Axis</source>
+        <translation>Вертикальная ось</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/voltage_box.py" line="101"/>
+        <source>Show Absorption</source>
+        <translation>Показать поглощение</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/voltage_box.py" line="102"/>
+        <source>Switch Y data between absorption and voltage</source>
+        <translation>Переключить значения по оси Y между поглощением и напряжением</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/voltage_box.py" line="104"/>
+        <source>−50%</source>
+        <translation>−50%</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/voltage_box.py" line="105"/>
+        <source>−10%</source>
+        <translation>−10%</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/voltage_box.py" line="106"/>
+        <source>+10%</source>
+        <translation>+10%</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/voltage_box.py" line="107"/>
+        <source>+50%</source>
+        <translation>+50%</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/voltage_box.py" line="227"/>
+        <source>Absorption</source>
+        <translation>Поглощение</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/voltage_box.py" line="234"/>
+        <source>Voltage</source>
+        <translation>Напряжение</translation>
+    </message>
+</context>
+<context>
     <name>WaitingScreen</name>
     <message>
         <location filename="../widgets/waiting_screen.py" line="97"/>
@@ -1337,296 +781,385 @@ Enter a correct value [cm]:</source>
     </message>
 </context>
 <context>
-    <name>workbook</name>
+    <name>csv separator</name>
     <message>
-        <location filename="../window/frequency_domain_window.py" line="964"/>
-        <location filename="../window/frequency_domain_window.py" line="1484"/>
-        <location filename="../window/frequency_domain_window.py" line="1502"/>
-        <location filename="../window/time_domain_window.py" line="840"/>
-        <location filename="../window/time_domain_window.py" line="853"/>
-        <source>Sheet1</source>
-        <translation>Лист1</translation>
+        <location filename="../settings.py" line="150"/>
+        <location filename="../settings.py" line="185"/>
+        <source>comma (,)</source>
+        <translation>запятая (,)</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="151"/>
+        <location filename="../settings.py" line="186"/>
+        <source>tab (\t)</source>
+        <translation>табуляция (\t)</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="152"/>
+        <location filename="../settings.py" line="187"/>
+        <source>semicolon (;)</source>
+        <translation>точка с запятой (;)</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="153"/>
+        <location filename="../settings.py" line="188"/>
+        <source>space ( )</source>
+        <translation>пробел ( )</translation>
     </message>
 </context>
 <context>
-    <name>FindLinesBox</name>
+    <name>dialog prompt</name>
     <message>
-        <location filename="../window/gui/find_lines_box.py" line="84"/>
-        <location filename="../window/gui/find_lines_box.py" line="113"/>
-        <source>Search threshold:</source>
-        <translation>Порог поиска:</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/find_lines_box.py" line="109"/>
-        <location filename="../window/gui/find_lines_box.py" line="117"/>
-        <source>Find Lines Automatically</source>
-        <translation>Найти линии автоматически</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/find_lines_box.py" line="116"/>
-        <source>Try to detect lines automatically</source>
-        <translation>Попробовать обнаружить линии поглощения автоматически</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/find_lines_box.py" line="119"/>
-        <source>Clear Automatically Found Lines</source>
-        <translation>Стереть автоматически найденные линии</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/find_lines_box.py" line="121"/>
-        <source>Previous Line</source>
-        <translation>Предыдущая линия</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/find_lines_box.py" line="122"/>
-        <source>Next Line</source>
-        <translation>Следующая линия</translation>
+        <location filename="../utils/__init__.py" line="482"/>
+        <source>Encountered invalid value of the cell length: {} cm
+Enter a correct value [cm]:</source>
+        <translation>Обнаружено неверное значение длины ячейки: {} см
+Введите корректное значение (см):</translation>
     </message>
 </context>
 <context>
-    <name>FoundLinesBox</name>
+    <name>file type</name>
     <message>
-        <location filename="../window/gui/found_lines_box.py" line="59"/>
-        <location filename="../window/gui/found_lines_box.py" line="106"/>
-        <source>Frequency uncertainty:</source>
-        <translation>Неопределённость по частоте:</translation>
+        <location filename="../settings.py" line="325"/>
+        <source>JSON file</source>
+        <translation>Файл JSON</translation>
     </message>
     <message>
-        <location filename="../window/gui/found_lines_box.py" line="102"/>
-        <source>Found Lines</source>
-        <translation>Найденные линии</translation>
+        <location filename="../settings.py" line="329"/>
+        <source>TAR file</source>
+        <translation>Файл TAR</translation>
     </message>
     <message>
-        <location filename="../window/gui/found_lines_box.py" line="129"/>
-        <source>Substance</source>
-        <translation>Вещество</translation>
-    </message>
-</context>
-<context>
-    <name>FrequencyBox</name>
-    <message>
-        <location filename="../window/gui/frequency_box.py" line="65"/>
-        <location filename="../window/gui/frequency_box.py" line="107"/>
-        <source>Minimum:</source>
-        <translation>Минимум:</translation>
+        <location filename="../settings.py" line="333"/>
+        <source>JSON with GZip compression</source>
+        <translation>JSON со сжатием GZip</translation>
     </message>
     <message>
-        <location filename="../window/gui/frequency_box.py" line="66"/>
-        <location filename="../window/gui/frequency_box.py" line="108"/>
-        <source>Maximum:</source>
-        <translation>Максимум:</translation>
+        <location filename="../settings.py" line="339"/>
+        <source>JSON with Bzip2 compression</source>
+        <translation>JSON со сжатием Bzip2</translation>
     </message>
     <message>
-        <location filename="../window/gui/frequency_box.py" line="67"/>
-        <location filename="../window/gui/frequency_box.py" line="109"/>
-        <source>Center:</source>
-        <translation>Центр:</translation>
+        <location filename="../settings.py" line="345"/>
+        <source>JSON with LZMA2 compression</source>
+        <translation>JSON со сжатием LZMA2</translation>
     </message>
     <message>
-        <location filename="../window/gui/frequency_box.py" line="68"/>
-        <location filename="../window/gui/frequency_box.py" line="110"/>
-        <source>Span:</source>
-        <translation>Промежуток:</translation>
+        <location filename="../settings.py" line="351"/>
+        <source>Tar archive with GZip compression</source>
+        <translation>Архив tar со сжатием GZip</translation>
     </message>
     <message>
-        <location filename="../window/gui/frequency_box.py" line="104"/>
-        <source>Frequency</source>
-        <translation>Частота</translation>
+        <location filename="../settings.py" line="357"/>
+        <source>Tar archive with Bzip2 compression</source>
+        <translation>Архив tar со сжатием Bzip2</translation>
     </message>
     <message>
-        <location filename="../window/gui/frequency_box.py" line="112"/>
-        <source>−50%</source>
-        <translation>−50%</translation>
+        <location filename="../settings.py" line="364"/>
+        <source>Tar archive with LZMA2 compression</source>
+        <translation>Архив tar со сжатием LZMA2</translation>
     </message>
     <message>
-        <location filename="../window/gui/frequency_box.py" line="113"/>
-        <source>−10%</source>
-        <translation>−10%</translation>
+        <location filename="../widgets/file_dialog.py" line="169"/>
+        <location filename="../widgets/open_file_path_entry.py" line="139"/>
+        <location filename="../widgets/open_file_path_entry.py" line="371"/>
+        <source>All supported</source>
+        <translation>Все поддерживаемые</translation>
     </message>
     <message>
-        <location filename="../window/gui/frequency_box.py" line="114"/>
-        <source>+10%</source>
-        <translation>+10%</translation>
+        <location filename="../window/gui/__init__.py" line="136"/>
+        <source>PSK Spectrometer</source>
+        <translation>Спектрометр с фазовой манипуляцией</translation>
     </message>
     <message>
-        <location filename="../window/gui/frequency_box.py" line="115"/>
-        <source>+50%</source>
-        <translation>+50%</translation>
+        <location filename="../window/gui/__init__.py" line="141"/>
+        <source>Fast Sweep Spectrometer</source>
+        <translation>Спектрометр с быстрым свипированием частоты</translation>
     </message>
 </context>
 <context>
-    <name>si prefixes</name>
+    <name>header with unit</name>
     <message>
-        <location filename="../window/gui/__init__.py" line="201"/>
-        <source>y,z,a,f,p,n,µ,m, ,k,M,G,T,P,E,Z,Y</source>
-        <translation>и,з,а,ф,п,н,мк,м, ,к,М,Г,Т,П,Э,З,И</translation>
+        <location filename="../utils/_types.py" line="65"/>
+        <source>{name} ({unit})</source>
+        <translation>{name}, {unit}</translation>
     </message>
 </context>
 <context>
-    <name>si prefix alternative micro</name>
+    <name>line end</name>
     <message>
-        <location filename="../window/gui/__init__.py" line="207"/>
-        <source>u</source>
-        <translation>мк</translation>
+        <location filename="../settings.py" line="137"/>
+        <location filename="../settings.py" line="172"/>
+        <source>line feed (\n, U+000A)</source>
+        <translation>подача строки (\n, U+000A)</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="138"/>
+        <location filename="../settings.py" line="173"/>
+        <source>carriage return (\r, U+000D)</source>
+        <translation>возврат каретки (\r, U+000D)</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="139"/>
+        <location filename="../settings.py" line="174"/>
+        <source>CR+LF (\r\n)</source>
+        <translation>ПС+ВК (\r\n)</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="140"/>
+        <location filename="../settings.py" line="175"/>
+        <source>LF+CR (\n\r)</source>
+        <translation>ВК+ПС (\n\r)</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="141"/>
+        <location filename="../settings.py" line="176"/>
+        <source>next line (U+0085)</source>
+        <translation>переход на следующую строку (U+0085)</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="142"/>
+        <location filename="../settings.py" line="177"/>
+        <source>line separator (U+2028)</source>
+        <translation>разделитель строк (U+2028)</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="143"/>
+        <location filename="../settings.py" line="178"/>
+        <source>paragraph separator (U+2029)</source>
+        <translation>разделитель абзацев (U+2029)</translation>
+    </message>
+    <message>
+        <location filename="../settings.py" line="146"/>
+        <location filename="../settings.py" line="181"/>
+        <source>system ({0})</source>
+        <translation>системный ({0})</translation>
     </message>
 </context>
 <context>
     <name>menu</name>
     <message>
-        <location filename="../window/gui/__init__.py" line="227"/>
+        <location filename="../window/gui/__init__.py" line="324"/>
         <source>Plot Options</source>
         <translation>Параметры графика</translation>
     </message>
 </context>
 <context>
+    <name>plot axes labels</name>
+    <message>
+        <location filename="../widgets/found_lines_model.py" line="105"/>
+        <location filename="../window/frequency_domain_window.py" line="1109"/>
+        <location filename="../window/time_domain_window.py" line="463"/>
+        <location filename="../window/gui/found_lines_box.py" line="137"/>
+        <location filename="../window/gui/__init__.py" line="632"/>
+        <source>Absorption</source>
+        <translation>Поглощение</translation>
+    </message>
+    <message>
+        <location filename="../widgets/found_lines_model.py" line="114"/>
+        <location filename="../window/gui/found_lines_box.py" line="150"/>
+        <source>Total Absorption</source>
+        <translation>Общее поглощение</translation>
+    </message>
+    <message>
+        <location filename="../window/frequency_domain_window.py" line="1134"/>
+        <location filename="../window/time_domain_window.py" line="487"/>
+        <location filename="../window/gui/found_lines_box.py" line="133"/>
+        <location filename="../window/gui/frequency_domain_gui.py" line="87"/>
+        <location filename="../window/gui/__init__.py" line="647"/>
+        <location filename="../window/gui/time_domain_gui.py" line="73"/>
+        <source>Voltage</source>
+        <translation>Напряжение</translation>
+    </message>
+    <message>
+        <location filename="../window/frequency_domain_window.py" line="1108"/>
+        <location filename="../window/frequency_domain_window.py" line="1133"/>
+        <location filename="../window/gui/found_lines_box.py" line="129"/>
+        <location filename="../window/gui/frequency_domain_gui.py" line="82"/>
+        <source>Frequency</source>
+        <translation>Частота</translation>
+    </message>
+    <message>
+        <location filename="../window/time_domain_window.py" line="462"/>
+        <location filename="../window/time_domain_window.py" line="486"/>
+        <location filename="../window/gui/time_domain_gui.py" line="68"/>
+        <source>Time</source>
+        <translation>Время</translation>
+    </message>
+    <message>
+        <location filename="../window/time_domain_window.py" line="509"/>
+        <location filename="../window/time_domain_window.py" line="518"/>
+        <location filename="../window/time_domain_window.py" line="550"/>
+        <location filename="../window/time_domain_window.py" line="559"/>
+        <location filename="../window/time_domain_window.py" line="594"/>
+        <location filename="../window/time_domain_window.py" line="607"/>
+        <source>Time (s)</source>
+        <translation>Время, с</translation>
+    </message>
+    <message>
+        <location filename="../window/time_domain_window.py" line="510"/>
+        <location filename="../window/time_domain_window.py" line="551"/>
+        <location filename="../window/time_domain_window.py" line="595"/>
+        <source>Absorption (cm⁻¹)</source>
+        <translation>Поглощение, см⁻¹</translation>
+    </message>
+    <message>
+        <location filename="../window/time_domain_window.py" line="519"/>
+        <location filename="../window/time_domain_window.py" line="560"/>
+        <location filename="../window/time_domain_window.py" line="608"/>
+        <source>Voltage (mV)</source>
+        <translation>Напряжение, мВ</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/found_lines_box.py" line="146"/>
+        <source>Mean Frequency</source>
+        <translation>Средняя частота</translation>
+    </message>
+</context>
+<context>
     <name>plot context menu action</name>
     <message>
-        <location filename="../window/gui/__init__.py" line="230"/>
+        <location filename="../window/gui/__init__.py" line="327"/>
         <source>View All</source>
         <translation>Автоматический масштаб</translation>
     </message>
     <message>
-        <location filename="../window/gui/__init__.py" line="234"/>
-        <location filename="../window/gui/__init__.py" line="242"/>
+        <location filename="../window/gui/__init__.py" line="331"/>
+        <location filename="../window/gui/__init__.py" line="339"/>
         <source>Alpha</source>
         <translation>Непрозрачность</translation>
     </message>
     <message>
-        <location filename="../window/gui/__init__.py" line="237"/>
+        <location filename="../window/gui/__init__.py" line="334"/>
         <source>Grid</source>
         <translation>Сетка</translation>
     </message>
     <message>
-        <location filename="../window/gui/__init__.py" line="239"/>
+        <location filename="../window/gui/__init__.py" line="336"/>
         <source>Show X Grid</source>
         <translation>Показать вертикальные линии сетки</translation>
     </message>
     <message>
-        <location filename="../window/gui/__init__.py" line="240"/>
+        <location filename="../window/gui/__init__.py" line="337"/>
         <source>Show Y Grid</source>
         <translation>Показать горизонтальные линии сетки</translation>
     </message>
     <message>
-        <location filename="../window/gui/__init__.py" line="241"/>
+        <location filename="../window/gui/__init__.py" line="338"/>
         <source>Opacity</source>
         <translation>Непрозрачность</translation>
     </message>
     <message>
-        <location filename="../window/gui/__init__.py" line="243"/>
+        <location filename="../window/gui/__init__.py" line="340"/>
         <source>Auto</source>
         <translation>Авто</translation>
     </message>
 </context>
 <context>
-    <name>TimeBox</name>
+    <name>si prefix alternative micro</name>
     <message>
-        <location filename="../window/gui/time_box.py" line="59"/>
-        <location filename="../window/gui/time_box.py" line="95"/>
-        <source>Minimum:</source>
-        <translation>Минимум:</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/time_box.py" line="60"/>
-        <location filename="../window/gui/time_box.py" line="96"/>
-        <source>Maximum:</source>
-        <translation>Максимум:</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/time_box.py" line="61"/>
-        <location filename="../window/gui/time_box.py" line="97"/>
-        <source>Center:</source>
-        <translation>Центр:</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/time_box.py" line="62"/>
-        <location filename="../window/gui/time_box.py" line="98"/>
-        <source>Span:</source>
-        <translation>Промежуток:</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/time_box.py" line="92"/>
-        <source>Time</source>
-        <translation>Время</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/time_box.py" line="100"/>
-        <source>−50%</source>
-        <translation>−50%</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/time_box.py" line="101"/>
-        <source>−10%</source>
-        <translation>−10%</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/time_box.py" line="102"/>
-        <source>+10%</source>
-        <translation>+10%</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/time_box.py" line="103"/>
-        <source>+50%</source>
-        <translation>+50%</translation>
+        <location filename="../window/gui/__init__.py" line="304"/>
+        <source>u</source>
+        <translation>мк</translation>
     </message>
 </context>
 <context>
-    <name>VoltageBox</name>
+    <name>si prefixes</name>
     <message>
-        <location filename="../window/gui/voltage_box.py" line="61"/>
-        <location filename="../window/gui/voltage_box.py" line="98"/>
-        <source>Minimum:</source>
-        <translation>Минимум:</translation>
+        <location filename="../window/gui/__init__.py" line="296"/>
+        <source>q,r,y,z,a,f,p,n,µ,m, ,k,M,G,T,P,E,Z,Y,R,Q</source>
+        <translation>кв,рн,и,з,а,ф,п,н,мк,м, ,к,М,Г,Т,П,Э,З,И,Рн,Кв</translation>
+    </message>
+</context>
+<context>
+    <name>unit</name>
+    <message>
+        <location filename="../settings.py" line="192"/>
+        <location filename="../window/gui/found_lines_box.py" line="124"/>
+        <location filename="../window/gui/frequency_box.py" line="116"/>
+        <location filename="../window/gui/frequency_domain_gui.py" line="74"/>
+        <source>Hz</source>
+        <translation>Гц</translation>
     </message>
     <message>
-        <location filename="../window/gui/voltage_box.py" line="62"/>
-        <location filename="../window/gui/voltage_box.py" line="99"/>
-        <source>Maximum:</source>
-        <translation>Максимум:</translation>
+        <location filename="../settings.py" line="200"/>
+        <source>px</source>
+        <translation>пикс</translation>
     </message>
     <message>
-        <location filename="../window/gui/voltage_box.py" line="95"/>
-        <source>Vertical Axis</source>
-        <translation>Вертикальная ось</translation>
+        <location filename="../widgets/font_selector.py" line="56"/>
+        <source>pt</source>
+        <translation>пт</translation>
     </message>
     <message>
-        <location filename="../window/gui/voltage_box.py" line="102"/>
-        <source>Show Absorption</source>
-        <translation>Показать поглощение</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/voltage_box.py" line="103"/>
-        <source>Switch Y data between absorption and voltage</source>
-        <translation>Переключить значения по оси Y между поглощением и напряжением</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/voltage_box.py" line="105"/>
-        <source>−50%</source>
-        <translation>−50%</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/voltage_box.py" line="106"/>
-        <source>−10%</source>
-        <translation>−10%</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/voltage_box.py" line="107"/>
-        <source>+10%</source>
-        <translation>+10%</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/voltage_box.py" line="108"/>
-        <source>+50%</source>
-        <translation>+50%</translation>
-    </message>
-    <message>
-        <location filename="../window/gui/voltage_box.py" line="222"/>
-        <source>Absorption</source>
-        <translation>Поглощение</translation>
-    </message>
-    <message>
+        <location filename="../widgets/found_lines_model.py" line="107"/>
+        <location filename="../widgets/found_lines_model.py" line="116"/>
+        <location filename="../window/frequency_domain_window.py" line="1116"/>
+        <location filename="../window/time_domain_window.py" line="470"/>
+        <location filename="../window/gui/found_lines_box.py" line="139"/>
+        <location filename="../window/gui/found_lines_box.py" line="152"/>
         <location filename="../window/gui/voltage_box.py" line="229"/>
-        <source>Voltage</source>
-        <translation>Напряжение</translation>
+        <source>cm⁻¹</source>
+        <translation>см⁻¹</translation>
+    </message>
+    <message>
+        <location filename="../widgets/found_lines_model.py" line="109"/>
+        <location filename="../widgets/found_lines_model.py" line="118"/>
+        <location filename="../window/gui/found_lines_box.py" line="141"/>
+        <location filename="../window/gui/found_lines_box.py" line="154"/>
+        <source>log₁₀(cm⁻¹)</source>
+        <translation>lg(см⁻¹)</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/__init__.py" line="633"/>
+        <location filename="../window/gui/__init__.py" line="638"/>
+        <source>cm&lt;sup&gt;−1&lt;/sup&gt;</source>
+        <translation>см&lt;sup&gt;−1&lt;/sup&gt;</translation>
+    </message>
+    <message>
+        <location filename="../window/gui/frequency_domain_gui.py" line="75"/>
+        <location filename="../window/gui/__init__.py" line="648"/>
+        <location filename="../window/gui/__init__.py" line="651"/>
+        <location filename="../window/gui/time_domain_gui.py" line="61"/>
+        <location filename="../window/gui/voltage_box.py" line="109"/>
+        <location filename="../window/gui/voltage_box.py" line="236"/>
+        <source>V</source>
+        <translation>В</translation>
+    </message>
+    <message>
+        <location filename="../window/frequency_domain_window.py" line="1115"/>
+        <location filename="../window/frequency_domain_window.py" line="1140"/>
+        <location filename="../window/gui/found_lines_box.py" line="130"/>
+        <location filename="../window/gui/found_lines_box.py" line="147"/>
+        <source>MHz</source>
+        <translation>МГц</translation>
+    </message>
+    <message>
+        <location filename="../window/frequency_domain_window.py" line="1141"/>
+        <location filename="../window/time_domain_window.py" line="494"/>
+        <location filename="../window/gui/found_lines_box.py" line="134"/>
+        <source>mV</source>
+        <translation>мВ</translation>
+    </message>
+    <message>
+        <location filename="../window/time_domain_window.py" line="469"/>
+        <location filename="../window/time_domain_window.py" line="493"/>
+        <location filename="../window/gui/time_box.py" line="104"/>
+        <location filename="../window/gui/time_domain_gui.py" line="60"/>
+        <source>s</source>
+        <translation>c</translation>
+    </message>
+</context>
+<context>
+    <name>workbook</name>
+    <message>
+        <location filename="../window/frequency_domain_window.py" line="728"/>
+        <location filename="../window/frequency_domain_window.py" line="1220"/>
+        <location filename="../window/frequency_domain_window.py" line="1238"/>
+        <location filename="../window/time_domain_window.py" line="598"/>
+        <location filename="../window/time_domain_window.py" line="611"/>
+        <source>Sheet1</source>
+        <translation>Лист1</translation>
     </message>
 </context>
 </TS>
